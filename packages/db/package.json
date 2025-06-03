@@ -38,6 +38,7 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@repo/config": "workspace:*",
     "@types/node": "^20.17.57",
     "drizzle-kit": "^0.31.1",
     "eslint": "catalog:",
