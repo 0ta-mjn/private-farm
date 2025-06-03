@@ -157,7 +157,7 @@ erDiagram
     string name "ユーザー名"
   }
   Diary ||--o{ User : "日誌作成者"
-  Organization ||--|{ User : "組織メンバー"
+  Organization }|--|{ User : "組織メンバー"
   Organization ||--o{ Diary : "組織日誌"
   Diary }o--o{ Thing : "日誌対象ほ場"
   Organization ||--o{ Thing : "センサー群の管理団体"
