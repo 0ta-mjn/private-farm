@@ -6,7 +6,16 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["SUPABASE_URL", "SUPABASE_KEY", "DATABASE_URL", "API_PORT"]
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "ACCEPT_ORIGIN",
+        "SUPABASE_URL",
+        "SUPABASE_KEY",
+        "DATABASE_URL",
+        "API_PORT"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -18,7 +27,16 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "cache": false,
       "persistent": true,
-      "env": ["SUPABASE_URL", "SUPABASE_KEY", "DATABASE_URL", "API_PORT"]
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "ACCEPT_ORIGIN",
+        "SUPABASE_URL",
+        "SUPABASE_KEY",
+        "DATABASE_URL",
+        "API_PORT"
+      ]
     }
   }
 }

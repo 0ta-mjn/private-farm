@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@fastify/cors": "^11.0.1",
     "@trpc/server": "catalog:",
     "fastify": "catalog:",
     "zod": "catalog:"
