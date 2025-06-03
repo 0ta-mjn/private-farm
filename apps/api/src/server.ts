@@ -8,11 +8,7 @@ import { dbClient } from "@repo/db/client";
 import { supaClient } from "@repo/supabase";
 import cors from "@fastify/cors";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("Missing DATABASE_URL environment variable");
-}
-
-const db = dbClient(process.env.DATABASE_URL);
+const db = dbClient();
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   throw new Error("Missing SUPABASE_URL or SUPABASE_KEY environment variable");

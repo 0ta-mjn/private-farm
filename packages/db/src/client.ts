@@ -3,8 +3,12 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema.js";
 import postgres from "postgres";
 
-export const dbClient = (url: string) => {
-  const client = postgres(url);
+export const dbClient = () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("Missing DATABASE_URL environment variable");
+  }
+
+  const client = postgres(process.env.DATABASE_URL);
 
   return drizzle({
     client,

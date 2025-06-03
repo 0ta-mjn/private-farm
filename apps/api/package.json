@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "dotenv -e .env tsx watch src/server.ts",
+    "dev": "dotenv -e .env -e ../../.env tsx watch src/server.ts",
+    "start": "dotenv -e .env -e ../../.env tsx src/server.ts",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
