@@ -110,12 +110,12 @@ export default function SetupPage() {
               name="userName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ユーザー名</FormLabel>
+                  <FormLabel>名前</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
-                        placeholder="your_username"
+                        placeholder="あなたの名前"
                         className="pl-10"
                         {...field}
                       />
@@ -188,8 +188,7 @@ export default function SetupPage() {
               <ul className="text-xs text-blue-700 space-y-1">
                 <li>• IoTデバイスの管理</li>
                 <li>• 農場データの可視化</li>
-                <li>• チームメンバーとの協力</li>
-                <li>• 作物の生育記録</li>
+                <li>• 農作業日誌の記録</li>
               </ul>
             </div>
           </div>
