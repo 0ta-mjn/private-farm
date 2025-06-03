@@ -4,7 +4,7 @@
  * Phase 1: 農業日誌・ユーザー管理機能
  * - ユーザー登録・ログイン機能
  * - Organization作成機能（招待なし）
- * - 農業日誌の入力機能（日付、内容、タグ）
+ * - 農業日誌の入力機能（日付、内容）
  * - 農業日誌のリスト表示・詳細表示画面
  *
  * @filepath packages/db/src/schema.ts
@@ -20,6 +20,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { z } from "zod";
 
 // ============================================================================
 // CORE TABLES
@@ -48,7 +49,6 @@ export const organizationsTable = pgTable("organizations", {
 export const usersTable = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey(), // Supabase Auth UUIDと連携
   name: varchar("name", { length: 255 }).notNull(), // 表示名
-  email: varchar("email", { length: 255 }).notNull().unique(), // ログイン用メールアドレス
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -121,7 +121,6 @@ export const thingsTable = pgTable("things", {
  * 日々の農作業内容を記録する。Phase 1の中核機能。
  * 設計書要件：日付、作業内容、対象ほ場の選択、タグ付け機能（作業種別、対象ほ場）
  *
- * @note 写真添付は Phase 1 では基本実装のみ（JSON配列で URL 保存）
  */
 export const diariesTable = pgTable(
   "diaries",
@@ -141,10 +140,6 @@ export const diariesTable = pgTable(
     organizationId: varchar("organization_id", { length: 255 })
       .references(() => organizationsTable.id)
       .notNull(), // 日誌が属する組織（設計書 ERD に従い）
-
-    // 拡張フィールド
-    tags: text("tags"), // JSON配列でタグを保存（例：["有機JAS", "防除", "ハウス1"]）
-    photos: text("photos"), // JSON配列で写真URLを保存（Phase 1では基本実装）
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -298,6 +293,15 @@ export const diaryThingsRelations = relations(diaryThingsTable, ({ one }) => ({
     references: [thingsTable.id],
   }),
 }));
+
+// ============================================================================
+// ENUM CONFIGURATION
+// ============================================================================
+
+/**
+ * memberのroleを定義するためのZodスキーマ
+ */
+export const MemberRoleSchema = z.enum(["admin"]);
 
 // ============================================================================
 // SCHEMA SUMMARY

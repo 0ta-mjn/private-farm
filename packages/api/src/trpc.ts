@@ -53,7 +53,8 @@ export const createTRPCContext = async ({
   db: ReturnType<typeof dbClient>;
   supabase: Supabase;
 }) => {
-  let authToken = req.headers["Authorization"] ?? null;
+  let authToken =
+    req.headers["authorization"] ?? req.headers["Authorization"] ?? null;
   if (typeof authToken === "string") {
     authToken = authToken.replace(/^Bearer\s+/i, "");
   } else {
@@ -67,6 +68,7 @@ export const createTRPCContext = async ({
   return {
     session,
     db,
+    supabase,
     token: authToken,
     req,
     res,
