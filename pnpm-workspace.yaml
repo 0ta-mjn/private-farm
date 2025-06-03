@@ -1,3 +1,17 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "emulator"
+
+catalog:
+  "prettier": ^3.5.3
+  "eslint": ^9.27.0
+  "typescript": ^5.8.2
+  "zod": ^3.25.47
+  "@trpc/server": ^11.2.0
+  "@trpc/client": ^11.2.0
+  "@trpc/tanstack-react-query": ^11.2.0
+  "@tanstack/react-query": ^5.79.0
+  "@supabase/supabase-js": "^2.49.8"
+  "fastify": ^5.3.3
+  "tsx": "^4.19.4"

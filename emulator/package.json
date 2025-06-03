@@ -1,0 +1,10 @@
+{
+  "name": "@repo/emulator",
+  "scripts": {
+    "dev": "pnpm dlx supabase status || pnpm dlx supabase start",
+    "reset": "pnpm dlx supabase db reset || pnpm dlx supabase start",
+    "test": "pnpm dlx supabase db test",
+    "lint": "pnpm dlx supabase db lint",
+    "deploy": "pnpm dlx supabase link --project-ref $SUPABASE_PROJECT_REF && pnpm dlx supabase db push"
+  }
+}
