@@ -75,7 +75,7 @@ export default function LoginPage() {
             break;
           case "email_not_confirmed":
             setGeneralError(
-              "メールアドレスが確認されていません。確認メールをご確認ください。"
+              "メールアドレスが確認されていません。確認メールをご確認いただくか、再度ご登録ください。"
             );
             break;
           case "too_many_requests":

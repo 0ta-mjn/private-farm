@@ -150,6 +150,11 @@ export default function AuthResetPasswordPage() {
             );
             setStatus("expired");
             break;
+          case "same_password":
+            setGeneralError(
+              "新しいパスワードは現在のパスワードと同じです。異なるパスワードを設定してください。"
+            );
+            break;
           default:
             setGeneralError(
               error.message || "パスワード更新中にエラーが発生しました"
@@ -158,9 +163,6 @@ export default function AuthResetPasswordPage() {
         }
         return;
       }
-
-      // 成功時の処理
-      setStatus("success");
 
       // 3秒後にログイン画面に遷移
       router.push("/login");
