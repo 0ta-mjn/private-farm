@@ -30,9 +30,9 @@ interface AuthLoadingContextType {
   loading: boolean;
 }
 
-const AuthLoadingContext = createContext<AuthLoadingContextType | undefined>(
-  undefined
-);
+const AuthLoadingContext = createContext<AuthLoadingContextType>({
+  loading: true,
+});
 
 // 認証アクションコンテキスト（メソッドのみ、再レンダリングを避けるため）
 interface AuthActionsContextType {
