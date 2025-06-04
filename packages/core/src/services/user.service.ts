@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, withUniqueIdRetry, desc, and } from "@repo/db";
+import { eq, withUniqueIdRetry, desc } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
@@ -247,51 +247,4 @@ export async function getUserSidebarData(db: Database, userId: string) {
     })),
     defaultOrganization,
   };
-}
-
-/**
- * 指定された組織におけるユーザーの詳細情報を取得します。
- *
- * @param db - データベースインスタンス。
- * @param userId - 対象ユーザーのID。
- * @param organizationId - 対象組織のID。
- * @returns ユーザーと組織の詳細情報。
- */
-export async function getUserOrganizationDetails(
-  db: Database,
-  userId: string,
-  organizationId: string
-) {
-  // ユーザーが指定された組織に所属しているかチェック
-  const membershipData = await db
-    .select({
-      user: {
-        id: usersTable.id,
-        name: usersTable.name,
-      },
-      organization: {
-        id: organizationsTable.id,
-        name: organizationsTable.name,
-        description: organizationsTable.description,
-      },
-      membership: {
-        role: organizationMembersTable.role,
-        createdAt: organizationMembersTable.createdAt,
-      },
-    })
-    .from(organizationMembersTable)
-    .innerJoin(usersTable, eq(organizationMembersTable.userId, usersTable.id))
-    .innerJoin(
-      organizationsTable,
-      eq(organizationMembersTable.organizationId, organizationsTable.id)
-    )
-    .where(
-      and(
-        eq(organizationMembersTable.userId, userId),
-        eq(organizationMembersTable.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  return membershipData[0] || null;
 }

@@ -1,13 +1,11 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
-import { z } from "zod";
 import { protectedProcedure } from "../trpc";
 import {
   getUserById,
   setupUserAndOrganization,
   checkUserSetupStatus,
   getUserSidebarData,
-  getUserOrganizationDetails,
   SetupSchema,
   UserCreationError,
   OrganizationCreationError,
@@ -93,23 +91,4 @@ export const userRouter = {
       });
     }
   }),
-
-  // 特定の組織でのユーザー詳細情報取得（認証が必要）
-  organizationDetails: protectedProcedure
-    .input(z.object({ organizationId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      try {
-        return await getUserOrganizationDetails(
-          ctx.db,
-          ctx.session.user.id,
-          input.organizationId
-        );
-      } catch (error) {
-        console.error("Organization details error:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "組織詳細情報の取得に失敗しました",
-        });
-      }
-    }),
 } satisfies TRPCRouterRecord;
