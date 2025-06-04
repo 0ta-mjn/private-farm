@@ -185,8 +185,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply size-full;
+  }
   body {
     @apply bg-background text-foreground;
+    @apply size-full;
   }
   html {
     font-family: var(--font-inter);

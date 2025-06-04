@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
         <TRPCProvider>
           <AuthProvider>{children}</AuthProvider>

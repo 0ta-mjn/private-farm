@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { useRouter } from "next/navigation";
 
 // ユーザーコンテキスト
 interface UserContextType {
@@ -84,10 +85,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const router = useRouter();
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setUser(null);
+      setSession(null);
+      router.push("/login");
     } catch (error) {
       console.error("Error signing out:", error);
       throw error;
