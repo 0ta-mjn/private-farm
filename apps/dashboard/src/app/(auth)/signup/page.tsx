@@ -98,7 +98,48 @@ export default function SignupPage() {
       });
 
       if (error) {
-        setGeneralError(error.message);
+        // エラーコードによる分岐処理
+        switch (error.code) {
+          case "email_exists":
+          case "user_already_exists":
+            setGeneralError(
+              "このメールアドレスは既に登録されています。ログインしてください。"
+            );
+            break;
+          case "validation_failed":
+            setGeneralError(
+              "入力内容に問題があります。もう一度確認してください。"
+            );
+            break;
+          case "weak_password":
+            setGeneralError(
+              "パスワードが脆弱です。より強力なパスワードを設定してください。"
+            );
+            break;
+          case "signup_disabled":
+            setGeneralError(
+              "サインアップが無効になっています。管理者にお問い合わせください。"
+            );
+            break;
+          case "over_request_rate_limit":
+            setGeneralError(
+              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
+            );
+            break;
+          case "over_email_send_rate_limit":
+            setGeneralError(
+              "メール送信の制限に達しました。しばらく時間をおいてから再度お試しください。"
+            );
+            break;
+          case "captcha_failed":
+            setGeneralError("認証に失敗しました。再度お試しください。");
+            break;
+          default:
+            setGeneralError(
+              error.message || "サインアップ中にエラーが発生しました"
+            );
+            break;
+        }
         return;
       }
 
