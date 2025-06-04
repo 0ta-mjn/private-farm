@@ -30,7 +30,7 @@ import {
   AlertCircleIcon,
   CheckCircleIcon,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 // フォームバリデーションスキーマ
@@ -63,7 +63,6 @@ const formSchema = z
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignupPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -365,13 +364,11 @@ export default function SignupPage() {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             すでにアカウントをお持ちの方は{" "}
-            <Button
-              variant="link"
-              className="p-0 h-auto hover:underline"
-              onClick={() => router.push("/login")}
-            >
-              ログイン
-            </Button>
+            <Link href="/login">
+              <Button variant="link" className="p-0 h-auto hover:underline">
+                ログイン
+              </Button>
+            </Link>
           </p>
         </div>
       </CardContent>

@@ -24,6 +24,7 @@ import {
 } from "@/shadcn/form";
 import { EyeIcon, EyeOffIcon, AlertCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trpcClient } from "@/trpc/client";
 
@@ -207,30 +208,25 @@ export default function LoginPage() {
 
         {/* パスワードリセットリンク */}
         <div className="mt-4 text-center">
-          <Button
-            variant="link"
-            className="p-0 h-auto text-sm hover:underline"
-            onClick={() => {
-              // TODO: パスワードリセット機能実装
-              // router.push("/forgot-password");
-              alert("パスワードリセット機能は未実装です");
-            }}
-          >
-            パスワードをお忘れの方
-          </Button>
+          <Link href="/reset-password">
+            <Button
+              variant="link"
+              className="p-0 h-auto text-sm hover:underline"
+            >
+              パスワードをお忘れの方
+            </Button>
+          </Link>
         </div>
 
         {/* サインアップリンク */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             アカウントをお持ちでない方は{" "}
-            <Button
-              variant="link"
-              className="p-0 h-auto hover:underline"
-              onClick={() => router.push("/signup")}
-            >
-              新規登録
-            </Button>
+            <Link href="/signup">
+              <Button variant="link" className="p-0 h-auto hover:underline">
+                新規登録
+              </Button>
+            </Link>
           </p>
         </div>
       </CardContent>
