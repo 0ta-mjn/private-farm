@@ -5,7 +5,11 @@ import {
   organizationsTable,
   usersTable,
 } from "@repo/db/schema";
-import { getUserById, setupUserAndOrganization } from "..";
+import {
+  getUserById,
+  setupUserAndOrganization,
+  checkUserSetupStatus,
+} from "..";
 
 const db = dbClient();
 
@@ -75,6 +79,50 @@ describe("UserService (関数型)", () => {
       expect(res.user.name).toBe("Edited User");
       expect(res.organization).toBeDefined();
       expect(res.organization.name).toBe("New Organization");
+    });
+  });
+
+  describe("checkUserSetupStatus", () => {
+    it("ユーザーが存在しない場合、未完了状態を返す", async () => {
+      const result = await checkUserSetupStatus(db, "non-existent-user-id");
+
+      expect(result.isCompleted).toBe(false);
+      expect(result.hasUser).toBe(false);
+      expect(result.hasOrganization).toBe(false);
+    });
+
+    it("ユーザーは存在するが組織に所属していない場合、未完了状態を返す", async () => {
+      const testUserId = "test-user-id";
+      // テスト用のユーザーを作成
+      await db
+        .insert(usersTable)
+        .values({
+          id: testUserId,
+          name: "Test User",
+        })
+        .returning();
+
+      const result = await checkUserSetupStatus(db, testUserId);
+
+      expect(result.isCompleted).toBe(false);
+      expect(result.hasUser).toBe(true);
+      expect(result.hasOrganization).toBe(false);
+    });
+
+    it("ユーザーが組織に所属している場合、完了状態を返す", async () => {
+      const testUserId = "test-user-with-org";
+
+      // setupUserAndOrganizationでユーザーと組織を作成
+      const setupResult = await setupUserAndOrganization(db, testUserId, {
+        userName: "Test User",
+        organizationName: "Test Organization",
+      });
+
+      const result = await checkUserSetupStatus(db, testUserId);
+
+      expect(result.isCompleted).toBe(true);
+      expect(result.hasUser).toBe(true);
+      expect(result.hasOrganization).toBe(true);
     });
   });
 });

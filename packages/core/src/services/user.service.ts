@@ -155,3 +155,40 @@ export async function setupUserAndOrganization(
     };
   });
 }
+
+/**
+ * ユーザーの初期設定状態を確認します。
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 確認するユーザーのID。
+ * @returns ユーザーの設定状態情報を含むオブジェクト。
+ */
+export async function checkUserSetupStatus(db: Database, userId: string) {
+  // ユーザー情報を取得
+  const user = await getUserById(db, userId);
+
+  if (!user) {
+    return {
+      isCompleted: false,
+      hasUser: false,
+      hasOrganization: false,
+    };
+  }
+
+  // ユーザーが所属する組織があるかチェック
+  const membershipResult = await db
+    .select({
+      organizationId: organizationMembersTable.organizationId,
+    })
+    .from(organizationMembersTable)
+    .where(eq(organizationMembersTable.userId, userId))
+    .limit(1);
+
+  const hasOrganization = membershipResult.length > 0;
+
+  return {
+    isCompleted: hasOrganization,
+    hasUser: true,
+    hasOrganization,
+  };
+}

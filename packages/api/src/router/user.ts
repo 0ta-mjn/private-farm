@@ -4,6 +4,7 @@ import { protectedProcedure } from "../trpc";
 import {
   getUserById,
   setupUserAndOrganization,
+  checkUserSetupStatus,
   SetupSchema,
   UserCreationError,
   OrganizationCreationError,
@@ -18,6 +19,19 @@ export const userRouter = {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "ユーザー情報の取得に失敗しました",
+      });
+    }
+  }),
+
+  // 初期設定状態確認（認証が必要）
+  setupCheck: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      return await checkUserSetupStatus(ctx.db, ctx.session.user.id);
+    } catch (error) {
+      console.error("Setup check error:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "初期設定状態の確認に失敗しました",
       });
     }
   }),
