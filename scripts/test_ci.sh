@@ -11,4 +11,4 @@ echo "Migrating database..."
 pnpm db:push:testing
 
 echo "Running tests..."
-pnpm dotenv -e .env.testing -- turbo run lint test
+pnpm dotenv -e .env.testing -- turbo run lint test --concurrency=1
