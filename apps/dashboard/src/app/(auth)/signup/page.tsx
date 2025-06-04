@@ -169,7 +169,7 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 text-center mb-4">
+          <p className="text-sm text-muted-foreground text-center mb-4">
             メールが届かない場合は、迷惑メールフォルダもご確認ください。
           </p>
           <Button
@@ -240,9 +240,9 @@ export default function SignupPage() {
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         >
                           {showPassword ? (
-                            <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                            <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <EyeIcon className="h-4 w-4 text-gray-400" />
+                            <EyeIcon className="h-4 w-4 text-muted-foreground" />
                           )}
                         </button>
                       </div>
@@ -277,9 +277,9 @@ export default function SignupPage() {
                           className="absolute inset-y-0 right-0 pr-3 flex items-center"
                         >
                           {showConfirmPassword ? (
-                            <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                            <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <EyeIcon className="h-4 w-4 text-gray-400" />
+                            <EyeIcon className="h-4 w-4 text-muted-foreground" />
                           )}
                         </button>
                       </div>

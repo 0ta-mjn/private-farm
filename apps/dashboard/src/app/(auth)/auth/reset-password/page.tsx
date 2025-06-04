@@ -277,14 +277,14 @@ export default function AuthResetPasswordPage() {
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         {showPassword ? (
-                          <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                          <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <EyeIcon className="h-4 w-4 text-gray-400" />
+                          <EyeIcon className="h-4 w-4 text-muted-foreground" />
                         )}
                       </button>
                     </div>
                   </FormControl>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     8文字以上、大文字・小文字・数字を含む必要があります
                   </p>
                   <FormMessage />
@@ -315,9 +315,9 @@ export default function AuthResetPasswordPage() {
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         {showConfirmPassword ? (
-                          <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                          <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <EyeIcon className="h-4 w-4 text-gray-400" />
+                          <EyeIcon className="h-4 w-4 text-muted-foreground" />
                         )}
                       </button>
                     </div>

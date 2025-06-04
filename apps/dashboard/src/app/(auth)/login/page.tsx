@@ -179,9 +179,9 @@ export default function LoginPage() {
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         {showPassword ? (
-                          <EyeOffIcon className="h-4 w-4 text-gray-400" />
+                          <EyeOffIcon className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <EyeIcon className="h-4 w-4 text-gray-400" />
+                          <EyeIcon className="h-4 w-4 text-muted-foreground" />
                         )}
                       </button>
                     </div>

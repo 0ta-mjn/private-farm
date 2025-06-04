@@ -33,6 +33,10 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-primary-sub: var(--primary-sub);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -49,134 +53,132 @@
   --radius: 0.625rem;
 
   /* neutral ベース */
-  --background: #f3f4f6; /* neutral-100 :contentReference[oaicite:26]{index=26} */
-  --foreground: #111827; /* neutral-900 :contentReference[oaicite:27]{index=27} */
-  --card: #f3f4f6; /* neutral-100 :contentReference[oaicite:28]{index=28} */
-  --card-foreground: #111827; /* neutral-900 :contentReference[oaicite:29]{index=29} */
-  --popover: #f3f4f6; /* neutral-100 :contentReference[oaicite:30]{index=30} */
-  --popover-foreground: #111827; /* neutral-900 :contentReference[oaicite:31]{index=31} */
+  --background: #f3f4f6; /* neutral-100 */
+  --foreground: #111827; /* neutral-900 */
+  --card: #f3f4f6; /* neutral-100 */
+  --card-foreground: #111827; /* neutral-900 */
+  --popover: #f3f4f6; /* neutral-100 */
+  --popover-foreground: #111827; /* neutral-900 */
 
   /* プライマリ（emerald-600 相当） */
-  --primary: #039668; /* emerald-600 :contentReference[oaicite:32]{index=32} */
+  --primary: #039668; /* emerald-600 */
   --primary-foreground: #ffffff;
 
   /* ホバー／アクティブ時：emerald-700 */
-  --primary-hover: #047857; /* emerald-700 :contentReference[oaicite:33]{index=33} */
+  --primary-hover: #047857; /* emerald-700 */
 
   /* ダークバリアント：emerald-800 */
-  --primary-dark: #065f46; /* emerald-800 :contentReference[oaicite:34]{index=34} */
+  --primary-dark: #065f46; /* emerald-800 */
 
   /* ライトバリアント：emerald-400 */
-  --primary-light: #34d399; /* emerald-400 :contentReference[oaicite:35]{index=35} */
+  --primary-light: #34d399; /* emerald-400 */
 
   /* サブ：emerald-300 */
-  --primary-sub: #6ee7b7; /* emerald-300 :contentReference[oaicite:36]{index=36} */
+  --primary-sub: #6ee7b7; /* emerald-300 */
 
-  /* セカンダリ（中間の neutral-600） */
-  --secondary: #6b7280; /* neutral-600 :contentReference[oaicite:37]{index=37} */
+  /* セカンダリ（中間の slate-600） */
+  --secondary: #4b5563; /* slate-600 */
   --secondary-foreground: #f3f4f6;
 
   /* ミューテッド（neutral-200～300 を使用） */
-  --muted: #e5e7eb; /* neutral-200 :contentReference[oaicite:38]{index=38} */
-  --muted-foreground: #737373; /* neutral-500 :contentReference[oaicite:39]{index=39} */
+  --muted: #e5e7eb; /* neutral-200 */
+  --muted-foreground: #737373; /* neutral-500 */
 
   /* アクセント：アンバー系を新たに設定 */
-  --accent: #f59e0b; /* amber-500 :contentReference[oaicite:40]{index=40} */
+  --accent: #f59e0b; /* amber-500 */
   --accent-foreground: #ffffff;
 
   /* デストラクティブ：赤系（濃いトーン） */
-  --destructive: #b91c1c; /* red-700 :contentReference[oaicite:41]{index=41} */
+  --destructive: #b91c1c; /* red-700 */
 
   /* ボーダー／入力／リング：neutral-300～400 */
-  --border: #d1d5db; /* neutral-300 :contentReference[oaicite:42]{index=42} */
-  --input: #d1d5db; /* neutral-300 :contentReference[oaicite:43]{index=43} */
-  --ring: #9ca3af; /* neutral-400 :contentReference[oaicite:44]{index=44} */
+  --border: #d1d5db; /* neutral-300 */
+  --input: #d1d5db; /* neutral-300 */
+  --ring: #9ca3af; /* neutral-400 */
 
   /* チャート色（データ可視化向けに調整） */
-  --chart-1: #064e3b; /* emerald-900 :contentReference[oaicite:45]{index=45} */
-  --chart-2: #ca8a04; /* amber-600 :contentReference[oaicite:46]{index=46} */
-  --chart-3: #1d4ed8; /* blue-700 :contentReference[oaicite:47]{index=47} */
-  --chart-4: #4d7c0f; /* lime-700 :contentReference[oaicite:48]{index=48} */
-  --chart-5: #0f172a; /* slate-900 :contentReference[oaicite:49]{index=49} */
+  --chart-1: #064e3b; /* emerald-900 */
+  --chart-2: #ca8a04; /* amber-600 */
+  --chart-3: #1d4ed8; /* blue-700 */
+  --chart-4: #4d7c0f; /* lime-700 */
+  --chart-5: #0f172a; /* slate-900 */
 
   /* サイドバー関連 */
-  --sidebar: #0f172a; /* neutral-900 :contentReference[oaicite:50]{index=50} */
+  --sidebar: #0f172a; /* neutral-900 */
   --sidebar-foreground: #f3f4f6;
-  --sidebar-primary: #047857; /* emerald-700 :contentReference[oaicite:51]{index=51} */
+  --sidebar-primary: #047857; /* emerald-700 */
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f59e0b; /* amber-500 :contentReference[oaicite:52]{index=52} */
+  --sidebar-accent: #d97706; /* amber-600 */
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1d2635; /* slate-800 :contentReference[oaicite:53]{index=53} */
-  --sidebar-ring: #374151; /* neutral-700 :contentReference[oaicite:54]{index=54} */
+  --sidebar-border: #1d2635; /* slate-800 */
+  --sidebar-ring: #374151; /* neutral-700 */
 
   /** リンク色 */
-  --external: #2563eb; /* blue-600 :contentReference[oaicite:55]{index=55} */
+  --external: #2563eb; /* blue-600 */
 
   /* フォント設定はそのまま利用 */
-  --font-inter:
-    "Inter", sans-serif; /* Neo-grotesque 系で可読性高い :contentReference[oaicite:55]{index=55} */
-  --font-poppins:
-    "Poppins", sans-serif; /* 見出しなど強調部分に適する :contentReference[oaicite:56]{index=56} */
+  --font-inter: "Inter", sans-serif; /* Neo-grotesque 系で可読性高い */
+  --font-poppins: "Poppins", sans-serif; /* 見出しなど強調部分に適する */
 }
 
 .dark {
   /* ダークテーマ：背景・テキスト・カードなどを neutral-900～neutral-800 に設定 */
-  --background: #111827; /* neutral-900 :contentReference[oaicite:57]{index=57} */
-  --foreground: #f3f4f6; /* neutral-100 :contentReference[oaicite:58]{index=58} */
-  --card: #1f2937; /* neutral-800 :contentReference[oaicite:59]{index=59} */
-  --card-foreground: #f3f4f6; /* neutral-100 :contentReference[oaicite:60]{index=60} */
-  --popover: #1f2937; /* neutral-800 :contentReference[oaicite:61]{index=61} */
-  --popover-foreground: #f3f4f6; /* neutral-100 :contentReference[oaicite:62]{index=62} */
+  --background: #111827; /* neutral-900 */
+  --foreground: #f3f4f6; /* neutral-100 */
+  --card: #1f2937; /* neutral-800 */
+  --card-foreground: #f3f4f6; /* neutral-100 */
+  --popover: #1f2937; /* neutral-800 */
+  --popover-foreground: #f3f4f6; /* neutral-100 */
 
   /* ダークテーマのプライマリ：emerald-800 */
-  --primary: #065f46; /* emerald-800 :contentReference[oaicite:63]{index=63} */
+  --primary: #065f46; /* emerald-800 */
   --primary-foreground: #ffffff;
 
   /* ホバー：emerald-700 */
-  --primary-hover: #047857; /* emerald-700 :contentReference[oaicite:64]{index=64} */
+  --primary-hover: #047857; /* emerald-700 */
 
   /* ライトバリアント：emerald-400 */
-  --primary-light: #34d399; /* emerald-400 :contentReference[oaicite:65]{index=65} */
+  --primary-light: #34d399; /* emerald-400 */
 
   /* サブカラー：emerald-300 */
-  --primary-sub: #6ee7b7; /* emerald-300 :contentReference[oaicite:66]{index=66} */
+  --primary-sub: #6ee7b7; /* emerald-300 */
 
   /* セカンダリ：neutral-700 */
-  --secondary: #4b5563; /* neutral-700 :contentReference[oaicite:67]{index=67} */
+  --secondary: #4b5563; /* neutral-700 */
   --secondary-foreground: #f3f4f6;
 
   /* ミューテッド：neutral-700～700 */
-  --muted: #374151; /* neutral-700 :contentReference[oaicite:68]{index=68} */
+  --muted: #374151; /* neutral-700 */
   --muted-foreground: #f3f4f6;
 
   /* アクセント：アンバー系をダーク向けに調整 */
-  --accent: #d97706; /* amber-600 :contentReference[oaicite:69]{index=69} */
+  --accent: #d97706; /* amber-600 */
   --accent-foreground: #ffffff;
 
   /* デストラクティブ：赤系 */
-  --destructive: #b91c1c; /* red-700 :contentReference[oaicite:70]{index=70} */
+  --destructive: #b91c1c; /* red-700 */
 
   /* ボーダー／入力／リング：neutral-700～neutral-600 */
-  --border: #374151; /* neutral-700 :contentReference[oaicite:71]{index=71} */
-  --input: #4b5563; /* neutral-700 :contentReference[oaicite:72]{index=72} */
-  --ring: #6b7280; /* neutral-600 :contentReference[oaicite:73]{index=73} */
+  --border: #374151; /* neutral-700 */
+  --input: #4b5563; /* neutral-700 */
+  --ring: #6b7280; /* neutral-600 */
 
   /* チャート色：濃い配色を維持 */
-  --chart-1: #064e3b; /* emerald-900 :contentReference[oaicite:74]{index=74} */
-  --chart-2: #ca8a04; /* amber-600 :contentReference[oaicite:75]{index=75} */
-  --chart-3: #1d4ed8; /* blue-700 :contentReference[oaicite:76]{index=76} */
-  --chart-4: #4d7c0f; /* lime-700 :contentReference[oaicite:77]{index=77} */
-  --chart-5: #e5e7eb; /* neutral-200 :contentReference[oaicite:78]{index=78} */
+  --chart-1: #064e3b; /* emerald-900 */
+  --chart-2: #ca8a04; /* amber-600 */
+  --chart-3: #1d4ed8; /* blue-700 */
+  --chart-4: #4d7c0f; /* lime-700 */
+  --chart-5: #e5e7eb; /* neutral-200 */
 
   /* サイドバー関連：非常に暗い背景にアンバーアクセント */
-  --sidebar: #0b1120; /* neutral-950 相当 :contentReference[oaicite:79]{index=79} */
+  --sidebar: #0b1120; /* neutral-950 相当 */
   --sidebar-foreground: #f3f4f6;
-  --sidebar-primary: #047857; /* emerald-700 :contentReference[oaicite:80]{index=80} */
+  --sidebar-primary: #047857; /* emerald-700 */
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #d97706; /* amber-600 :contentReference[oaicite:81]{index=81} */
+  --sidebar-accent: #d97706; /* amber-600 */
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1f2937; /* neutral-800 :contentReference[oaicite:82]{index=82} */
-  --sidebar-ring: #4b5563; /* neutral-700 :contentReference[oaicite:83]{index=83} */
+  --sidebar-border: #1f2937; /* neutral-800 */
+  --sidebar-ring: #4b5563; /* neutral-700 */
 }
 
 @layer base {

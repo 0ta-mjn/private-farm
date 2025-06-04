@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
             </AlertDescription>
           </Alert>
 
-          <div className="text-sm text-gray-600 space-y-2">
+          <div className="text-sm text-muted-foreground space-y-2">
             <p>• メールが届かない場合は、迷惑メールフォルダをご確認ください</p>
             <p>• リンクは24時間有効です</p>
             <p>
