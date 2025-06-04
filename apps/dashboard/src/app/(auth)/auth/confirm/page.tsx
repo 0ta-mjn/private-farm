@@ -45,10 +45,7 @@ export default function AuthCallbackPage() {
             setStatus("success");
             setMessage("アカウントの確認が完了しました。");
 
-            // 3秒後に初期設定画面に遷移
-            setTimeout(() => {
-              router.push("/setup");
-            }, 3000);
+            router.push("/setup");
           }
         } else {
           throw new Error("認証情報が見つかりません");
