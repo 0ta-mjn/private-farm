@@ -28,7 +28,7 @@ const UNIQUE_VIOLATION_ERROR_CODE = "23505";
  * );
  * ```
  */
-export async function createWithUUIDRetry<T>(
+export async function withUniqueIdRetry<T>(
   insertFn: (id: string) => Promise<T>,
   options: {
     maxRetries?: number;
@@ -43,7 +43,7 @@ export async function createWithUUIDRetry<T>(
   } = options;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const id = generateUUID({ idPrefix, length });
+    const id = generateUniqueId({ idPrefix, length });
 
     try {
       return await insertFn(id);
@@ -90,19 +90,19 @@ function isPostgresError(error: unknown): error is { code: string } {
  * @example
  * ```typescript
  * // 標準UUID
- * const id1 = generateUUID(); // "550e8400-e29b-41d4-a716-446655440000"
+ * const id1 = generateUniqueId(); // "550e8400-e29b-41d4-a716-446655440000"
  *
  * // プレフィックス付き
- * const id2 = generateUUID({ idPrefix: "org_" }); // "org_550e8400-e29b-41d4-a716-446655440000"
+ * const id2 = generateUniqueId({ idPrefix: "org_" }); // "org_550e8400-e29b-41d4-a716-446655440000"
  *
  * // 固定長（ハッシュ化）
- * const id3 = generateUUID({ length: 12 }); // "a1b2c3d4e5f6"
+ * const id3 = generateUniqueId({ length: 12 }); // "a1b2c3d4e5f6"
  *
  * // プレフィックス + 固定長
- * const id4 = generateUUID({ idPrefix: "user_", length: 8 }); // "user_a1b2c3d4"
+ * const id4 = generateUniqueId({ idPrefix: "user_", length: 8 }); // "user_a1b2c3d4"
  * ```
  */
-export function generateUUID(
+export function generateUniqueId(
   options: {
     idPrefix?: string;
     length?: number;

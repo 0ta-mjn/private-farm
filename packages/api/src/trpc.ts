@@ -49,7 +49,7 @@ export const createTRPCContext = async ({
   res,
   db,
   supabase,
-}: CreateFastifyContextOptions & {
+}: Pick<CreateFastifyContextOptions, "req" | "res"> & {
   db: ReturnType<typeof dbClient>;
   supabase: Supabase;
 }) => {

@@ -15,5 +15,12 @@ catalog:
   fastify: ^5.3.3
   tsx: ^4.19.4
   superjson: "^2.2.2"
+  vitest: ^2.1.8
+  "drizzle-orm": "^0.44.1"
+  "drizzle-zod": "^0.8.2"
+  "postgres": "^3.4.7"
+  "drizzle-kit": "^0.31.1"
+  "@types/node": "^20.17.57"
+  "dotenv-cli": "^8.0.0"
 onlyBuiltDependencies:
   - supabase

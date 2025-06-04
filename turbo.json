@@ -17,6 +17,11 @@
         "API_PORT"
       ]
     },
+    "test": {
+      "dependsOn": ["lint", "push"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["DATABASE_URL"]
+    },
     "lint": {
       "dependsOn": ["^lint"]
     },
@@ -39,6 +44,16 @@
       ]
     },
     "push": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["DATABASE_URL"],
+      "cache": false,
+      "interactive": true
+    },
+    "stop": {
+      "cache": false,
+      "interactive": true
+    },
+    "stopd": {
       "cache": false,
       "interactive": true
     },
