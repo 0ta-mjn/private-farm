@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, withUniqueIdRetry } from "@repo/db";
+import { eq, withUniqueIdRetry, desc, and } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
@@ -191,4 +191,107 @@ export async function checkUserSetupStatus(db: Database, userId: string) {
     hasUser: true,
     hasOrganization,
   };
+}
+
+/**
+ * サイドバー表示に必要なユーザーと組織の情報を取得します。
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 対象ユーザーのID。
+ * @returns ユーザー情報、所属組織一覧、デフォルト組織を含むオブジェクト。
+ */
+export async function getUserSidebarData(db: Database, userId: string) {
+  // ユーザー情報を取得
+  const user = await getUserById(db, userId);
+
+  if (!user) {
+    return null;
+  }
+
+  // ユーザーが所属する組織とメンバーシップ情報を取得
+  const organizationsWithMembership = await db
+    .select({
+      organization: {
+        id: organizationsTable.id,
+        name: organizationsTable.name,
+        description: organizationsTable.description,
+        updatedAt: organizationsTable.updatedAt,
+      },
+      membership: {
+        id: organizationMembersTable.id,
+        role: organizationMembersTable.role,
+        createdAt: organizationMembersTable.createdAt,
+      },
+    })
+    .from(organizationMembersTable)
+    .innerJoin(
+      organizationsTable,
+      eq(organizationMembersTable.organizationId, organizationsTable.id)
+    )
+    .where(eq(organizationMembersTable.userId, userId))
+    .orderBy(desc(organizationsTable.updatedAt)); // 最近更新された組織順
+
+  // デフォルト組織（最も最近更新された組織）を設定
+  const defaultOrganization =
+    organizationsWithMembership[0]?.organization || null;
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+    },
+    organizations: organizationsWithMembership.map((item) => ({
+      ...item.organization,
+      role: item.membership.role,
+      joinedAt: item.membership.createdAt,
+    })),
+    defaultOrganization,
+  };
+}
+
+/**
+ * 指定された組織におけるユーザーの詳細情報を取得します。
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 対象ユーザーのID。
+ * @param organizationId - 対象組織のID。
+ * @returns ユーザーと組織の詳細情報。
+ */
+export async function getUserOrganizationDetails(
+  db: Database,
+  userId: string,
+  organizationId: string
+) {
+  // ユーザーが指定された組織に所属しているかチェック
+  const membershipData = await db
+    .select({
+      user: {
+        id: usersTable.id,
+        name: usersTable.name,
+      },
+      organization: {
+        id: organizationsTable.id,
+        name: organizationsTable.name,
+        description: organizationsTable.description,
+      },
+      membership: {
+        role: organizationMembersTable.role,
+        createdAt: organizationMembersTable.createdAt,
+      },
+    })
+    .from(organizationMembersTable)
+    .innerJoin(usersTable, eq(organizationMembersTable.userId, usersTable.id))
+    .innerJoin(
+      organizationsTable,
+      eq(organizationMembersTable.organizationId, organizationsTable.id)
+    )
+    .where(
+      and(
+        eq(organizationMembersTable.userId, userId),
+        eq(organizationMembersTable.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  return membershipData[0] || null;
 }

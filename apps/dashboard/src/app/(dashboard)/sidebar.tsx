@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,6 +20,13 @@ import {
   SidebarRail,
 } from "@/shadcn/sidebar";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shadcn/select";
+import {
   HomeIcon,
   BookIcon,
   SettingsIcon,
@@ -32,7 +39,10 @@ import {
   History as HistoryIcon,
   BellIcon,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
+import { useOrganization } from "@/contexts/organization-context";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -52,87 +62,141 @@ interface SidebarSection {
   items: SidebarItem[];
 }
 
-// サイドバーの構成データ
-const sidebarSections: SidebarSection[] = [
-  {
-    id: "main",
-    items: [
-      {
-        id: "home",
-        label: "ホーム",
-        icon: HomeIcon,
-        href: "/dashboard",
-      },
-      {
-        id: "diary",
-        label: "農業日誌",
-        icon: BookIcon,
-        href: "/diary",
-        children: [
-          {
-            id: "new-diary",
-            label: "新しい日誌を作成",
-            icon: PlusIcon,
-            href: "/diary/new",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: "data",
-    title: "データ管理",
-    items: [
-      {
-        id: "sensors",
-        label: "センサー管理",
-        icon: SensorIcon,
-        disabled: true,
-        badge: "準備中",
-      },
-      {
-        id: "realtime",
-        label: "リアルタイムデータ",
-        icon: ChartIcon,
-        disabled: true,
-        badge: "準備中",
-      },
-      {
-        id: "history",
-        label: "履歴データ",
-        icon: HistoryIcon,
-        disabled: true,
-        badge: "準備中",
-      },
-    ],
-  },
-  {
-    id: "settings",
-    title: "設定",
-    items: [
-      {
-        id: "account",
-        label: "アカウント設定",
-        icon: SettingsIcon,
-        href: "/settings/account",
-      },
-      {
-        id: "notifications",
-        label: "通知設定",
-        icon: BellIcon,
-        disabled: true,
-        badge: "準備中",
-      },
-    ],
-  },
-];
+// 組織の型定義
+interface Organization {
+  id: string;
+  name: string;
+  description: string | null;
+  role: string;
+  joinedAt: Date;
+  updatedAt: Date;
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
+  const {
+    currentOrganizationId,
+    setCurrentOrganization,
+    setDefaultOrganization,
+    isInitialized,
+  } = useOrganization();
+  const trpc = useTRPC();
+
+  // サイドバーデータを取得
+  const { data: sidebarData, isLoading } = useQuery(
+    trpc.user.sidebarData.queryOptions()
+  );
+
+  // デフォルト組織を設定
+  useEffect(() => {
+    if (sidebarData?.defaultOrganization && isInitialized) {
+      setDefaultOrganization(sidebarData.defaultOrganization.id);
+    }
+  }, [sidebarData?.defaultOrganization, isInitialized, setDefaultOrganization]);
+
+  // 現在の組織情報を取得
+  const currentOrganization = currentOrganizationId
+    ? sidebarData?.organizations.find(
+        (org: Organization) => org.id === currentOrganizationId
+      ) || sidebarData?.defaultOrganization
+    : sidebarData?.defaultOrganization;
 
   const handleLogout = () => {
     signOut();
+  };
+
+  const handleComingSoon = () => {
+    alert("この機能は準備中です");
+  };
+
+  // サイドバーの構成データ
+  const sidebarSections: SidebarSection[] = [
+    {
+      id: "main",
+      items: [
+        {
+          id: "home",
+          label: "ホーム",
+          icon: HomeIcon,
+          href: "/dashboard",
+        },
+        {
+          id: "diary",
+          label: "農業日誌",
+          icon: BookIcon,
+          href: "/diary",
+          children: [
+            {
+              id: "new-diary",
+              label: "新しい日誌を作成",
+              icon: PlusIcon,
+              href: "/diary/new",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "data",
+      title: "データ管理",
+      items: [
+        {
+          id: "sensors",
+          label: "センサー管理",
+          icon: SensorIcon,
+          disabled: true,
+          badge: "準備中",
+          onClick: handleComingSoon,
+        },
+        {
+          id: "realtime",
+          label: "リアルタイムデータ",
+          icon: ChartIcon,
+          disabled: true,
+          badge: "準備中",
+          onClick: handleComingSoon,
+        },
+        {
+          id: "history",
+          label: "履歴データ",
+          icon: HistoryIcon,
+          disabled: true,
+          badge: "準備中",
+          onClick: handleComingSoon,
+        },
+      ],
+    },
+    {
+      id: "settings",
+      title: "設定",
+      items: [
+        {
+          id: "organization-settings",
+          label: "組織設定",
+          icon: BuildingIcon,
+          href: "/settings/organization-settings",
+        },
+        {
+          id: "account",
+          label: "アカウント設定",
+          icon: SettingsIcon,
+          href: "/settings/account",
+        },
+        {
+          id: "notifications",
+          label: "通知設定",
+          icon: BellIcon,
+          disabled: true,
+          badge: "準備中",
+          onClick: handleComingSoon,
+        },
+      ],
+    },
+  ];
+
+  const handleOrganizationChange = (organizationId: string) => {
+    setCurrentOrganization(organizationId);
   };
 
   // アクティブ状態の判定
@@ -143,19 +207,56 @@ export function AppSidebar() {
     return pathname.startsWith(href);
   };
 
+  // ローディング状態の表示
+  if (isLoading || !isInitialized) {
+    return (
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        </SidebarHeader>
+        <SidebarRail />
+      </Sidebar>
+    );
+  }
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/organization/settings">
-                <BuildingIcon className="h-4 w-4" />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium truncate">組織名</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
+            <div className="flex items-center gap-2 py-2">
+              <Select
+                value={currentOrganizationId || ""}
+                onValueChange={handleOrganizationChange}
+              >
+                <SelectTrigger className="h-auto w-full p-0 border-none bg-transparent hover:bg-sidebar-accent">
+                  <SelectValue>
+                    <div className="flex items-center min-w-0 flex-1 gap-2 px-2 text-sidebar-accent-foreground">
+                      <BuildingIcon className="h-4 w-4 shrink-0 text-current" />
+
+                      <span className="text-sm font-medium truncate">
+                        {currentOrganization?.name || "組織を選択"}
+                      </span>
+                    </div>
+                  </SelectValue>
+                </SelectTrigger>
+
+                <SelectContent>
+                  {sidebarData?.organizations?.map((org: Organization) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{org.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {org.role === "admin" ? "管理者" : "メンバー"}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -234,15 +335,12 @@ export function AppSidebar() {
         <SidebarMenu>
           {/* ユーザー情報 */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild size="lg">
               <div className="flex items-center gap-3 px-2 py-2">
                 <UserIcon className="h-4 w-4" />
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-medium truncate">
-                    ユーザー名
-                  </span>
-                  <span className="text-xs text-sidebar-foreground/70 truncate">
-                    user@example.com
+                    {sidebarData?.user?.name || "ユーザー名"}
                   </span>
                 </div>
               </div>
