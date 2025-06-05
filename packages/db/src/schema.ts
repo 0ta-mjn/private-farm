@@ -71,10 +71,10 @@ export const organizationMembersTable = pgTable(
   {
     id: varchar("id", { length: 255 }).primaryKey(),
     userId: varchar("user_id", { length: 255 })
-      .references(() => usersTable.id)
+      .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
     organizationId: varchar("organization_id", { length: 255 })
-      .references(() => organizationsTable.id)
+      .references(() => organizationsTable.id, { onDelete: "cascade" })
       .notNull(),
     role: varchar("role", { length: 50 }).default("member").notNull(), // admin: 管理者, member: 一般メンバー
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -109,7 +109,7 @@ export const thingsTable = pgTable("things", {
   location: varchar("location", { length: 255 }), // 所在地（住所や GPS座標）
   area: real("area"), // 面積（平方メートル）
   organizationId: varchar("organization_id", { length: 255 })
-    .references(() => organizationsTable.id)
+    .references(() => organizationsTable.id, { onDelete: "cascade" })
     .notNull(), // どの組織が管理するほ場か
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -134,11 +134,12 @@ export const diariesTable = pgTable(
     temperature: real("temperature"), // 作業日の気温（℃）
 
     // 関係性フィールド
-    userId: varchar("user_id", { length: 255 })
-      .references(() => usersTable.id)
-      .notNull(), // 日誌作成者
+    userId: varchar("user_id", { length: 255 }).references(
+      () => usersTable.id,
+      { onDelete: "set null" }
+    ), // 日誌作成者
     organizationId: varchar("organization_id", { length: 255 })
-      .references(() => organizationsTable.id)
+      .references(() => organizationsTable.id, { onDelete: "cascade" })
       .notNull(), // 日誌が属する組織（設計書 ERD に従い）
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -171,10 +172,10 @@ export const diaryThingsTable = pgTable(
   {
     id: varchar("id", { length: 255 }).primaryKey(),
     diaryId: varchar("diary_id", { length: 255 })
-      .references(() => diariesTable.id)
+      .references(() => diariesTable.id, { onDelete: "cascade" })
       .notNull(),
     thingId: varchar("thing_id", { length: 255 })
-      .references(() => thingsTable.id)
+      .references(() => thingsTable.id, { onDelete: "cascade" })
       .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

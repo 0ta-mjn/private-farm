@@ -160,7 +160,7 @@ erDiagram
     string id PK "ユーザーID"
     string name "ユーザー名"
   }
-  Diary ||--o{ User : "日誌作成者"
+  Diary }o--o| User : "日誌作成者"
   Organization }|--|{ User : "組織メンバー"
   Organization ||--o{ Diary : "組織日誌"
   Diary }o--o{ Thing : "日誌対象ほ場"

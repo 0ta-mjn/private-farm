@@ -4,6 +4,7 @@ import * as schema from "./schema";
 import postgres from "postgres";
 
 export type Database = ReturnType<typeof dbClient>;
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 export const dbClient = () => {
   if (!process.env.DATABASE_URL) {
