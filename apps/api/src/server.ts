@@ -6,12 +6,9 @@ import fastify from "fastify";
 import { appRouter, type AppRouter, createTRPCContext } from "@repo/api";
 import { dbClient } from "@repo/db/client";
 import { supaClient } from "@repo/supabase";
+import cors from "@fastify/cors";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("Missing DATABASE_URL environment variable");
-}
-
-const db = dbClient(process.env.DATABASE_URL);
+const db = dbClient();
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   throw new Error("Missing SUPABASE_URL or SUPABASE_KEY environment variable");
@@ -21,6 +18,17 @@ const supabase = supaClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 const server = fastify({
   maxParamLength: 5000,
 });
+
+// 全てのオリジンを許可する場合
+await server.register(cors, {
+  origin: process.env.ACCEPT_ORIGINS
+    ? process.env.ACCEPT_ORIGINS.split(",") // Use environment variable for allowed domains
+    : "*", // Default to "*" for development purposes
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // Cookie も渡したい場合に true にする
+});
+
 server.register(fastifyTRPCPlugin, {
   prefix: "/trpc",
   trpcOptions: {

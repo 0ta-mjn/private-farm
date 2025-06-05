@@ -19,6 +19,7 @@ export const validateToken = async (
   supabase: Supabase,
   token: string
 ): Promise<Session | null> => {
+  // Bearerトークンを使用してユーザー情報を取得
   const { data, error } = await supabase.auth.getUser(token);
   if (error) {
     throw error;

@@ -1,10 +1,14 @@
 {
   "name": "@repo/emulator",
   "scripts": {
-    "dev": "pnpm dlx supabase status || pnpm dlx supabase start",
-    "reset": "pnpm dlx supabase db reset || pnpm dlx supabase start",
-    "test": "pnpm dlx supabase db test",
-    "lint": "pnpm dlx supabase db lint",
-    "deploy": "pnpm dlx supabase link --project-ref $SUPABASE_PROJECT_REF && pnpm dlx supabase db push"
+    "dev": "supabase status || supabase start",
+    "reset": "supabase db reset || supabase start",
+    "stop": "supabase stop",
+    "stopd": "supabase stop --no-backup",
+    "lint": "supabase db lint",
+    "deploy": "supabase link --project-ref $SUPABASE_PROJECT_REF && supabase db push"
+  },
+  "devDependencies": {
+    "supabase": "^2.24.3"
   }
 }
