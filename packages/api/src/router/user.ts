@@ -7,9 +7,8 @@ import {
   checkUserSetupStatus,
   getUserSidebarData,
   SetupSchema,
-  UserCreationError,
-  OrganizationCreationError,
 } from "@repo/core";
+import { UserCreationError, OrganizationCreationError } from "@repo/config";
 
 export const userRouter = {
   // 現在のユーザー情報を取得（認証が必要）

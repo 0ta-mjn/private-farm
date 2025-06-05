@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect } from "vitest";
+import { describe, it, beforeEach, expect, beforeAll } from "vitest";
 import { dbClient } from "@repo/db/client";
 import {
   organizationMembersTable,
@@ -18,8 +18,8 @@ describe("UserService (関数型)", () => {
     // テスト用のデータベースをリセット
     await db.transaction(async (tx) => {
       await tx.delete(organizationMembersTable);
-      await tx.delete(usersTable);
       await tx.delete(organizationsTable);
+      await tx.delete(usersTable);
     });
   });
 

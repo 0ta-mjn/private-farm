@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { eq, withUniqueIdRetry, desc } from "@repo/db";
+import { eq, desc } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
   organizationMembersTable,
-  MemberRoleSchema,
 } from "@repo/db/schema";
-import { DEFAULT_UUID_CONFIG } from "@repo/config";
+import { UserCreationError } from "@repo/config";
 import type { Database } from "@repo/db/client";
+import { createOrganizationCore } from "./organization.service";
 
 // バリデーションスキーマ
 export const SetupSchema = z.object({
@@ -22,21 +22,6 @@ export const SetupSchema = z.object({
 });
 
 export type SetupInput = z.infer<typeof SetupSchema>;
-
-// ビジネスエラー
-export class UserCreationError extends Error {
-  constructor() {
-    super("ユーザーの作成に失敗しました");
-    this.name = "UserCreationError";
-  }
-}
-
-export class OrganizationCreationError extends Error {
-  constructor() {
-    super("組織の作成に失敗しました");
-    this.name = "OrganizationCreationError";
-  }
-}
 
 /**
  * ユーザーIDに基づいてユーザーデータを取得するサービスです。
@@ -112,41 +97,12 @@ export async function setupUserAndOrganization(
       throw new UserCreationError();
     }
 
-    // 組織作成
-    const organizationResult = await withUniqueIdRetry(
-      (organizationId: string) =>
-        tx
-          .insert(organizationsTable)
-          .values({
-            id: organizationId,
-            name: input.organizationName,
-            description: `${input.organizationName}の組織`,
-          })
-          .returning(),
-      { idPrefix: DEFAULT_UUID_CONFIG.organization.idPrefix }
+    // 共通の組織作成関数を使用
+    const { organization, membership } = await createOrganizationCore(
+      tx,
+      user.id,
+      { organizationName: input.organizationName }
     );
-
-    const organization = organizationResult[0]!;
-    if (!organization) {
-      throw new OrganizationCreationError();
-    }
-
-    // メンバーシップ作成（管理者として）
-    const membershipResult = await withUniqueIdRetry(
-      (membershipId: string) =>
-        tx
-          .insert(organizationMembersTable)
-          .values({
-            id: membershipId,
-            userId: user.id,
-            organizationId: organization.id,
-            role: MemberRoleSchema.enum.admin,
-          })
-          .returning(),
-      { idPrefix: DEFAULT_UUID_CONFIG.organization.idPrefix }
-    );
-
-    const membership = membershipResult[0]!;
 
     return {
       user,
