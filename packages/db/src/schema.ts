@@ -77,6 +77,7 @@ export const organizationMembersTable = pgTable(
       .references(() => organizationsTable.id, { onDelete: "cascade" })
       .notNull(),
     role: varchar("role", { length: 50 }).default("member").notNull(), // admin: 管理者, member: 一般メンバー
+    latestViewedAt: timestamp("latest_viewed_at"), // 最後に組織を閲覧した日時
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

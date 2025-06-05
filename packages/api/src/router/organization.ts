@@ -5,12 +5,15 @@ import {
   createOrganization,
   getUserOrganizations,
   getOrganizationById,
+  updateOrganization,
   CreateOrganizationSchema,
+  UpdateOrganizationSchema,
 } from "@repo/core";
 import { z } from "zod";
 import {
   MembershipCreationError,
   OrganizationCreationError,
+  OrganizationUpdateError,
 } from "@repo/config";
 
 export const organizationRouter = {
@@ -94,6 +97,42 @@ export const organizationRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "組織の詳細取得に失敗しました",
+        });
+      }
+    }),
+
+  // 組織を更新（認証が必要）
+  update: protectedProcedure
+    .input(
+      z
+        .object({
+          organizationId: z.string(),
+        })
+        .merge(UpdateOrganizationSchema)
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const { organizationId, ...updateData } = input;
+        return await updateOrganization(
+          ctx.db,
+          organizationId,
+          ctx.session.user.id,
+          updateData
+        );
+      } catch (error) {
+        console.error("Organization update error:", error);
+
+        // ビジネスエラーをtRPCエラーに変換
+        if (error instanceof OrganizationUpdateError) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "組織の更新中にエラーが発生しました",
         });
       }
     }),

@@ -6,9 +6,11 @@ import {
   setupUserAndOrganization,
   checkUserSetupStatus,
   getUserSidebarData,
+  updateOrganizationLatestViewedAt,
   SetupSchema,
 } from "@repo/core";
 import { UserCreationError, OrganizationCreationError } from "@repo/config";
+import { z } from "zod";
 
 export const userRouter = {
   // 現在のユーザー情報を取得（認証が必要）
@@ -90,4 +92,24 @@ export const userRouter = {
       });
     }
   }),
+
+  // 組織の最後閲覧日時を更新（認証が必要）
+  updateOrganizationViewed: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        await updateOrganizationLatestViewedAt(
+          ctx.db,
+          ctx.session.user.id,
+          input.organizationId
+        );
+        return { success: true };
+      } catch (error) {
+        console.error("Update organization viewed error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "組織閲覧日時の更新に失敗しました",
+        });
+      }
+    }),
 } satisfies TRPCRouterRecord;

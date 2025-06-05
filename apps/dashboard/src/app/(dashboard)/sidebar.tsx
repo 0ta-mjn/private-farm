@@ -77,12 +77,7 @@ interface Organization {
 export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
-  const {
-    currentOrganizationId,
-    setCurrentOrganization,
-    setDefaultOrganization,
-    isInitialized,
-  } = useOrganization();
+  const { currentOrganizationId, setCurrentOrganization } = useOrganization();
   const trpc = useTRPC();
 
   // サイドバーデータを取得
@@ -90,12 +85,16 @@ export function AppSidebar() {
     trpc.user.sidebarData.queryOptions()
   );
 
-  // デフォルト組織を設定
+  // デフォルト組織を設定（現在の組織が未設定の場合のみ）
   useEffect(() => {
-    if (sidebarData?.defaultOrganization && isInitialized) {
-      setDefaultOrganization(sidebarData.defaultOrganization.id);
+    if (sidebarData?.defaultOrganization && !currentOrganizationId) {
+      setCurrentOrganization(sidebarData.defaultOrganization.id);
     }
-  }, [sidebarData?.defaultOrganization, isInitialized, setDefaultOrganization]);
+  }, [
+    sidebarData?.defaultOrganization,
+    currentOrganizationId,
+    setCurrentOrganization, // useCallbackでメモ化されているため安全
+  ]);
 
   // 現在の組織情報を取得
   const currentOrganization = currentOrganizationId
@@ -177,7 +176,7 @@ export function AppSidebar() {
           id: "organization-settings",
           label: "組織設定",
           icon: BuildingIcon,
-          href: "/settings/organization-settings",
+          href: "/organization/settings",
         },
         {
           id: "account",
@@ -210,7 +209,7 @@ export function AppSidebar() {
   };
 
   // ローディング状態の表示
-  if (isLoading || !isInitialized) {
+  if (isLoading) {
     return (
       <Sidebar collapsible="icon">
         <SidebarHeader>

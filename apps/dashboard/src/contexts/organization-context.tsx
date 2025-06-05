@@ -4,17 +4,17 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
   ReactNode,
+  useCallback,
+  useRef,
 } from "react";
-import { STORAGE_KEYS } from "@/constants/storage";
+import { useTRPC } from "@/trpc/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface OrganizationContextType {
   currentOrganizationId: string | null;
   setCurrentOrganization: (organizationId: string) => void;
-  setDefaultOrganization: (organizationId: string) => void;
   clearCurrentOrganization: () => void;
-  isInitialized: boolean;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(
@@ -29,56 +29,52 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   const [currentOrganizationId, setCurrentOrganizationIdState] = useState<
     string | null
   >(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const lastInvalidatedOrgRef = useRef<string | null>(null);
 
-  // ローカルストレージから初期値を読み込み
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.CURRENT_ORGANIZATION_ID);
-      if (stored) {
-        setCurrentOrganizationIdState(stored);
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  // 組織の最終閲覧時刻を更新するmutation
+  const updateOrganizationViewedMutation = useMutation(
+    trpc.user.updateOrganizationViewed.mutationOptions({
+      onSuccess: (_, variables) => {
+        // 前回無効化した組織と異なる場合のみキャッシュを無効化
+        if (lastInvalidatedOrgRef.current !== variables.organizationId) {
+          lastInvalidatedOrgRef.current = variables.organizationId;
+          queryClient.invalidateQueries({
+            queryKey: trpc.user.sidebarData.queryKey(),
+          });
+        }
+      },
+      onError: (error: unknown) => {
+        console.warn("Failed to update organization viewed:", error);
+      },
+    })
+  );
+
+  const setCurrentOrganization = useCallback(
+    (organizationId: string) => {
+      // 同じ組織IDの場合は何もしない（重複実行を防ぐ）
+      if (currentOrganizationId === organizationId) {
+        return;
       }
-    } catch (error) {
-      console.warn("Failed to load organization from localStorage:", error);
-    } finally {
-      setIsInitialized(true);
-    }
-  }, []);
 
-  const setCurrentOrganization = (organizationId: string) => {
-    setCurrentOrganizationIdState(organizationId);
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.CURRENT_ORGANIZATION_ID,
-        organizationId
-      );
-    } catch (error) {
-      console.warn("Failed to save organization to localStorage:", error);
-    }
-  };
+      setCurrentOrganizationIdState(organizationId);
+
+      // 組織の最終閲覧時刻を更新
+      updateOrganizationViewedMutation.mutate({ organizationId });
+    },
+    [currentOrganizationId, updateOrganizationViewedMutation]
+  );
 
   const clearCurrentOrganization = () => {
     setCurrentOrganizationIdState(null);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_ORGANIZATION_ID);
-    } catch (error) {
-      console.warn("Failed to remove organization from localStorage:", error);
-    }
-  };
-
-  const setDefaultOrganization = (organizationId: string) => {
-    // 現在の組織が設定されていない場合のみデフォルトを設定
-    if (!currentOrganizationId && isInitialized) {
-      setCurrentOrganization(organizationId);
-    }
   };
 
   const value: OrganizationContextType = {
     currentOrganizationId,
     setCurrentOrganization,
-    setDefaultOrganization,
     clearCurrentOrganization,
-    isInitialized,
   };
 
   return (

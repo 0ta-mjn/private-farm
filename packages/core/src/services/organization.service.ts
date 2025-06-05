@@ -9,6 +9,7 @@ import {
   DEFAULT_UUID_CONFIG,
   OrganizationCreationError,
   MembershipCreationError,
+  OrganizationUpdateError,
 } from "@repo/config";
 import type { Database, Transaction } from "@repo/db/client";
 
@@ -22,6 +23,17 @@ export const CreateOrganizationSchema = z.object({
 });
 
 export type CreateOrganizationInput = z.infer<typeof CreateOrganizationSchema>;
+
+// 組織更新用のスキーマ
+export const UpdateOrganizationSchema = z.object({
+  name: z
+    .string()
+    .min(1, "組織名を入力してください")
+    .max(100, "組織名は100文字以下で入力してください"),
+  description: z.string().optional(),
+});
+
+export type UpdateOrganizationInput = z.infer<typeof UpdateOrganizationSchema>;
 
 /**
  * 組織作成のコア処理（トランザクション内で実行される）
@@ -197,4 +209,59 @@ export async function getOrganizationById(
     role: result.membership.role,
     joinedAt: result.membership.createdAt,
   };
+}
+
+/**
+ * 組織の情報を更新します。
+ *
+ * @param db - データベースインスタンス。
+ * @param organizationId - 更新する組織のID。
+ * @param userId - 更新を行うユーザーのID（権限チェック用）。
+ * @param input - 更新する組織の情報。
+ * @returns 更新された組織の情報。
+ */
+export async function updateOrganization(
+  db: Database,
+  organizationId: string,
+  userId: string,
+  input: UpdateOrganizationInput
+) {
+  // ユーザーが組織の管理者であることを確認
+  const membershipResult = await db
+    .select({
+      membership: {
+        role: organizationMembersTable.role,
+      },
+    })
+    .from(organizationMembersTable)
+    .where(
+      and(
+        eq(organizationMembersTable.userId, userId),
+        eq(organizationMembersTable.organizationId, organizationId)
+      )
+    )
+    .limit(1);
+
+  const membership = membershipResult[0];
+  if (!membership || membership.membership.role !== "admin") {
+    throw new OrganizationUpdateError("組織を更新する権限がありません");
+  }
+
+  // 組織情報を更新
+  const updateResult = await db
+    .update(organizationsTable)
+    .set({
+      name: input.name,
+      description: input.description,
+      updatedAt: new Date(),
+    })
+    .where(eq(organizationsTable.id, organizationId))
+    .returning();
+
+  const updatedOrganization = updateResult[0];
+  if (!updatedOrganization) {
+    throw new OrganizationUpdateError("組織の更新に失敗しました");
+  }
+
+  return updatedOrganization;
 }

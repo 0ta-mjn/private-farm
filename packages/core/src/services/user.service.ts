@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc } from "@repo/db";
+import { eq, desc, and, sql } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
@@ -176,6 +176,7 @@ export async function getUserSidebarData(db: Database, userId: string) {
       membership: {
         id: organizationMembersTable.id,
         role: organizationMembersTable.role,
+        latestViewedAt: organizationMembersTable.latestViewedAt,
         createdAt: organizationMembersTable.createdAt,
       },
     })
@@ -185,9 +186,12 @@ export async function getUserSidebarData(db: Database, userId: string) {
       eq(organizationMembersTable.organizationId, organizationsTable.id)
     )
     .where(eq(organizationMembersTable.userId, userId))
-    .orderBy(desc(organizationsTable.updatedAt)); // 最近更新された組織順
+    .orderBy(
+      sql`${organizationMembersTable.latestViewedAt} DESC NULLS LAST`, // NULL値は最後に
+      desc(organizationMembersTable.createdAt) // latestViewedAtがnullの場合は作成日時順
+    );
 
-  // デフォルト組織（最も最近更新された組織）を設定
+  // デフォルト組織（最も最近閲覧した組織、または最も古くから所属している組織）を設定
   const defaultOrganization =
     organizationsWithMembership[0]?.organization || null;
 
@@ -203,4 +207,39 @@ export async function getUserSidebarData(db: Database, userId: string) {
     })),
     defaultOrganization,
   };
+}
+
+/**
+ * ユーザーの組織最後閲覧日時を更新します。
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 対象ユーザーのID。
+ * @param organizationId - 閲覧した組織のID。
+ * @returns 更新処理が成功した場合はtrue、失敗した場合はfalse。
+ */
+export async function updateOrganizationLatestViewedAt(
+  db: Database,
+  userId: string,
+  organizationId: string
+) {
+  try {
+    const result = await db
+      .update(organizationMembersTable)
+      .set({
+        latestViewedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(organizationMembersTable.userId, userId),
+          eq(organizationMembersTable.organizationId, organizationId)
+        )
+      )
+      .returning({ id: organizationMembersTable.id });
+
+    // 更新された行が0の場合は、ユーザーが組織のメンバーでないか、存在しない
+    return result.length > 0;
+  } catch (error) {
+    console.error("Failed to update organization latest viewed at:", error);
+    return false;
+  }
 }

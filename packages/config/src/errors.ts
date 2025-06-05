@@ -31,3 +31,13 @@ export class MembershipCreationError extends Error {
     this.name = "MembershipCreationError";
   }
 }
+
+/**
+ * 組織更新関連のエラー
+ */
+export class OrganizationUpdateError extends Error {
+  constructor(message: string = "組織の更新に失敗しました") {
+    super(message);
+    this.name = "OrganizationUpdateError";
+  }
+}
