@@ -32,7 +32,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/lib/auth-hooks";
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 // フォームバリデーションスキーマ
@@ -53,6 +53,7 @@ export default function SetupPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   // 初期設定状態の確認
@@ -82,6 +83,16 @@ export default function SetupPage() {
     trpc.user.setup.mutationOptions({
       onSuccess: (data) => {
         console.log("Setup successful:", data);
+
+        // 初期設定状態のキャッシュを無効化
+        queryClient.invalidateQueries({
+          queryKey: trpc.user.setupCheck.queryKey(),
+        });
+
+        // ユーザー関連のキャッシュも無効化（サイドバーデータなど）
+        queryClient.invalidateQueries({
+          queryKey: trpc.user.sidebarData.queryKey(),
+        });
 
         router.push("/dashboard");
       },
