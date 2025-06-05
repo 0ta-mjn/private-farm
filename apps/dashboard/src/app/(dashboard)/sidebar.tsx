@@ -20,12 +20,12 @@ import {
   SidebarRail,
 } from "@/shadcn/sidebar";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shadcn/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shadcn/dropdown-menu";
 import {
   HomeIcon,
   BookIcon,
@@ -43,6 +43,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
+import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
+import { Button } from "@/shadcn/button";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -227,35 +229,48 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 py-2">
-              <Select
-                value={currentOrganizationId || ""}
-                onValueChange={handleOrganizationChange}
-              >
-                <SelectTrigger className="h-auto w-full p-0 border-none bg-transparent hover:bg-sidebar-accent">
-                  <SelectValue>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton className="w-full">
                     <div className="flex items-center min-w-0 flex-1 gap-2 px-2 text-sidebar-accent-foreground">
                       <BuildingIcon className="h-4 w-4 shrink-0 text-current" />
-
                       <span className="text-sm font-medium truncate">
                         {currentOrganization?.name || "組織を選択"}
                       </span>
                     </div>
-                  </SelectValue>
-                </SelectTrigger>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
 
-                <SelectContent>
+                <DropdownMenuContent className="w-56">
                   {sidebarData?.organizations?.map((org: Organization) => (
-                    <SelectItem key={org.id} value={org.id}>
+                    <DropdownMenuItem
+                      key={org.id}
+                      onClick={() => handleOrganizationChange(org.id)}
+                      className="group"
+                    >
                       <div className="flex flex-col gap-1">
                         <span className="font-medium">{org.name}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground group-focus:text-muted">
                           {org.role === "admin" ? "管理者" : "メンバー"}
                         </span>
                       </div>
-                    </SelectItem>
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem asChild>
+                    <CreateOrganizationDialog>
+                      <Button variant="ghost" className="w-full">
+                        <div className="flex items-center gap-2 w-full cursor-pointer text-sm">
+                          <PlusIcon className="h-4 w-4" />
+                          <span>新しい組織を作成</span>
+                        </div>
+                      </Button>
+                    </CreateOrganizationDialog>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
