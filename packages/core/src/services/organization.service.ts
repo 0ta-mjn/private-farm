@@ -226,27 +226,6 @@ export async function updateOrganization(
   userId: string,
   input: UpdateOrganizationInput
 ) {
-  // ユーザーが組織の管理者であることを確認
-  const membershipResult = await db
-    .select({
-      membership: {
-        role: organizationMembersTable.role,
-      },
-    })
-    .from(organizationMembersTable)
-    .where(
-      and(
-        eq(organizationMembersTable.userId, userId),
-        eq(organizationMembersTable.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  const membership = membershipResult[0];
-  if (!membership || membership.membership.role !== "admin") {
-    throw new OrganizationUpdateError("組織を更新する権限がありません");
-  }
-
   // 組織情報を更新
   const updateResult = await db
     .update(organizationsTable)

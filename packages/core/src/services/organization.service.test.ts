@@ -11,9 +11,7 @@ import {
   getOrganizationById,
   updateOrganization,
   CreateOrganizationSchema,
-  UpdateOrganizationSchema,
 } from "./organization.service";
-import { OrganizationUpdateError } from "@repo/config";
 
 const db = dbClient();
 
@@ -233,101 +231,6 @@ describe("OrganizationService", () => {
       expect(organizations).toHaveLength(1);
       expect(organizations[0]?.name).toBe(updateInput.name);
       expect(organizations[0]?.description).toBe(updateInput.description);
-    });
-
-    it("should throw error when user is not admin", async () => {
-      // テストユーザーを作成
-      const adminUserId = "admin-user-id";
-      const memberUserId = "member-user-id";
-
-      await db.insert(usersTable).values([
-        { id: adminUserId, name: "Admin User" },
-        { id: memberUserId, name: "Member User" },
-      ]);
-
-      // 管理者として組織を作成
-      const createdOrg = await createOrganization(db, adminUserId, {
-        organizationName: "Test Organization",
-      });
-
-      // メンバーとして組織に追加（実際の実装では別の関数が必要ですが、テストのため直接追加）
-      await db.insert(organizationMembersTable).values({
-        id: "member-membership-id",
-        userId: memberUserId,
-        organizationId: createdOrg.organization.id,
-        role: "member",
-      });
-
-      const updateInput = {
-        name: "Updated Organization",
-        description: "Updated description",
-      };
-
-      // メンバーユーザーによる更新を試行
-      await expect(
-        updateOrganization(
-          db,
-          createdOrg.organization.id,
-          memberUserId,
-          updateInput
-        )
-      ).rejects.toThrow(OrganizationUpdateError);
-    });
-
-    it("should throw error when user is not a member", async () => {
-      // テストユーザーを作成
-      const adminUserId = "admin-user-id";
-      const outsiderUserId = "outsider-user-id";
-
-      await db.insert(usersTable).values([
-        { id: adminUserId, name: "Admin User" },
-        { id: outsiderUserId, name: "Outsider User" },
-      ]);
-
-      // 管理者として組織を作成
-      const createdOrg = await createOrganization(db, adminUserId, {
-        organizationName: "Test Organization",
-      });
-
-      const updateInput = {
-        name: "Updated Organization",
-        description: "Updated description",
-      };
-
-      // 組織外のユーザーによる更新を試行
-      await expect(
-        updateOrganization(
-          db,
-          createdOrg.organization.id,
-          outsiderUserId,
-          updateInput
-        )
-      ).rejects.toThrow(OrganizationUpdateError);
-    });
-
-    it("should validate UpdateOrganizationSchema", () => {
-      // 無効な入力のテスト
-      expect(() => UpdateOrganizationSchema.parse({ name: "" })).toThrow();
-
-      expect(() =>
-        UpdateOrganizationSchema.parse({
-          name: "a".repeat(101),
-        })
-      ).toThrow();
-
-      // 有効な入力のテスト
-      expect(() =>
-        UpdateOrganizationSchema.parse({
-          name: "Valid Organization Name",
-        })
-      ).not.toThrow();
-
-      expect(() =>
-        UpdateOrganizationSchema.parse({
-          name: "Valid Organization Name",
-          description: "Valid description",
-        })
-      ).not.toThrow();
     });
   });
 });

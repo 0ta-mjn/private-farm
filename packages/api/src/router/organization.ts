@@ -15,6 +15,7 @@ import {
   OrganizationCreationError,
   OrganizationUpdateError,
 } from "@repo/config";
+import { guardOrganizationMembership } from "../guard/organization";
 
 export const organizationRouter = {
   // 新しい組織を作成（認証が必要）
@@ -111,6 +112,14 @@ export const organizationRouter = {
         .merge(UpdateOrganizationSchema)
     )
     .mutation(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId,
+        "admin"
+      );
+
       try {
         const { organizationId, ...updateData } = input;
         return await updateOrganization(
