@@ -164,6 +164,8 @@ export const diariesTable = pgTable(
  * 農作業日誌と対象ほ場の多対多関係を管理する。
  * 一つの日誌で複数のほ場を対象にできる（例：複数圃場での同時作業）。
  *
+ * @note 複合主キー(diaryId, thingId)を使用して重複を防ぎ、パフォーマンスを向上
+ *
  * @example
  * - 「トマト定植」日誌 → 第1圃場、第2圃場
  * - 「追肥作業」日誌 → ハウス1のみ
@@ -171,7 +173,6 @@ export const diariesTable = pgTable(
 export const diaryThingsTable = pgTable(
   "diary_things",
   {
-    id: varchar("id", { length: 255 }).primaryKey(),
     diaryId: varchar("diary_id", { length: 255 })
       .references(() => diariesTable.id, { onDelete: "cascade" })
       .notNull(),
@@ -181,11 +182,11 @@ export const diaryThingsTable = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    // 同一日誌に同一ほ場が重複して関連付けられることを防ぐ
-    uniqueDiaryThing: unique("unique_diary_thing").on(
-      table.diaryId,
-      table.thingId
-    ),
+    // 複合主キー：同一日誌に同一ほ場が重複して関連付けられることを防ぐ
+    pk: {
+      name: "diary_things_pkey",
+      columns: [table.diaryId, table.thingId],
+    },
   })
 );
 
