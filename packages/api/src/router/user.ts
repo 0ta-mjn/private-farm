@@ -7,6 +7,7 @@ import {
   checkUserSetupStatus,
   getUserSidebarData,
   updateOrganizationLatestViewedAt,
+  updateUserProfile,
   SetupSchema,
 } from "@repo/core";
 import { UserCreationError, OrganizationCreationError } from "@repo/config";
@@ -109,6 +110,41 @@ export const userRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "組織閲覧日時の更新に失敗しました",
+        });
+      }
+    }),
+
+  // プロフィール更新（認証が必要）
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        name: z
+          .string()
+          .min(1, "名前は必須です")
+          .max(50, "名前は50文字以内で入力してください"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const updatedUser = await updateUserProfile(
+          ctx.db,
+          ctx.session.user.id,
+          input
+        );
+
+        if (!updatedUser) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "ユーザーが見つかりません",
+          });
+        }
+
+        return updatedUser;
+      } catch (error) {
+        console.error("Update profile error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "プロフィールの更新に失敗しました",
         });
       }
     }),

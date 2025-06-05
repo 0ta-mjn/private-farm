@@ -12,6 +12,7 @@ import {
   checkUserSetupStatus,
   getUserSidebarData,
   updateOrganizationLatestViewedAt,
+  updateUserProfile,
 } from "..";
 
 const db = dbClient();
@@ -303,6 +304,91 @@ describe("UserService (関数型)", () => {
       expect(sidebarData?.defaultOrganization?.name).toBe(
         "Second Organization"
       );
+    });
+  });
+
+  describe("updateUserProfile", () => {
+    it("ユーザープロフィールが正しく更新される", async () => {
+      const testUserId = "test-user-id";
+      const originalName = "Original User";
+      const updatedName = "Updated User";
+
+      // テスト用のユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: originalName,
+      });
+
+      // プロフィールを更新
+      const result = await updateUserProfile(db, testUserId, {
+        name: updatedName,
+      });
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe(testUserId);
+      expect(result?.name).toBe(updatedName);
+      expect(result?.updatedAt).toBeDefined();
+
+      // データベースからも確認
+      const userFromDB = await getUserById(db, testUserId);
+      expect(userFromDB?.name).toBe(updatedName);
+    });
+
+    it("存在しないユーザーの場合はnullを返す", async () => {
+      const result = await updateUserProfile(db, "non-existent-user", {
+        name: "New Name",
+      });
+
+      expect(result).toBeNull();
+    });
+
+    it("名前が空文字列でも更新される", async () => {
+      const testUserId = "test-user-id";
+
+      // テスト用のユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Original Name",
+      });
+
+      // 空文字列で更新
+      const result = await updateUserProfile(db, testUserId, {
+        name: "",
+      });
+
+      expect(result).toBeDefined();
+      expect(result?.name).toBe("");
+    });
+
+    it("updatedAtが正しく更新される", async () => {
+      const testUserId = "test-user-id";
+
+      // テスト用のユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Original Name",
+      });
+
+      // 元のupdatedAtを取得
+      const originalUser = await getUserById(db, testUserId);
+      const originalUpdatedAt = originalUser?.updatedAt;
+
+      // 少し待機してからプロフィールを更新
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const result = await updateUserProfile(db, testUserId, {
+        name: "Updated Name",
+      });
+
+      expect(result).toBeDefined();
+      expect(result?.updatedAt).toBeDefined();
+
+      // updatedAtが更新されていることを確認
+      if (originalUpdatedAt && result?.updatedAt) {
+        expect(result.updatedAt.getTime()).toBeGreaterThan(
+          originalUpdatedAt.getTime()
+        );
+      }
     });
   });
 });

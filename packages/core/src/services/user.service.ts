@@ -243,3 +243,37 @@ export async function updateOrganizationLatestViewedAt(
     return false;
   }
 }
+
+/**
+ * ユーザーのプロフィール情報を更新します。
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 更新するユーザーのID。
+ * @param input - 更新するプロフィール情報。
+ * @returns 更新されたユーザー情報。ユーザーが見つからない場合はnullを返します。
+ */
+export async function updateUserProfile(
+  db: Database,
+  userId: string,
+  input: { name: string }
+) {
+  try {
+    const result = await db
+      .update(usersTable)
+      .set({
+        name: input.name,
+        updatedAt: new Date(),
+      })
+      .where(eq(usersTable.id, userId))
+      .returning({
+        id: usersTable.id,
+        name: usersTable.name,
+        updatedAt: usersTable.updatedAt,
+      });
+
+    return result[0] || null;
+  } catch (error) {
+    console.error("Failed to update user profile:", error);
+    throw error;
+  }
+}

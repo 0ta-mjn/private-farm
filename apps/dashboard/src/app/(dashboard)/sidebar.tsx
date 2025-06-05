@@ -29,7 +29,6 @@ import {
 import {
   HomeIcon,
   BookIcon,
-  SettingsIcon,
   LogOutIcon,
   UserIcon,
   BuildingIcon,
@@ -38,12 +37,14 @@ import {
   BarChart3 as ChartIcon,
   History as HistoryIcon,
   BellIcon,
+  SettingsIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
+import { AccountSettingsDialog } from "@/components/account-settings-dialog";
 import { Button } from "@/shadcn/button";
 
 // サイドバーアイテムの型定義
@@ -177,12 +178,6 @@ export function AppSidebar() {
           label: "組織設定",
           icon: BuildingIcon,
           href: "/organization/settings",
-        },
-        {
-          id: "account",
-          label: "アカウント設定",
-          icon: SettingsIcon,
-          href: "/settings/account",
         },
         {
           id: "notifications",
@@ -349,16 +344,22 @@ export function AppSidebar() {
         <SidebarMenu>
           {/* ユーザー情報 */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
-              <div className="flex items-center gap-3 px-2 py-2">
-                <UserIcon className="h-4 w-4" />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium truncate">
-                    {sidebarData?.user?.name || "ユーザー名"}
-                  </span>
+            <AccountSettingsDialog>
+              <SidebarMenuButton asChild size="lg">
+                <div className="flex items-center gap-3 px-2 py-2 cursor-pointer">
+                  <UserIcon className="h-4 w-4" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium truncate">
+                      {sidebarData?.user?.name || "ユーザー名"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      設定を編集
+                    </span>
+                  </div>
+                  <SettingsIcon className="h-4 w-4 ml-auto text-sidebar-accent-foreground" />
                 </div>
-              </div>
-            </SidebarMenuButton>
+              </SidebarMenuButton>
+            </AccountSettingsDialog>
           </SidebarMenuItem>
 
           {/* ログアウト */}
