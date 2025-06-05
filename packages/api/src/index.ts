@@ -7,10 +7,12 @@ import {
 } from "./trpc";
 import { userRouter } from "./router/user";
 import { organizationRouter } from "./router/organization";
+import { diaryRouter } from "./router/diary";
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
   organization: organizationRouter,
+  diary: diaryRouter,
 });
 
 // export type definition of API
