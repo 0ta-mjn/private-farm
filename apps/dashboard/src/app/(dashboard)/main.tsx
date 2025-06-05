@@ -3,7 +3,7 @@
 import { AppSidebar } from "@/app/(dashboard)/sidebar";
 import { Header } from "@/app/(dashboard)/header";
 import { SidebarProvider, SidebarInset } from "@/shadcn/sidebar";
-import { useRequireAuth } from "@/lib/auth-hooks";
+import { useRequireAuthAndSetup } from "@/lib/auth-hooks";
 import { TRPCProvider } from "@/trpc/trpc-provider";
 import { OrganizationProvider } from "@/contexts/organization-context";
 
@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardMain({ children }: DashboardLayoutProps) {
-  const { loading: isLoading } = useRequireAuth();
+  const { loading: isLoading } = useRequireAuthAndSetup();
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full"></div>;

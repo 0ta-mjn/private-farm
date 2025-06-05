@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/shadcn/button";
@@ -32,7 +32,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/lib/auth-hooks";
 import { useTRPC } from "@/trpc/client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 // フォームバリデーションスキーマ
@@ -54,6 +54,20 @@ export default function SetupPage() {
   const { user, loading: authLoading } = useRequireAuth();
   const trpc = useTRPC();
   const [generalError, setGeneralError] = useState<string | null>(null);
+
+  // 初期設定状態の確認
+  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
+    trpc.user.setupCheck.queryOptions(undefined, {
+      enabled: !!user && !authLoading,
+    })
+  );
+
+  // 初期設定が完了している場合はダッシュボードにリダイレクト
+  useEffect(() => {
+    if (!authLoading && !isCheckingSetup && setupStatus?.isCompleted) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isCheckingSetup, setupStatus, router]);
 
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
