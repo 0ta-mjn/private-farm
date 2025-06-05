@@ -97,15 +97,19 @@
 graph TD
   Nd[センサーノード] -->|データ送信| GW[ゲートウェイ]
   GW --> NW[ネットワークサーバー<br>ChirpStack]
-  NW -->|転送| PS[Cloud Pub/Sub]
-  PS -->|フォーマット| CF[Cloud Functions]
-  CF -->|Storage Write API| BQ[Big Query]
+  NW -->|Redis| Upstash
+  NW -->|Postgres| Supabase
+  NW -->|MQTT| MQTT[Mosquitto<br>+Pub/Sub Connector]
+  MQTT -->|転送| PS[Cloud Pub/Sub]
+  PS -->|Storage Write API| BQ[Big Query]
   BQ -->|データ取得| DA[ダッシュボードAPI]
   DA -->|データ表示| DF[ダッシュボード]
   DA -->|通知| Discord[Discord Bot]
   DA -->|Auth/DB| Supabase
   DA -->|デバイス登録| NW
 ```
+
+- ネットワークサーバー+MQTTブローカーは初期はVPS運用→k8s移行を検討
 
 ## データモデル
 
