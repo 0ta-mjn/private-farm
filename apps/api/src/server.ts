@@ -21,7 +21,9 @@ const server = fastify({
 
 // 全てのオリジンを許可する場合
 await server.register(cors, {
-  origin: "*", // 本番環境ではドメインを絞るのが望ましい
+  origin: process.env.ACCEPT_ORIGINS
+    ? process.env.ACCEPT_ORIGINS.split(",") // Use environment variable for allowed domains
+    : "*", // Default to "*" for development purposes
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true, // Cookie も渡したい場合に true にする
