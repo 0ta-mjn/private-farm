@@ -49,6 +49,7 @@
   "devDependencies": {
     "@playwright/test": "^1.52.0",
     "@repo/api": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@tailwindcss/postcss": "^4",

@@ -38,6 +38,10 @@ import {
 } from "@/shadcn/select";
 import { Badge } from "@/shadcn/badge";
 import { cn } from "@/lib/utils";
+import {
+  WEATHER_DISPLAY_OPTIONS,
+  WORK_TYPE_DISPLAY_OPTIONS,
+} from "@repo/config";
 
 // フォームスキーマ定義
 const DiaryFormSchema = z.object({
@@ -54,6 +58,15 @@ const DiaryFormSchema = z.object({
 
 type DiaryFormData = z.infer<typeof DiaryFormSchema>;
 
+interface FieldOption {
+  id: string;
+  name: string;
+  type: string;
+  area: number;
+}
+
+export type { DiaryFormData, FieldOption };
+
 interface DiaryFormDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -61,37 +74,8 @@ interface DiaryFormDrawerProps {
   isSubmitting?: boolean;
   initialData?: DiaryFormData;
   onSubmit: (data: DiaryFormData) => void;
+  fieldOptions?: FieldOption[];
 }
-
-// スタブデータ：ほ場選択のオプション
-const FIELD_OPTIONS = [
-  { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
-  { id: "field-2", name: "B区画（きゅうり）", type: "field", area: 150 },
-  { id: "field-3", name: "C区画（ナス）", type: "field", area: 80 },
-  { id: "greenhouse-1", name: "第1温室", type: "greenhouse", area: 200 },
-  { id: "greenhouse-2", name: "第2温室", type: "greenhouse", area: 180 },
-];
-
-const WEATHER_OPTIONS = [
-  "晴れ",
-  "曇り",
-  "雨",
-  "雪",
-  "晴れ時々曇り",
-  "曇り時々雨",
-];
-
-const WORK_TYPE_OPTIONS = [
-  "種まき",
-  "植付け",
-  "水やり",
-  "除草",
-  "施肥",
-  "農薬散布",
-  "収穫",
-  "剪定",
-  "その他",
-];
 
 export function DiaryFormDrawer({
   open,
@@ -100,6 +84,7 @@ export function DiaryFormDrawer({
   isSubmitting = false,
   initialData,
   onSubmit,
+  fieldOptions = [],
 }: DiaryFormDrawerProps) {
   const form = useForm<DiaryFormData>({
     resolver: zodResolver(DiaryFormSchema),
@@ -155,7 +140,7 @@ export function DiaryFormDrawer({
     form.setValue("thingIds", updatedIds);
   };
 
-  const selectedFields = FIELD_OPTIONS.filter((field) =>
+  const selectedFields = fieldOptions.filter((field) =>
     selectedThingIds.includes(field.id)
   );
 
@@ -224,9 +209,12 @@ export function DiaryFormDrawer({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {WORK_TYPE_OPTIONS.map((workType) => (
-                              <SelectItem key={workType} value={workType}>
-                                {workType}
+                            {WORK_TYPE_DISPLAY_OPTIONS.map((workType) => (
+                              <SelectItem
+                                key={workType.value}
+                                value={workType.value}
+                              >
+                                {workType.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -296,7 +284,7 @@ export function DiaryFormDrawer({
                           作業を行ったほ場や温室を選択してください（複数選択可）
                         </FormDescription>
                         <div className="grid grid-cols-1 gap-3">
-                          {FIELD_OPTIONS.map((field) => (
+                          {fieldOptions.map((field) => (
                             <div
                               key={field.id}
                               className={cn(
@@ -360,9 +348,12 @@ export function DiaryFormDrawer({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {WEATHER_OPTIONS.map((weather) => (
-                                <SelectItem key={weather} value={weather}>
-                                  {weather}
+                              {WEATHER_DISPLAY_OPTIONS.map((weather) => (
+                                <SelectItem
+                                  key={weather.value}
+                                  value={weather.value}
+                                >
+                                  {weather.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -449,6 +440,3 @@ export function DiaryFormDrawer({
     </Drawer>
   );
 }
-
-// 型エクスポート
-export type { DiaryFormData };

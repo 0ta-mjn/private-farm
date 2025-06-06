@@ -226,6 +226,9 @@ importers:
       '@repo/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
