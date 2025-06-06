@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "start:test": "next build && next start",
     "lint": "next lint --max-warnings 0",
+    "test": "dotenv -e .env.testing pnpm playwright test --config=playwright.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -37,6 +39,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@repo/api": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
@@ -44,6 +47,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "catalog:",
     "eslint": "catalog:",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.3",

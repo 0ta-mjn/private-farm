@@ -14,13 +14,20 @@
         "SUPABASE_URL",
         "SUPABASE_KEY",
         "DATABASE_URL",
-        "API_PORT"
+        "API_PORT",
+        "CI"
       ]
     },
     "test": {
       "dependsOn": ["lint", "push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["DATABASE_URL"]
+      "env": [
+        "DATABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "CI"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
