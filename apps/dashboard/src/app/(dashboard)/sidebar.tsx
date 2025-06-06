@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -15,7 +14,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/shadcn/sidebar";
@@ -43,9 +41,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
+import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
 import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
 import { AccountSettingsDialog } from "@/components/account-settings-dialog";
 import { Button } from "@/shadcn/button";
+import { SidebarMenuItemButton } from "./sidebar-menu-item-button";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -79,6 +79,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
   const { currentOrganizationId, setCurrentOrganization } = useOrganization();
+  const diaryDrawerActions = useDiaryDrawerActions();
   const trpc = useTRPC();
 
   // サイドバーデータを取得
@@ -133,7 +134,7 @@ export function AppSidebar() {
               id: "new-diary",
               label: "新しい日誌を作成",
               icon: PlusIcon,
-              href: "/diary/new",
+              onClick: diaryDrawerActions.openCreate,
             },
           ],
         },
@@ -280,54 +281,22 @@ export function AppSidebar() {
               <SidebarMenu>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.id}>
-                    {item.href ? (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.href)}
-                        disabled={item.disabled}
-                        tooltip={item.disabled ? item.badge : undefined}
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-auto rounded-full bg-sidebar-accent px-2 py-0.5 text-xs font-medium text-sidebar-accent-foreground">
-                              {item.badge}
-                            </span>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    ) : (
-                      <SidebarMenuButton
-                        onClick={item.onClick}
-                        disabled={item.disabled}
-                        tooltip={item.disabled ? item.badge : undefined}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto rounded-full bg-sidebar-accent px-2 py-0.5 text-xs font-medium text-sidebar-accent-foreground">
-                            {item.badge}
-                          </span>
-                        )}
-                      </SidebarMenuButton>
-                    )}
+                    <SidebarMenuItemButton
+                      item={item}
+                      isActive={item.href ? isActive(item.href) : false}
+                    />
 
                     {item.children && item.children.length > 0 && (
                       <SidebarMenuSub>
                         {item.children.map((child) => (
                           <SidebarMenuSubItem key={child.id}>
-                            <SidebarMenuSubButton
-                              asChild
+                            <SidebarMenuItemButton
+                              item={child}
                               isActive={
                                 child.href ? isActive(child.href) : false
                               }
-                            >
-                              <Link href={child.href || "#"}>
-                                <child.icon className="h-4 w-4" />
-                                <span>{child.label}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
+                              isSubItem={true}
+                            />
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>

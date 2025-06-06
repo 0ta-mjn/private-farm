@@ -129,7 +129,7 @@ export const diariesTable = pgTable(
     id: varchar("id", { length: 255 }).primaryKey(),
     date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD 形式（日付での検索・ソートが頻繁）
     title: varchar("title", { length: 255 }), // 作業タイトル（例：「トマト定植作業」）
-    content: text("content").notNull(), // 作業内容の詳細
+    content: text("content"), // 作業内容の詳細（任意）
     workType: varchar("work_type", { length: 100 }), // 作業種別（播種、施肥、収穫、防除等）
     weather: varchar("weather", { length: 50 }), // 作業日の天気（晴れ、曇り、雨等）
     temperature: real("temperature"), // 作業日の気温（℃）

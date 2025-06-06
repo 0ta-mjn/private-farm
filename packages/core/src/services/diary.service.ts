@@ -21,7 +21,7 @@ export const CreateDiaryInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
   title: z.string().optional(),
-  content: z.string().min(1, "内容は必須です"),
+  content: z.string().optional(),
   workType: z.string().optional(),
   weather: z.string().optional(),
   temperature: z.number().optional(),
@@ -30,7 +30,7 @@ export const CreateDiaryInputSchema = z.object({
 
 export const UpdateDiaryInputSchema = z.object({
   title: z.string().optional(),
-  content: z.string().min(1, "内容は必須です").optional(),
+  content: z.string().optional(),
   workType: z.string().optional(),
   weather: z.string().optional(),
   temperature: z.number().optional(),
@@ -221,7 +221,7 @@ type DiaryWithOptionalThings = {
   id: string;
   date: string;
   title: string | null;
-  content: string;
+  content: string | null;
   workType: string | null;
   weather: string | null;
   temperature: number | null;
