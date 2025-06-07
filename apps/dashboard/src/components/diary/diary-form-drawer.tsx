@@ -146,29 +146,31 @@ export function DiaryFormDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onClose}>
-      <DrawerContent>
+      <DrawerContent data-testid="diary-form-drawer">
         <DrawerHeader className="text-left border-b">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex items-center justify-between lg:justify-start">
               <div>
-                <DrawerTitle>
+                <DrawerTitle data-testid="drawer-title">
                   {isEdit ? "農業日誌を編集" : "農業日誌を作成"}
                 </DrawerTitle>
-                <DrawerDescription>
+                <DrawerDescription data-testid="drawer-description">
                   作業内容や対象ほ場の情報を記録してください。
                 </DrawerDescription>
               </div>
             </div>
 
             {/* 大きい画面でのアクションボタン */}
-            <div className="hidden lg:flex gap-2">
+            <div className="hidden lg:flex gap-2" data-testid="desktop-actions">
               <Button
+                data-testid="submit-button-desktop"
                 onClick={form.handleSubmit(handleSubmit)}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
               </Button>
               <Button
+                data-testid="cancel-button-desktop"
                 type="button"
                 variant="outline"
                 onClick={onClose}
@@ -183,6 +185,7 @@ export function DiaryFormDrawer({
         <div className="flex-1 p-4 overflow-y-auto">
           <Form {...form}>
             <form
+              data-testid="diary-form"
               onSubmit={form.handleSubmit(handleSubmit)}
               className="space-y-6"
             >
@@ -204,22 +207,23 @@ export function DiaryFormDrawer({
                           value={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger data-testid="work-type-select">
                               <SelectValue placeholder="作業種別を選択" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent data-testid="work-type-options">
                             {WORK_TYPE_DISPLAY_OPTIONS.map((workType) => (
                               <SelectItem
                                 key={workType.value}
                                 value={workType.value}
+                                data-testid={`work-type-option-${workType.value}`}
                               >
                                 {workType.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage data-testid="work-type-error" />
                       </FormItem>
                     )}
                   />
@@ -237,6 +241,7 @@ export function DiaryFormDrawer({
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
+                                data-testid="date-picker-trigger"
                                 variant="outline"
                                 className={cn(
                                   "w-[12.5rem] pl-3 text-left font-normal hover:bg-transparent hover:text-foreground",
@@ -244,7 +249,7 @@ export function DiaryFormDrawer({
                                 )}
                               >
                                 {field.value ? (
-                                  format(field.value, "yyyy年MM月dd日", {
+                                  format(field.value, "PPP", {
                                     locale: ja,
                                   })
                                 ) : (
@@ -256,6 +261,7 @@ export function DiaryFormDrawer({
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
+                              data-testid="date-picker-calendar"
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
@@ -263,12 +269,12 @@ export function DiaryFormDrawer({
                                 date > new Date() ||
                                 date < new Date("1900-01-01")
                               }
-                              initialFocus
+                              autoFocus
                               locale={ja}
                             />
                           </PopoverContent>
                         </Popover>
-                        <FormMessage />
+                        <FormMessage data-testid="date-error" />
                       </FormItem>
                     )}
                   />
@@ -283,15 +289,23 @@ export function DiaryFormDrawer({
                         <FormDescription>
                           作業を行ったほ場や温室を選択してください（複数選択可）
                         </FormDescription>
-                        <div className="grid grid-cols-1 gap-3">
+                        <div
+                          className="grid grid-cols-1 gap-3"
+                          data-testid="field-options-container"
+                        >
                           {fieldOptions.map((field) => (
                             <div
+                              role="option"
                               key={field.id}
+                              data-testid={`field-option-${field.id}`}
                               className={cn(
                                 "border rounded-lg p-3 cursor-pointer transition-colors",
                                 selectedThingIds.includes(field.id)
                                   ? "border-primary bg-primary/5"
                                   : "border-border hover:border-primary/50"
+                              )}
+                              aria-selected={selectedThingIds.includes(
+                                field.id
                               )}
                               onClick={() => handleFieldToggle(field.id)}
                             >
@@ -306,22 +320,32 @@ export function DiaryFormDrawer({
                                   </div>
                                 </div>
                                 {selectedThingIds.includes(field.id) && (
-                                  <div className="w-2 h-2 bg-primary rounded-full" />
+                                  <div
+                                    className="w-2 h-2 bg-primary rounded-full"
+                                    data-testid={`field-selected-indicator-${field.id}`}
+                                  />
                                 )}
                               </div>
                             </div>
                           ))}
                         </div>
                         {selectedFields.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-3">
+                          <div
+                            className="flex flex-wrap gap-2 mt-3"
+                            data-testid="selected-fields-badges"
+                          >
                             {selectedFields.map((field) => (
-                              <Badge key={field.id} variant="secondary">
+                              <Badge
+                                key={field.id}
+                                variant="secondary"
+                                data-testid={`field-badge-${field.id}`}
+                              >
                                 {field.name}
                               </Badge>
                             ))}
                           </div>
                         )}
-                        <FormMessage />
+                        <FormMessage data-testid="fields-error" />
                       </FormItem>
                     )}
                   />
@@ -343,22 +367,23 @@ export function DiaryFormDrawer({
                             value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger>
+                              <SelectTrigger data-testid="weather-select">
                                 <SelectValue placeholder="天気を選択" />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
+                            <SelectContent data-testid="weather-options">
                               {WEATHER_DISPLAY_OPTIONS.map((weather) => (
                                 <SelectItem
                                   key={weather.value}
                                   value={weather.value}
+                                  data-testid={`weather-option-${weather.value}`}
                                 >
                                   {weather.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
+                          <FormMessage data-testid="weather-error" />
                         </FormItem>
                       )}
                     />
@@ -372,6 +397,7 @@ export function DiaryFormDrawer({
                           <FormLabel>気温 (℃)</FormLabel>
                           <FormControl>
                             <Input
+                              data-testid="temperature-input"
                               type="number"
                               placeholder="例: 25"
                               className="max-w-[6.25rem]"
@@ -385,7 +411,7 @@ export function DiaryFormDrawer({
                               value={field.value ?? ""}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage data-testid="temperature-error" />
                         </FormItem>
                       )}
                     />
@@ -400,12 +426,13 @@ export function DiaryFormDrawer({
                         <FormLabel>作業メモ</FormLabel>
                         <FormControl>
                           <Textarea
+                            data-testid="content-textarea"
                             placeholder="作業の詳細や気づいたことを記録してください（任意）"
                             className="min-h-[7.5rem] lg:min-h-[12rem] max-w-full resize-none"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage data-testid="content-error" />
                       </FormItem>
                     )}
                   />
@@ -416,9 +443,10 @@ export function DiaryFormDrawer({
         </div>
 
         {/* モバイル用のフッターボタン */}
-        <div className="p-4 border-t lg:hidden">
+        <div className="p-4 border-t lg:hidden" data-testid="mobile-actions">
           <div className="flex flex-col gap-2 w-full">
             <Button
+              data-testid="submit-button-mobile"
               onClick={form.handleSubmit(handleSubmit)}
               disabled={isSubmitting}
               className="w-full"
@@ -426,6 +454,7 @@ export function DiaryFormDrawer({
               {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
             </Button>
             <Button
+              data-testid="cancel-button-mobile"
               type="button"
               variant="outline"
               onClick={onClose}

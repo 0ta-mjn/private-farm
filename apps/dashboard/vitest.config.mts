@@ -5,9 +5,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
-    environment: "jsdom",
+    environment: "happy-dom",
     setupFiles: ["./tests/setup.ts"],
     globals: true,
     watch: false,
+    poolOptions: {
+      threads: { singleThread: true },
+    },
   },
 });

@@ -268,6 +268,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 9.28.0(jiti@2.4.2)
+      happy-dom:
+        specifier: ^17.6.3
+        version: 17.6.3
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0
@@ -285,7 +288,7 @@ importers:
         version: 5.1.4(typescript@5.8.3)(vite@5.4.19(@types/node@20.17.57)(lightningcss@1.30.1))
       vitest:
         specifier: 'catalog:'
-        version: 3.2.1(@types/node@20.17.57)(jsdom@26.1.0)(lightningcss@1.30.1)
+        version: 3.2.1(@types/node@20.17.57)(happy-dom@17.6.3)(jsdom@26.1.0)(lightningcss@1.30.1)
 
   emulator:
     devDependencies:
@@ -337,7 +340,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.1(@types/node@20.17.57)(jsdom@26.1.0)(lightningcss@1.30.1)
+        version: 3.2.1(@types/node@20.17.57)(happy-dom@17.6.3)(jsdom@26.1.0)(lightningcss@1.30.1)
 
   packages/config:
     devDependencies:
@@ -383,7 +386,7 @@ importers:
         version: 5.8.3
       vitest:
         specifier: 'catalog:'
-        version: 3.2.1(@types/node@20.17.57)(jsdom@26.1.0)(lightningcss@1.30.1)
+        version: 3.2.1(@types/node@20.17.57)(happy-dom@17.6.3)(jsdom@26.1.0)(lightningcss@1.30.1)
 
   packages/db:
     dependencies:
@@ -2919,6 +2922,10 @@ packages:
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
 
+  happy-dom@17.6.3:
+    resolution: {integrity: sha512-UVIHeVhxmxedbWPCfgS55Jg2rDfwf2BCKeylcPSqazLz5w3Kri7Q4xdBJubsr/+VUzFLh0VjIvh13RaDA2/Xug==}
+    engines: {node: '>=20.0.0'}
+
   has-bigints@1.1.0:
     resolution: {integrity: sha512-R3pbpkcIqv2Pm3dUwgjclDRVmWpTJW2DcMzcIhEXEx1oh/CEMObMm3KLmRJOdvhM7o4uQBnwr8pzRK2sJWIqfg==}
     engines: {node: '>= 0.4'}
@@ -4120,6 +4127,10 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -6531,6 +6542,11 @@ snapshots:
 
   graphemer@1.4.0: {}
 
+  happy-dom@17.6.3:
+    dependencies:
+      webidl-conversions: 7.0.0
+      whatwg-mimetype: 3.0.0
+
   has-bigints@1.1.0: {}
 
   has-flag@4.0.0: {}
@@ -7715,7 +7731,7 @@ snapshots:
       fsevents: 2.3.3
       lightningcss: 1.30.1
 
-  vitest@3.2.1(@types/node@20.17.57)(jsdom@26.1.0)(lightningcss@1.30.1):
+  vitest@3.2.1(@types/node@20.17.57)(happy-dom@17.6.3)(jsdom@26.1.0)(lightningcss@1.30.1):
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.1
@@ -7742,6 +7758,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.17.57
+      happy-dom: 17.6.3
       jsdom: 26.1.0
     transitivePeerDependencies:
       - less
@@ -7767,6 +7784,8 @@ snapshots:
   whatwg-encoding@3.1.1:
     dependencies:
       iconv-lite: 0.6.3
+
+  whatwg-mimetype@3.0.0: {}
 
   whatwg-mimetype@4.0.0: {}
 

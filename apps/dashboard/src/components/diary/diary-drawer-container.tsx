@@ -114,6 +114,8 @@ export function DiaryDrawerContainer() {
 
       if (isEdit && diaryId) {
         // 更新処理
+        console.log("Updating diary with ID:", diaryId);
+        console.log("Form data:", formData);
         updateDiaryMutation.mutate({
           diaryId,
           ...formData,
