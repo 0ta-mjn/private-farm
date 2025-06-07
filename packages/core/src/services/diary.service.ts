@@ -29,6 +29,10 @@ export const CreateDiaryInputSchema = z.object({
 });
 
 export const UpdateDiaryInputSchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください")
+    .optional(),
   title: z.string().optional(),
   content: z.string().optional(),
   workType: z.string().optional(),
@@ -427,6 +431,7 @@ export async function updateDiary(
   params: DiaryParams,
   input: UpdateDiaryInput
 ) {
+  console.info("Updating diary with params:", params, "and input:", input);
   return await db.transaction(async (tx) => {
     // thingIdsが指定されている場合、権限チェックを実行
     if (input.thingIds !== undefined && input.thingIds.length > 0) {
