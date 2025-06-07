@@ -4,7 +4,6 @@ import { AppSidebar } from "@/app/(dashboard)/sidebar";
 import { Header } from "@/app/(dashboard)/header";
 import { SidebarProvider, SidebarInset } from "@/shadcn/sidebar";
 import { useRequireAuthAndSetup } from "@/lib/auth-hooks";
-import { TRPCProvider } from "@/trpc/trpc-provider";
 import { OrganizationProvider } from "@/contexts/organization-context";
 import { DiaryDrawerProvider } from "@/contexts/diary-drawer-context";
 import { DiaryDrawerContainer } from "@/components/diary/diary-drawer-container";
@@ -21,21 +20,19 @@ export default function DashboardMain({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <TRPCProvider>
-      <OrganizationProvider>
-        <DiaryDrawerProvider>
-          <SidebarProvider className="h-full">
-            <AppSidebar />
-            <SidebarInset className="min-h-0">
-              <Header />
-              <main className="flex flex-col min-h-0 px-4 py-6 lg:px-8">
-                {children}
-              </main>
-            </SidebarInset>
-            <DiaryDrawerContainer />
-          </SidebarProvider>
-        </DiaryDrawerProvider>
-      </OrganizationProvider>
-    </TRPCProvider>
+    <OrganizationProvider>
+      <DiaryDrawerProvider>
+        <SidebarProvider className="h-full">
+          <AppSidebar />
+          <SidebarInset className="min-h-0">
+            <Header />
+            <main className="flex flex-col min-h-0 px-4 py-6 lg:px-8">
+              {children}
+            </main>
+          </SidebarInset>
+          <DiaryDrawerContainer />
+        </SidebarProvider>
+      </DiaryDrawerProvider>
+    </OrganizationProvider>
   );
 }
