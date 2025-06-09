@@ -1,64 +1,23 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
 import { useUserId } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
 import { Button } from "@/shadcn/button";
 import { PlusIcon } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shadcn/alert-dialog";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
 import { DiarySearch } from "@/components/diary/diary-search";
-import { toast } from "sonner";
+import { DeleteDiaryDialog } from "@/components/diary/delete-diary-dialog";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function DiaryPageContent() {
   const actions = useDiaryDrawerActions();
-  const trpc = useTRPC();
   const userId = useUserId();
   const { currentOrganizationId } = useOrganization();
-  const queryClient = useQueryClient();
 
   // 状態管理
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
-
-  // 削除mutation - instructions.mdの推奨パターンを使用
-  const deleteMutation = useMutation(
-    trpc.diary.delete.mutationOptions({
-      onSuccess: () => {
-        toast.success("日誌を削除しました");
-        // カレンダー用のキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byMonth.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byDate.queryKey(),
-        });
-        // ステート更新
-        setDeleteDialogOpen(false);
-        setDeletingDiaryId(null);
-      },
-      onError: (error) => {
-        console.error("Failed to delete diary:", error);
-        toast.error("日誌の削除に失敗しました");
-        // エラー時もダイアログを閉じる
-        setDeleteDialogOpen(false);
-        setDeletingDiaryId(null);
-      },
-    })
-  );
 
   // イベントハンドラー
   const router = useRouter();
@@ -76,17 +35,6 @@ function DiaryPageContent() {
 
   const handleDelete = (diaryId: string) => {
     setDeletingDiaryId(diaryId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!deletingDiaryId) return;
-
-    // tRPC削除mutationを実行
-    deleteMutation.mutate({
-      diaryId: deletingDiaryId,
-      organizationId: currentOrganizationId || "",
-    });
   };
 
   if (!userId) return null; // ユーザーが未ログインの場合は何も表示しない
@@ -130,22 +78,11 @@ function DiaryPageContent() {
       </div>
 
       {/* 削除確認ダイアログ */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>日誌を削除</AlertDialogTitle>
-            <AlertDialogDescription>
-              この日誌を削除しますか？この操作は取り消すことができません。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>
-              削除する
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteDiaryDialog
+        diaryId={deletingDiaryId}
+        organizationId={currentOrganizationId || ""}
+        onClose={() => setDeletingDiaryId(null)}
+      />
     </div>
   );
 }
