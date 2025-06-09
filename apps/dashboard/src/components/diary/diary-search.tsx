@@ -17,9 +17,9 @@ import {
 import { Badge } from "@/shadcn/badge";
 import { CalendarIcon, MapPinIcon } from "lucide-react";
 import {
-  WEATHER_DISPLAY_OPTIONS,
-  WORK_TYPE_DISPLAY_OPTIONS,
-} from "@repo/config";
+  getWeatherDisplay,
+  getWorkTypeDisplay,
+} from "@/constants/agricultural-constants";
 import { cn } from "@/lib/utils";
 import { RouterOutputs } from "@repo/api";
 
@@ -64,18 +64,6 @@ function DiarySearchList({
   );
 
   const diaries = diariesQuery.data?.diaries || [];
-
-  const getWeatherDisplay = (weather: string | null) => {
-    if (!weather) return null;
-    return WEATHER_DISPLAY_OPTIONS.find((option) => option.value === weather);
-  };
-
-  const getWorkTypeDisplay = (workType: string | null) => {
-    if (!workType) return null;
-    return WORK_TYPE_DISPLAY_OPTIONS.find(
-      (option) => option.value === workType
-    );
-  };
 
   return (
     <CommandList>

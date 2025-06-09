@@ -17,39 +17,21 @@ import { Badge } from "@/shadcn/badge";
 import { Button } from "@/shadcn/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WORK_TYPE_OPTIONS, type WorkTypeKey } from "@repo/config";
+import { RouterOutputs } from "@repo/api";
+import { getWorkTypeDisplay } from "@/constants/agricultural-constants";
 
 // tRPCの型定義を利用 - 月の日誌サマリーの配列型
-type DiaryMonthSummaryData = Array<{
-  id: string;
-  date: string;
-  weather: string | null;
-  workType: string | null;
-  fields: Array<{
-    id: string;
-    name: string;
-  }>;
-}>;
+type DiaryMonthSummaryData = RouterOutputs["diary"]["byMonth"][number];
 
 interface DiaryCalendarViewProps {
   currentMonth: Date;
   selectedDate: Date | null;
-  diaries: DiaryMonthSummaryData;
+  diaries: DiaryMonthSummaryData[];
   onMonthChange: (direction: "prev" | "next") => void;
   onDateSelect: (date: Date) => void;
 }
 
-interface DiaryByDate {
-  [key: string]: DiaryMonthSummaryData[number][];
-}
-
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-
-// 作業種別の表示テキストを取得するヘルパー関数
-const getWorkTypeDisplay = (workType: string | null | undefined): string => {
-  if (!workType) return "未分類";
-  return WORK_TYPE_OPTIONS[workType as WorkTypeKey] || workType;
-};
 
 export function DiaryCalendarView({
   currentMonth,
@@ -60,7 +42,7 @@ export function DiaryCalendarView({
 }: DiaryCalendarViewProps) {
   // 日誌を日付別にグループ化
   const diariesByDate = useMemo(() => {
-    const grouped: DiaryByDate = {};
+    const grouped: Record<string, DiaryMonthSummaryData[]> = {};
     diaries.forEach((diary) => {
       const dateKey = format(new Date(diary.date), "yyyy-MM-dd");
       if (!grouped[dateKey]) {
@@ -194,7 +176,8 @@ export function DiaryCalendarView({
                             className="text-xs w-full justify-center truncate"
                             style={{ fontSize: "10px", padding: "1px 4px" }}
                           >
-                            {getWorkTypeDisplay(diary.workType)}
+                            {getWorkTypeDisplay(diary.workType)?.label ||
+                              "未設定"}
                           </Badge>
                         ))}
                         {dayDiaries.length > 2 && (

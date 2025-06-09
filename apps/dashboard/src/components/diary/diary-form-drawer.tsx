@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import {
   WEATHER_DISPLAY_OPTIONS,
   WORK_TYPE_DISPLAY_OPTIONS,
-} from "@repo/config";
+} from "@/constants/agricultural-constants";
 
 // フォームスキーマ定義
 const DiaryFormSchema = z.object({

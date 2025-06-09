@@ -23,9 +23,9 @@ import {
   TrashIcon,
 } from "lucide-react";
 import {
-  WEATHER_DISPLAY_OPTIONS,
-  WORK_TYPE_DISPLAY_OPTIONS,
-} from "@repo/config";
+  getWeatherDisplay,
+  getWorkTypeDisplay,
+} from "@/constants/agricultural-constants";
 
 interface DiaryDateDetailProps {
   selectedDate: Date;
@@ -35,26 +35,6 @@ interface DiaryDateDetailProps {
   onDelete?: (diaryId: string) => void;
   currentUserId?: string;
 }
-
-// 作業種別の表示テキストを取得するヘルパー関数
-const getWorkTypeDisplay = (workType: string | null | undefined): string => {
-  if (!workType) return "未設定";
-  return (
-    WORK_TYPE_DISPLAY_OPTIONS.find((option) => option.value === workType)
-      ?.label || workType
-  );
-};
-
-// 天気の表示テキストを取得するヘルパー関数
-const getWeatherDisplay = (
-  weather: string | null | undefined
-): string | null => {
-  if (!weather) return null;
-  return (
-    WEATHER_DISPLAY_OPTIONS.find((option) => option.value === weather)?.label ||
-    weather
-  );
-};
 
 export function DiaryDateDetail({
   selectedDate,
@@ -118,6 +98,8 @@ export function DiaryDateDetail({
             <div className="space-y-3">
               {diaries.map((diary) => {
                 const isCurrentUser = currentUserId === diary.userId;
+                const workTypeDisplay = getWorkTypeDisplay(diary.workType);
+                const weatherDisplay = getWeatherDisplay(diary.weather);
                 return (
                   <div key={diary.id} className="p-4 border rounded-lg">
                     <div className="space-y-3">
@@ -125,7 +107,7 @@ export function DiaryDateDetail({
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary" className="text-xs">
-                            {getWorkTypeDisplay(diary.workType)}
+                            {workTypeDisplay?.label || "未設定"}
                           </Badge>
                           {diary.title && (
                             <span className="text-sm font-medium text-foreground">
@@ -136,14 +118,12 @@ export function DiaryDateDetail({
                         <div className="flex items-center gap-2">
                           {/* 天気・気温情報 */}
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {getWeatherDisplay(diary.weather) && (
-                              <span>{getWeatherDisplay(diary.weather)}</span>
+                            {weatherDisplay && (
+                              <span>{weatherDisplay.label}</span>
                             )}
                             {diary.temperature && (
                               <>
-                                {getWeatherDisplay(diary.weather) && (
-                                  <span>•</span>
-                                )}
+                                {weatherDisplay && <span>•</span>}
                                 <span>{diary.temperature}°C</span>
                               </>
                             )}
