@@ -121,7 +121,7 @@ describe("DiaryFormDrawer", () => {
 
       // 選択されたほ場のバッジが表示されること
       expect(screen.getByTestId("selected-fields-badges")).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
     });
 
     test("フィールドオプションが正しく表示されること", () => {
@@ -298,11 +298,8 @@ describe("DiaryFormDrawer", () => {
       await user.click(field1Option);
 
       // 選択されたことを確認
-      expect(
-        screen.getByTestId("field-selected-indicator-field-1")
-      ).toBeInTheDocument();
       expect(screen.getByTestId("selected-fields-badges")).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
     });
 
     test("ほ場を複数選択できること", async () => {
@@ -318,26 +315,15 @@ describe("DiaryFormDrawer", () => {
       await user.click(field2Option);
 
       // 両方が選択されていることを確認
-      expect(
-        screen.getByTestId("field-selected-indicator-field-1")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-selected-indicator-field-2")
-      ).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-2")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
+      expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
 
       // greenhouse-1も選択
       const greenhouse1Option = screen.getByTestId("field-option-greenhouse-1");
       await user.click(greenhouse1Option);
 
       // 3つ全てが選択されていることを確認
-      expect(
-        screen.getByTestId("field-selected-indicator-greenhouse-1")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-badge-greenhouse-1")
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
     });
 
     test("選択したほ場を解除できること", async () => {
@@ -351,31 +337,20 @@ describe("DiaryFormDrawer", () => {
       await user.click(field2Option);
 
       // 両方が選択されていることを確認
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-2")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
+      expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
 
       // field-1の選択を解除
       await user.click(field1Option);
 
       // field-1の選択が解除され、field-2は残っていることを確認
-      expect(
-        screen.queryByTestId("field-selected-indicator-field-1")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId("field-badge-field-1")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-selected-indicator-field-2")
-      ).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-2")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).not.toBeChecked();
+      expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
 
       // field-2も解除
       await user.click(field2Option);
 
       // 全ての選択が解除され、バッジコンテナも非表示になることを確認
-      expect(
-        screen.queryByTestId("field-selected-indicator-field-2")
-      ).not.toBeInTheDocument();
       expect(
         screen.queryByTestId("selected-fields-badges")
       ).not.toBeInTheDocument();
@@ -396,21 +371,21 @@ describe("DiaryFormDrawer", () => {
 
       // バッジコンテナが表示され、field-1のバッジが存在することを確認
       expect(screen.getByTestId("selected-fields-badges")).toBeInTheDocument();
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
 
       // greenhouse-1も選択
       const greenhouse1Option = screen.getByTestId("field-option-greenhouse-1");
       await user.click(greenhouse1Option);
 
-      // 両方のバッジが表示されることを確認
-      expect(screen.getByTestId("field-badge-field-1")).toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-badge-greenhouse-1")
-      ).toBeInTheDocument();
+      // 両方が選択されていることを確認
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
+      expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
 
-      // バッジの数が選択したほ場の数と一致することを確認
-      const badges = screen.getAllByTestId(/^field-badge-/);
-      expect(badges).toHaveLength(2);
+      // チェックされているフィールドの数が選択したほ場の数と一致することを確認
+      const checkedCheckboxes = screen.getAllByRole("checkbox", {
+        checked: true,
+      });
+      expect(checkedCheckboxes).toHaveLength(2);
     });
   });
 
@@ -1137,10 +1112,8 @@ describe("DiaryFormDrawer", () => {
       expect(weatherSelect).toHaveTextContent("雨");
 
       // ほ場選択が正しく設定されていることを確認
-      const fieldCheckedIndicator = screen.getByTestId(
-        "field-selected-indicator-field-2"
-      );
-      expect(fieldCheckedIndicator).toBeInTheDocument();
+      const fieldCheckbox = screen.getByTestId("field-checkbox-field-2");
+      expect(fieldCheckbox).toBeChecked();
     });
 
     test("初期データがundefinedの場合デフォルト値が設定されること", async () => {
@@ -1175,10 +1148,8 @@ describe("DiaryFormDrawer", () => {
 
       // ほ場選択のデフォルト値を確認
       mockFieldOptions.forEach((field) => {
-        const fieldCheckedIndicator = screen.queryByTestId(
-          `field-selected-indicator-${field.id}`
-        );
-        expect(fieldCheckedIndicator).toBeNull();
+        const fieldCheckbox = screen.getByTestId(`field-checkbox-${field.id}`);
+        expect(fieldCheckbox).not.toBeChecked();
       });
     });
 
@@ -1241,10 +1212,8 @@ describe("DiaryFormDrawer", () => {
 
       // ほ場選択がリセットされていることを確認
       mockFieldOptions.forEach((field) => {
-        const fieldCheckedIndicator = screen.queryByTestId(
-          `field-selected-indicator-${field.id}`
-        );
-        expect(fieldCheckedIndicator).toBeNull();
+        const fieldCheckbox = screen.getByTestId(`field-checkbox-${field.id}`);
+        expect(fieldCheckbox).not.toBeChecked();
       });
     });
   });
@@ -1426,9 +1395,7 @@ describe("DiaryFormDrawer", () => {
       expect(temperatureInput).toHaveValue(20);
       expect(workTypeSelect).toHaveTextContent("植付け");
       expect(weatherSelect).toHaveTextContent("晴れ");
-      expect(
-        screen.getByTestId("field-selected-indicator-field-1")
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
 
       // 異なる初期データに変更
       const initialData2: DiaryFormData = {
@@ -1463,15 +1430,9 @@ describe("DiaryFormDrawer", () => {
       });
 
       // ほ場選択が更新されていることを確認
-      expect(
-        screen.queryByTestId("field-selected-indicator-field-1")
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-selected-indicator-field-2")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-selected-indicator-greenhouse-1")
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("field-checkbox-field-1")).not.toBeChecked();
+      expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
+      expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
     });
 
     test("onCloseプロパティの変更で新しい関数が呼ばれること", async () => {

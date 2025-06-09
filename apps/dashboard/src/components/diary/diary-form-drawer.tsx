@@ -37,6 +37,8 @@ import {
   SelectValue,
 } from "@/shadcn/select";
 import { Badge } from "@/shadcn/badge";
+import { Checkbox } from "@/shadcn/checkbox";
+import { Label } from "@/shadcn/label";
 import { cn } from "@/lib/utils";
 import {
   WEATHER_DISPLAY_OPTIONS,
@@ -289,49 +291,9 @@ export function DiaryFormDrawer({
                         <FormDescription>
                           作業を行ったほ場や温室を選択してください（複数選択可）
                         </FormDescription>
-                        <div
-                          className="grid grid-cols-1 gap-3"
-                          data-testid="field-options-container"
-                        >
-                          {fieldOptions.map((field) => (
-                            <div
-                              role="option"
-                              key={field.id}
-                              data-testid={`field-option-${field.id}`}
-                              className={cn(
-                                "border rounded-lg p-3 cursor-pointer transition-colors",
-                                selectedThingIds.includes(field.id)
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/50"
-                              )}
-                              aria-selected={selectedThingIds.includes(
-                                field.id
-                              )}
-                              onClick={() => handleFieldToggle(field.id)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-medium text-sm">
-                                    {field.name}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {field.type === "field" ? "ほ場" : "温室"} •{" "}
-                                    {field.area}㎡
-                                  </div>
-                                </div>
-                                {selectedThingIds.includes(field.id) && (
-                                  <div
-                                    className="w-2 h-2 bg-primary rounded-full"
-                                    data-testid={`field-selected-indicator-${field.id}`}
-                                  />
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
                         {selectedFields.length > 0 && (
                           <div
-                            className="flex flex-wrap gap-2 mt-3"
+                            className="flex flex-wrap gap-2 mb-3"
                             data-testid="selected-fields-badges"
                           >
                             {selectedFields.map((field) => (
@@ -345,6 +307,42 @@ export function DiaryFormDrawer({
                             ))}
                           </div>
                         )}
+                        <div
+                          className="grid grid-cols-1 gap-3"
+                          data-testid="field-options-container"
+                        >
+                          {fieldOptions.map((field) => (
+                            <Label
+                              key={field.id}
+                              className={cn(
+                                "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                                selectedThingIds.includes(field.id)
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/50"
+                              )}
+                              data-testid={`field-option-${field.id}`}
+                            >
+                              <Checkbox
+                                id={`field-${field.id}`}
+                                checked={selectedThingIds.includes(field.id)}
+                                onCheckedChange={() =>
+                                  handleFieldToggle(field.id)
+                                }
+                                className="data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                data-testid={`field-checkbox-${field.id}`}
+                              />
+                              <div className="grid gap-1.5 font-normal">
+                                <p className="text-sm leading-none font-medium">
+                                  {field.name}
+                                </p>
+                                <p className="text-muted-foreground text-sm">
+                                  {field.type === "field" ? "ほ場" : "温室"} •{" "}
+                                  {field.area}㎡
+                                </p>
+                              </div>
+                            </Label>
+                          ))}
+                        </div>
                         <FormMessage data-testid="fields-error" />
                       </FormItem>
                     )}
