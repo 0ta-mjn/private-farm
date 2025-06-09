@@ -9,8 +9,9 @@
     "start": "next start",
     "start:test": "next build && next start",
     "lint": "next lint --max-warnings 0",
-    "test": "dotenv -e .env.testing pnpm playwright test --config=playwright.config.ts",
+    "test": "pnpm test:unit",
     "test:unit": "vitest",
+    "test:e2e": "dotenv -e .env.testing pnpm playwright test --config=playwright.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

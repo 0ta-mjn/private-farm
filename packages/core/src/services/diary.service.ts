@@ -22,7 +22,7 @@ export const CreateDiaryInputSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
   title: z.string().optional(),
   content: z.string().optional(),
-  workType: z.string().optional(),
+  workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().optional(),
   temperature: z.number().optional(),
   thingIds: z.array(z.string()).optional().default([]),

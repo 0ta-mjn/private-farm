@@ -72,6 +72,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "トマトの植え付け作業を行いました。",
+        workType: "PLANTING",
         thingIds: [testThingId],
       };
 
@@ -91,7 +92,7 @@ describe("DiaryService", () => {
         date: "2025-06-05",
         title: "トマト植え付け",
         content: "トマトの植え付け作業を行いました。",
-        workType: "定植",
+        workType: "PLANTING",
         weather: "晴れ",
         temperature: 25.5,
         thingIds: [testThingId],
@@ -110,6 +111,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "複数ほ場での作業",
+        workType: "OTHER",
         thingIds: [testThingId],
       };
 
@@ -130,6 +132,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "一般的な農場作業",
+        workType: "OTHER",
         thingIds: [],
       };
 
@@ -167,6 +170,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "無効なほ場IDを使用",
+        workType: "OTHER",
         thingIds: [otherThingId], // 異なる組織のほ場ID
       };
 
@@ -180,6 +184,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "存在しないほ場IDを使用",
+        workType: "OTHER",
         thingIds: ["non-existent-thing-id"],
       };
 
@@ -193,6 +198,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "混在するほ場ID",
+        workType: "OTHER",
         thingIds: [testThingId, "invalid-thing-id"],
       };
 
@@ -209,6 +215,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "PLANTING",
         thingIds: [testThingId],
       };
 
@@ -247,6 +254,7 @@ describe("DiaryService", () => {
         organizationId: otherOrgId,
         date: "2025-06-05",
         content: "他組織の日誌",
+        workType: "OTHER",
         thingIds: [],
       };
 
@@ -269,6 +277,7 @@ describe("DiaryService", () => {
           organizationId: testOrganizationId,
           date: `2025-06-0${i}`,
           content: `日誌${i}`,
+          workType: "OTHER",
           thingIds: [],
         });
       }
@@ -289,6 +298,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-01",
         content: "古い日誌",
+        workType: "OTHER",
         thingIds: [],
       });
 
@@ -296,6 +306,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-03",
         content: "新しい日誌",
+        workType: "PLANTING",
         thingIds: [],
       });
 
@@ -315,6 +326,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "ほ場での作業",
+        workType: "WEEDING",
         thingIds: [testThingId],
       });
 
@@ -359,6 +371,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "最初のほ場での作業",
+        workType: "FERTILIZING",
         thingIds: [testThingId],
       });
 
@@ -366,6 +379,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-04",
         content: "別のほ場での作業",
+        workType: "WATERING",
         thingIds: [anotherThingId],
       });
 
@@ -373,6 +387,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-03",
         content: "両方のほ場での作業",
+        workType: "HARVESTING",
         thingIds: [testThingId, anotherThingId],
       });
 
@@ -430,6 +445,7 @@ describe("DiaryService", () => {
         organizationId: otherOrgId,
         date: "2025-06-05",
         content: "他組織の日誌",
+        workType: "SEEDING",
         thingIds: [otherThingId],
       });
 
@@ -438,6 +454,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-04",
         content: "自組織の日誌",
+        workType: "PRUNING",
         thingIds: [testThingId],
       });
 
@@ -469,6 +486,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "使用されているほ場での作業",
+        workType: "SPRAYING",
         thingIds: [testThingId],
       });
 
@@ -492,6 +510,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "元の内容",
+        workType: "PLANTING",
         thingIds: [testThingId],
       };
 
@@ -500,7 +519,7 @@ describe("DiaryService", () => {
       const updateInput = {
         title: "更新されたタイトル",
         content: "更新された内容",
-        workType: "収穫",
+        workType: "HARVESTING",
       };
 
       const result = await updateDiary(
@@ -522,6 +541,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "WEEDING",
         thingIds: [testThingId],
       };
 
@@ -564,6 +584,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "FERTILIZING",
         thingIds: [testThingId],
       };
 
@@ -608,6 +629,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "WATERING",
         thingIds: [testThingId],
       };
 
@@ -636,6 +658,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "SEEDING",
         thingIds: [testThingId],
       };
 
@@ -664,6 +687,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "PRUNING",
         thingIds: [testThingId],
       };
 
@@ -699,6 +723,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
+        workType: "SPRAYING",
         thingIds: [testThingId],
       };
 
@@ -738,6 +763,7 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "削除予定の日誌",
+        workType: "OTHER",
         thingIds: [testThingId],
       };
 
