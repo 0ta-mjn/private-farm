@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import React, { useState, Suspense } from "react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useUserId } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
 import { Button } from "@/shadcn/button";
-import { PlusIcon, SearchIcon } from "lucide-react";
-import { Input } from "@/shadcn/input";
+import { PlusIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,9 +19,9 @@ import {
   AlertDialogTitle,
 } from "@/shadcn/alert-dialog";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
-import { DiaryListView } from "@/components/diary/diary-list-view";
-import { SimplePagination } from "@/components/diary/simple-pagination";
+import { DiarySearch } from "@/components/diary/diary-search";
 import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function DiaryPageContent() {
   const actions = useDiaryDrawerActions();
@@ -32,31 +31,15 @@ function DiaryPageContent() {
   const queryClient = useQueryClient();
 
   // 状態管理
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
-
-  const pageSize = 20; // フェーズ1の仕様に合わせて20件
-
-  // offset を計算
-  const offset = (currentPage - 1) * pageSize;
 
   // 削除mutation - instructions.mdの推奨パターンを使用
   const deleteMutation = useMutation(
     trpc.diary.delete.mutationOptions({
-      onSuccess: (_, variables) => {
+      onSuccess: () => {
         toast.success("日誌を削除しました");
-        // 検索用のキャッシュを更新
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.search.queryKey({
-            organizationId: variables.organizationId,
-            offset,
-            limit: pageSize,
-            search: searchQuery || undefined,
-          }),
-        });
-        // カレンダー用のキャッシュも無効化
+        // カレンダー用のキャッシュを無効化
         queryClient.invalidateQueries({
           queryKey: trpc.diary.byMonth.queryKey(),
         });
@@ -77,36 +60,14 @@ function DiaryPageContent() {
     })
   );
 
-  // 日誌一覧の取得 - 新しい検索エンドポイントを使用
-  const diariesQueryOptions = trpc.diary.search.queryOptions(
-    {
-      organizationId: currentOrganizationId || "",
-      offset,
-      limit: pageSize,
-      search: searchQuery || undefined,
-    },
-    {
-      enabled: !!currentOrganizationId,
-      staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-    }
-  );
-
-  const diariesQuery = useQuery(diariesQueryOptions);
-
-  // データの加工
-  const diaries = useMemo(() => {
-    return diariesQuery.data?.diaries || [];
-  }, [diariesQuery.data]);
-
-  const totalPages = useMemo(() => {
-    if (!diariesQuery.data?.total) return 1;
-    return Math.ceil(diariesQuery.data.total / pageSize);
-  }, [diariesQuery.data?.total, pageSize]);
-
   // イベントハンドラー
-  const handleDiaryClick = (diaryId: string) => {
-    // TODO: 詳細ダイアログを開く実装
-    console.log("Open diary detail:", diaryId);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const handleDiaryClick = (diary: { date: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("date", diary.date);
+    params.set("month", diary.date.slice(0, 7)); // yyyy-MM形式に変換
+    router.replace(`?${params.toString()}`, { scroll: false });
   };
 
   const handleEdit = (diaryId: string) => {
@@ -128,15 +89,6 @@ function DiaryPageContent() {
     });
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1); // 検索時はページを1に戻す
-  };
-
   if (!userId) return null; // ユーザーが未ログインの場合は何も表示しない
 
   // 組織が選択されていない場合の表示
@@ -155,17 +107,10 @@ function DiaryPageContent() {
       {/* ヘッダー */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex justify-between items-start">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="relative max-w-md">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="日誌を検索..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+          <DiarySearch
+            onDiarySelect={handleDiaryClick}
+            currentUserId={userId}
+          />
 
           <Button onClick={actions.openCreate}>
             <PlusIcon className="h-4 w-4 mr-2" />
@@ -174,44 +119,14 @@ function DiaryPageContent() {
         </div>
       </div>
 
-      {/* メインコンテンツ */}
+      {/* メインコンテンツ - カレンダー表示 */}
       <div className="space-y-6">
-        {diariesQuery.isLoading ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">読み込み中...</div>
-          </div>
-        ) : diariesQuery.error ? (
-          <div className="text-center py-12">
-            <div className="text-destructive">データの取得に失敗しました</div>
-          </div>
-        ) : searchQuery ? (
-          <>
-            <DiaryListView
-              diaries={diaries}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onCardClick={handleDiaryClick}
-              currentUserId={userId}
-              loading={diariesQuery.isLoading}
-            />
-
-            {/* ページネーション（一覧表示時のみ） */}
-            <SimplePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              hasNextPage={currentPage < totalPages}
-              hasPrevPage={currentPage > 1}
-            />
-          </>
-        ) : (
-          <DiaryCalendarView
-            organizationId={currentOrganizationId}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            currentUserId={userId}
-          />
-        )}
+        <DiaryCalendarView
+          organizationId={currentOrganizationId}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          currentUserId={userId}
+        />
       </div>
 
       {/* 削除確認ダイアログ */}
