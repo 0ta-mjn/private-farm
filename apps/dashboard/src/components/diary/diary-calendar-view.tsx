@@ -1,181 +1,216 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import React, { useMemo } from "react";
 import {
   format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
   isSameMonth,
-  addMonths,
-  subMonths,
-  parse,
-  isValid,
+  getDay,
 } from "date-fns";
-import { Card, CardContent } from "@/shadcn/card";
-import { DiaryDateDetail } from "./diary-date-detail";
-import { CalendarGrid } from "./calendar-grid";
-import { useTRPC } from "@/trpc/client";
+import { ja } from "date-fns/locale";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
+import { Badge } from "@/shadcn/badge";
+import { Button } from "@/shadcn/button";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { WORK_TYPE_OPTIONS, type WorkTypeKey } from "@repo/config";
+
+// tRPCの型定義を利用 - 月の日誌サマリーの配列型
+type DiaryMonthSummaryData = Array<{
+  id: string;
+  date: string;
+  weather: string | null;
+  workType: string | null;
+  fields: Array<{
+    id: string;
+    name: string;
+  }>;
+}>;
 
 interface DiaryCalendarViewProps {
-  organizationId: string;
-  onEdit?: (diaryId: string) => void;
-  onDelete?: (diaryId: string) => void;
-  currentUserId: string;
+  currentMonth: Date;
+  selectedDate: Date | null;
+  diaries: DiaryMonthSummaryData;
+  onMonthChange: (direction: "prev" | "next") => void;
+  onDateSelect: (date: Date) => void;
 }
 
+interface DiaryByDate {
+  [key: string]: DiaryMonthSummaryData[number][];
+}
+
+const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+// 作業種別の表示テキストを取得するヘルパー関数
+const getWorkTypeDisplay = (workType: string | null | undefined): string => {
+  if (!workType) return "未分類";
+  return WORK_TYPE_OPTIONS[workType as WorkTypeKey] || workType;
+};
+
 export function DiaryCalendarView({
-  organizationId,
-  onEdit,
-  onDelete,
-  currentUserId,
+  currentMonth,
+  selectedDate,
+  diaries,
+  onMonthChange,
+  onDateSelect,
 }: DiaryCalendarViewProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const trpc = useTRPC();
-
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-
-  // 月のサマリーデータを取得（カレンダー表示用）
-  const monthSummaryQuery = useQuery(
-    trpc.diary.byMonth.queryOptions(
-      {
-        organizationId,
-        year: currentMonth.getFullYear(),
-        month: currentMonth.getMonth() + 1,
-      },
-      {
-        enabled: !!organizationId,
-        staleTime: 5 * 60 * 1000, // 5分間キャッシュ
+  // 日誌を日付別にグループ化
+  const diariesByDate = useMemo(() => {
+    const grouped: DiaryByDate = {};
+    diaries.forEach((diary) => {
+      const dateKey = format(new Date(diary.date), "yyyy-MM-dd");
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
       }
-    )
-  );
+      grouped[dateKey].push(diary);
+    });
+    return grouped;
+  }, [diaries]);
 
-  // データはそのまま使用（変換不要）
-  const diaries = monthSummaryQuery.data || [];
+  // カレンダーの日付データを生成
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const startDate = new Date(monthStart);
+    const endDate = new Date(monthEnd);
 
-  // URLパラメータを更新するヘルパー関数
-  const updateUrlParams = useCallback(
-    (newMonth?: Date | null, newSelectedDate?: Date | null) => {
-      const params = new URLSearchParams(searchParams.toString());
+    // 月初の曜日調整（日曜日から開始）
+    const startDay = getDay(startDate);
+    startDate.setDate(startDate.getDate() - startDay);
 
-      // 新しい月が指定された場合
-      if (newMonth !== undefined) {
-        if (newMonth) {
-          params.set("month", format(newMonth, "yyyy-MM"));
-        } else {
-          params.delete("month");
-        }
-      }
+    // 月末の曜日調整（土曜日まで）
+    const endDay = getDay(endDate);
+    endDate.setDate(endDate.getDate() + (6 - endDay));
 
-      // 新しい選択日が指定された場合
-      if (newSelectedDate !== undefined) {
-        if (newSelectedDate) {
-          params.set("date", format(newSelectedDate, "yyyy-MM-dd"));
-          // 日付が指定された場合は自動的に月も設定
-          params.set("month", format(newSelectedDate, "yyyy-MM"));
-        } else {
-          params.delete("date");
-        }
-      }
+    return eachDayOfInterval({ start: startDate, end: endDate });
+  }, [currentMonth]);
 
-      router.replace(`?${params.toString()}`, { scroll: false });
-    },
-    [router, searchParams]
-  );
-
-  // URLパラメータの変更を監視して状態を同期、初期化も行う
-  useEffect(() => {
-    const monthParam = searchParams.get("month");
-    const dateParam = searchParams.get("date");
-
-    // 初期値の設定
-    let initialMonth = new Date();
-    let initialDate = new Date();
-
-    if (monthParam) {
-      const parsedMonth = parse(monthParam, "yyyy-MM", new Date());
-      if (isValid(parsedMonth)) {
-        initialMonth = parsedMonth;
-      }
-    }
-
-    if (dateParam) {
-      const parsedDate = parse(dateParam, "yyyy-MM-dd", new Date());
-      if (isValid(parsedDate)) {
-        initialDate = parsedDate;
-      }
-    }
-
-    setCurrentMonth(initialMonth);
-    setSelectedDate(initialDate);
-
-    // dateクエリが指定されていてmonthがないか異なる月が指定されている場合のみクエリを更新
-    if (dateParam && initialDate) {
-      const selectedMonth = format(initialDate, "yyyy-MM");
-      if (!monthParam || monthParam !== selectedMonth) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("month", selectedMonth);
-        router.replace(`?${params.toString()}`, { scroll: false });
-      }
-    }
-  }, [searchParams, router]);
-
-  const handleMonthChange = (direction: "prev" | "next") => {
-    const newMonth =
-      direction === "prev"
-        ? subMonths(currentMonth, 1)
-        : addMonths(currentMonth, 1);
-    setCurrentMonth(newMonth);
-    setSelectedDate(null); // 月変更時は選択日をクリア
-    updateUrlParams(newMonth, null); // 月を更新し、日付をクリア
+  const handlePrevMonth = () => {
+    onMonthChange("prev");
   };
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
-    // 選択された日付に基づいて月も更新
-    if (!isSameMonth(date, currentMonth)) {
-      setCurrentMonth(date);
-    }
-    updateUrlParams(undefined, date); // 日付のみ更新（月は自動的に設定される）
+  const handleNextMonth = () => {
+    onMonthChange("next");
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    return isSameMonth(date, currentMonth);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* カレンダー部分 */}
-      <div className="lg:col-span-2">
-        <CalendarGrid
-          currentMonth={currentMonth}
-          selectedDate={selectedDate}
-          diaries={diaries}
-          onMonthChange={handleMonthChange}
-          onDateSelect={handleDateClick}
-        />
-      </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg font-semibold">
+            {format(currentMonth, "yyyy年 M月", { locale: ja })}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrevMonth}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeftIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextMonth}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="w-full">
+          {/* 曜日ヘッダー */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {WEEKDAYS.map((day, index) => (
+              <div
+                key={day}
+                className={cn(
+                  "text-center text-sm font-medium py-2",
+                  index === 0
+                    ? "text-red-500"
+                    : index === 6
+                      ? "text-blue-500"
+                      : "text-muted-foreground"
+                )}
+              >
+                {day}
+              </div>
+            ))}
+          </div>
 
-      {/* 選択した日付の日誌一覧 */}
-      {selectedDate ? (
-        <DiaryDateDetail
-          selectedDate={selectedDate}
-          organizationId={organizationId}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          currentUserId={currentUserId}
-        />
-      ) : (
-        <Card className="w-full">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="text-center text-muted-foreground">
-              <div className="text-lg font-medium mb-2">
-                日付を選択してください
-              </div>
-              <div className="text-sm">
-                カレンダーから日付をクリックすると、その日の日誌が表示されます
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          {/* カレンダーグリッド */}
+          <div className="grid grid-cols-7 gap-1">
+            {calendarDays.map((date, index) => {
+              const dateKey = format(date, "yyyy-MM-dd");
+              const dayDiaries = diariesByDate[dateKey] || [];
+              const isSelected = selectedDate
+                ? isSameDay(date, selectedDate)
+                : false;
+              const isTodayDate = isToday(date);
+              const isInCurrentMonth = isCurrentMonth(date);
+
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "min-h-[80px] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
+                    isTodayDate && "bg-primary/20 border-primary",
+                    isSelected && "bg-accent/20 border-accent",
+                    !isInCurrentMonth && "opacity-40"
+                  )}
+                  onClick={() => onDateSelect(date)}
+                >
+                  <div className="space-y-1">
+                    {/* 日付 */}
+                    <div
+                      className={cn(
+                        "text-sm font-medium text-center",
+                        !isInCurrentMonth && "text-muted-foreground",
+                        isTodayDate && "text-primary font-bold",
+                        isSelected && "text-accent font-bold"
+                      )}
+                    >
+                      {format(date, "d")}
+                    </div>
+
+                    {/* 作業種別バッジ */}
+                    {dayDiaries.length > 0 && (
+                      <div className="space-y-1">
+                        {dayDiaries.slice(0, 2).map((diary, diaryIndex) => (
+                          <Badge
+                            key={diaryIndex}
+                            variant="secondary"
+                            className="text-xs w-full justify-center truncate"
+                            style={{ fontSize: "10px", padding: "1px 4px" }}
+                          >
+                            {getWorkTypeDisplay(diary.workType)}
+                          </Badge>
+                        ))}
+                        {dayDiaries.length > 2 && (
+                          <div className="text-xs text-center text-muted-foreground">
+                            +{dayDiaries.length - 2}件
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
