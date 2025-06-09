@@ -12,9 +12,11 @@ import {
 import {
   createDiary,
   getDiary,
-  listDiaries,
   updateDiary,
   deleteDiary,
+  getDiariesByDate,
+  getDiariesByMonth,
+  searchDiaries,
 } from "./diary.service";
 
 const db = dbClient();
@@ -266,241 +268,6 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
       });
       expect(result).toBeNull();
-    });
-  });
-
-  describe("listDiaries", () => {
-    it("should list diaries with pagination", async () => {
-      // 複数の日誌を作成
-      for (let i = 1; i <= 5; i++) {
-        await createDiary(db, testUserId, {
-          organizationId: testOrganizationId,
-          date: `2025-06-0${i}`,
-          content: `日誌${i}`,
-          workType: "OTHER",
-          thingIds: [],
-        });
-      }
-
-      const result = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 3,
-        offset: 0,
-      });
-
-      expect(result.diaries).toHaveLength(3);
-      expect(result.total).toBe(5);
-      expect(result.hasNext).toBe(true);
-    });
-
-    it("should list diaries ordered by date desc", async () => {
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-01",
-        content: "古い日誌",
-        workType: "OTHER",
-        thingIds: [],
-      });
-
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-03",
-        content: "新しい日誌",
-        workType: "PLANTING",
-        thingIds: [],
-      });
-
-      const result = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-      });
-
-      expect(result.diaries[0]!.date).toBe("2025-06-03");
-      expect(result.diaries[1]!.date).toBe("2025-06-01");
-    });
-
-    it("should include thing relationships when includeThings is true", async () => {
-      // ほ場関連付けのある日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-05",
-        content: "ほ場での作業",
-        workType: "WEEDING",
-        thingIds: [testThingId],
-      });
-
-      // includeThings: trueで取得
-      const resultWithThings = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-        includeThings: true,
-      });
-
-      expect(resultWithThings.diaries).toHaveLength(1);
-      expect(resultWithThings.diaries[0]!.diaryThings).toBeDefined();
-      expect(resultWithThings.diaries[0]!.diaryThings!).toHaveLength(1);
-      expect(resultWithThings.diaries[0]!.diaryThings![0]!.thing.name).toBe(
-        "Test Field"
-      );
-
-      // includeThings: falseで取得（デフォルト）
-      const resultWithoutThings = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-      });
-
-      expect(resultWithoutThings.diaries).toHaveLength(1);
-      expect(resultWithoutThings.diaries[0]!.diaryThings).toBeUndefined();
-    });
-
-    it("should filter diaries by thingId", async () => {
-      // 追加のほ場を作成
-      const anotherThingId = "another-thing-id";
-      await db.insert(thingsTable).values({
-        id: anotherThingId,
-        name: "Another Field",
-        type: "field",
-        organizationId: testOrganizationId,
-      });
-
-      // 複数の日誌を作成（異なるほ場関連付けで）
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-05",
-        content: "最初のほ場での作業",
-        workType: "FERTILIZING",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-04",
-        content: "別のほ場での作業",
-        workType: "WATERING",
-        thingIds: [anotherThingId],
-      });
-
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-03",
-        content: "両方のほ場での作業",
-        workType: "HARVESTING",
-        thingIds: [testThingId, anotherThingId],
-      });
-
-      // testThingIdでフィルタ
-      const result = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-        thingId: testThingId,
-      });
-
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(
-        result.diaries.some((d) => d.content === "最初のほ場での作業")
-      ).toBe(true);
-      expect(
-        result.diaries.some((d) => d.content === "両方のほ場での作業")
-      ).toBe(true);
-      expect(result.diaries.some((d) => d.content === "別のほ場での作業")).toBe(
-        false
-      );
-
-      // 存在しないthingIdでフィルタ
-      const emptyResult = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-        thingId: "non-existent-thing-id",
-      });
-
-      expect(emptyResult.diaries).toHaveLength(0);
-      expect(emptyResult.total).toBe(0);
-    });
-
-    it("should not allow filtering by thingId from different organization", async () => {
-      // 別の組織とそのほ場を作成
-      const otherOrgId = "other-org-id";
-      const otherThingId = "other-thing-id";
-
-      await db.insert(organizationsTable).values({
-        id: otherOrgId,
-        name: "Other Organization",
-      });
-
-      await db.insert(thingsTable).values({
-        id: otherThingId,
-        name: "Other Field",
-        type: "field",
-        organizationId: otherOrgId,
-      });
-
-      // 別の組織で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: otherOrgId,
-        date: "2025-06-05",
-        content: "他組織の日誌",
-        workType: "SEEDING",
-        thingIds: [otherThingId],
-      });
-
-      // 元の組織で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-04",
-        content: "自組織の日誌",
-        workType: "PRUNING",
-        thingIds: [testThingId],
-      });
-
-      // 他組織のthingIdでフィルタを試行 - 結果は空であるべき
-      const result = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-        thingId: otherThingId, // 他組織のthingId
-      });
-
-      // 他組織のthingIdでフィルタした場合、結果は空になるべき
-      expect(result.diaries).toHaveLength(0);
-      expect(result.total).toBe(0);
-    });
-
-    it("should properly filter when thingId exists but has no associated diaries in organization", async () => {
-      // 新しいほ場を作成（日誌関連付けなし）
-      const unusedThingId = "unused-thing-id";
-      await db.insert(thingsTable).values({
-        id: unusedThingId,
-        name: "Unused Field",
-        type: "field",
-        organizationId: testOrganizationId,
-      });
-
-      // testThingIdに関連付けられた日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
-        date: "2025-06-05",
-        content: "使用されているほ場での作業",
-        workType: "SPRAYING",
-        thingIds: [testThingId],
-      });
-
-      // 使用されていないthingIdでフィルタ
-      const result = await listDiaries(db, {
-        organizationId: testOrganizationId,
-        limit: 10,
-        offset: 0,
-        thingId: unusedThingId,
-      });
-
-      expect(result.diaries).toHaveLength(0);
-      expect(result.total).toBe(0);
-      expect(result.hasNext).toBe(false);
     });
   });
 
@@ -797,6 +564,664 @@ describe("DiaryService", () => {
         organizationId: testOrganizationId,
       });
       expect(result).toBe(false);
+    });
+  });
+
+  describe("getDiariesByDate", () => {
+    it("should get all diaries for a specific date with full data", async () => {
+      const targetDate = "2025-06-05";
+
+      // 同じ日付で複数の日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+        content: "午前の作業",
+        workType: "PLANTING",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+        content: "午後の作業",
+        workType: "WATERING",
+        thingIds: [testThingId],
+      });
+
+      // 異なる日付で日誌を作成（結果に含まれないはず）
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-06",
+        content: "翌日の作業",
+        workType: "HARVESTING",
+        thingIds: [testThingId],
+      });
+
+      const result = await getDiariesByDate(db, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result.every((diary) => diary.date === targetDate)).toBe(true);
+      expect(result.some((diary) => diary.content === "午前の作業")).toBe(true);
+      expect(result.some((diary) => diary.content === "午後の作業")).toBe(true);
+      expect(result.some((diary) => diary.content === "翌日の作業")).toBe(
+        false
+      );
+
+      // フルデータが含まれていることを確認
+      expect(result[0]!.diaryThings).toBeDefined();
+      expect(result[0]!.diaryThings).toHaveLength(1);
+      expect(result[0]!.diaryThings![0]!.thing.name).toBe("Test Field");
+    });
+
+    it("should return empty array for date with no diaries", async () => {
+      const result = await getDiariesByDate(db, {
+        organizationId: testOrganizationId,
+        date: "2025-06-05",
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should only return diaries for the specified organization", async () => {
+      const targetDate = "2025-06-05";
+
+      // 別の組織を作成
+      const otherOrgId = "other-org-id";
+      await db.insert(organizationsTable).values({
+        id: otherOrgId,
+        name: "Other Organization",
+      });
+
+      // 元の組織で日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+        content: "自組織の作業",
+        workType: "PLANTING",
+        thingIds: [testThingId],
+      });
+
+      // 別の組織で日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: otherOrgId,
+        date: targetDate,
+        content: "他組織の作業",
+        workType: "WATERING",
+        thingIds: [],
+      });
+
+      const result = await getDiariesByDate(db, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.content).toBe("自組織の作業");
+      expect(result[0]!.organizationId).toBe(testOrganizationId);
+    });
+
+    it("should order diaries by creation time", async () => {
+      const targetDate = "2025-06-05";
+
+      // 複数の日誌を順番に作成
+      const diary1 = await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+        content: "最初の作業",
+        workType: "PLANTING",
+        thingIds: [],
+      });
+
+      // 少し待ってから次の日誌を作成
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const diary2 = await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+        content: "二番目の作業",
+        workType: "WATERING",
+        thingIds: [],
+      });
+
+      const result = await getDiariesByDate(db, {
+        organizationId: testOrganizationId,
+        date: targetDate,
+      });
+
+      expect(result).toHaveLength(2);
+      // createdAt順（新しい順）で並んでいることを確認
+      expect(result[0]!.id).toBe(diary2.id);
+      expect(result[1]!.id).toBe(diary1.id);
+    });
+  });
+
+  describe("getDiariesByMonth", () => {
+    it("should get summary data for all diaries in a month", async () => {
+      // 6月の複数の日付で日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-01",
+        content: "6月1日の作業",
+        workType: "PLANTING",
+        weather: "晴れ",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-05",
+        content: "6月5日の作業",
+        workType: "WATERING",
+        weather: "曇り",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-15",
+        content: "6月15日の作業",
+        workType: "HARVESTING",
+        weather: "雨",
+        thingIds: [testThingId],
+      });
+
+      // 別の月の日誌（結果に含まれないはず）
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-07-01",
+        content: "7月1日の作業",
+        workType: "PLANTING",
+        thingIds: [testThingId],
+      });
+
+      const result = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 6,
+      });
+
+      expect(result).toHaveLength(3);
+
+      // 各レコードがサマリーデータのみを含んでいることを確認
+      result.forEach((diary) => {
+        expect(diary.date).toBeDefined();
+        expect(diary.workType).toBeDefined();
+        expect(diary.weather).toBeDefined();
+        expect(diary.fields).toBeDefined();
+        expect(diary.fields.length).toBeGreaterThan(0);
+        expect(diary.fields[0]!.id).toBe(testThingId);
+        expect(diary.fields[0]!.name).toBe("Test Field");
+      });
+
+      // 日付順（新しい順）に並んでいることを確認
+      expect(result[0]!.date).toBe("2025-06-15");
+      expect(result[1]!.date).toBe("2025-06-05");
+      expect(result[2]!.date).toBe("2025-06-01");
+    });
+
+    it("should return empty array for month with no diaries", async () => {
+      const result = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 6,
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("should only return diaries for the specified organization", async () => {
+      // 別の組織を作成
+      const otherOrgId = "other-org-id";
+      const otherThingId = "other-thing-id";
+
+      await db.insert(organizationsTable).values({
+        id: otherOrgId,
+        name: "Other Organization",
+      });
+
+      await db.insert(thingsTable).values({
+        id: otherThingId,
+        name: "Other Field",
+        type: "field",
+        organizationId: otherOrgId,
+      });
+
+      // 両方の組織で同じ月に日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-01",
+        content: "自組織の作業",
+        workType: "PLANTING",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: otherOrgId,
+        date: "2025-06-01",
+        content: "他組織の作業",
+        workType: "WATERING",
+        thingIds: [otherThingId],
+      });
+
+      const result = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 6,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.fields[0]!.id).toBe(testThingId);
+      expect(result[0]!.fields[0]!.name).toBe("Test Field");
+    });
+
+    it("should handle diaries with multiple fields correctly", async () => {
+      // 追加のほ場を作成
+      const anotherThingId = "another-thing-id";
+      await db.insert(thingsTable).values({
+        id: anotherThingId,
+        name: "Another Field",
+        type: "field",
+        organizationId: testOrganizationId,
+      });
+
+      // 複数のほ場に関連付けられた日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-01",
+        content: "複数ほ場での作業",
+        workType: "PLANTING",
+        weather: "晴れ",
+        thingIds: [testThingId, anotherThingId],
+      });
+
+      const result = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 6,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.fields).toHaveLength(2);
+
+      const fieldNames = result[0]!.fields.map((f) => f.name);
+      expect(fieldNames).toContain("Test Field");
+      expect(fieldNames).toContain("Another Field");
+    });
+
+    it("should handle different months and years correctly", async () => {
+      // 異なる年月で日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-01",
+        content: "2025年6月の作業",
+        workType: "PLANTING",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-07-01",
+        content: "2025年7月の作業",
+        workType: "WATERING",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2024-06-01",
+        content: "2024年6月の作業",
+        workType: "HARVESTING",
+        thingIds: [testThingId],
+      });
+
+      // 2025年6月のデータを取得
+      const result2025_06 = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 6,
+      });
+
+      expect(result2025_06).toHaveLength(1);
+      expect(result2025_06[0]!.date).toBe("2025-06-01");
+
+      // 2025年7月のデータを取得
+      const result2025_07 = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2025,
+        month: 7,
+      });
+
+      expect(result2025_07).toHaveLength(1);
+      expect(result2025_07[0]!.date).toBe("2025-07-01");
+
+      // 2024年6月のデータを取得
+      const result2024_06 = await getDiariesByMonth(db, {
+        organizationId: testOrganizationId,
+        year: 2024,
+        month: 6,
+      });
+
+      expect(result2024_06).toHaveLength(1);
+      expect(result2024_06[0]!.date).toBe("2024-06-01");
+    });
+  });
+
+  describe("searchDiaries", () => {
+    beforeEach(async () => {
+      // 追加のほ場を作成
+      const anotherThingId = "another-thing-id";
+      await db.insert(thingsTable).values({
+        id: anotherThingId,
+        name: "Another Field",
+        type: "field",
+        organizationId: testOrganizationId,
+      });
+
+      // 検索用のテストデータを作成
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-01",
+        title: "トマト植え付け",
+        content: "トマトの苗を植え付けました。土壌の状態が良好です。",
+        workType: "PLANTING",
+        weather: "晴れ",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-05",
+        title: "水やり作業",
+        content: "トマトとキュウリに水やりを行いました。",
+        workType: "WATERING",
+        weather: "曇り",
+        thingIds: [testThingId, anotherThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-10",
+        title: "収穫作業",
+        content: "キュウリを収穫しました。豊作でした。",
+        workType: "HARVESTING",
+        weather: "晴れ",
+        thingIds: [anotherThingId],
+      });
+
+      await createDiary(db, testUserId, {
+        organizationId: testOrganizationId,
+        date: "2025-06-15",
+        title: "除草作業",
+        content: "雑草を除去しました。",
+        workType: "WEEDING",
+        weather: "雨",
+        thingIds: [],
+      });
+    });
+
+    it("should search by text content", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        search: "トマト",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.diaries.some((d) => d.title === "トマト植え付け")).toBe(
+        true
+      );
+      expect(result.diaries.some((d) => d.title === "水やり作業")).toBe(true);
+    });
+
+    it("should search by work type", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        workTypes: ["PLANTING", "HARVESTING"],
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.diaries.some((d) => d.workType === "PLANTING")).toBe(true);
+      expect(result.diaries.some((d) => d.workType === "HARVESTING")).toBe(
+        true
+      );
+    });
+
+    it("should search by date range", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        dateFrom: "2025-06-05",
+        dateTo: "2025-06-10",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(
+        result.diaries.every(
+          (d) => d.date >= "2025-06-05" && d.date <= "2025-06-10"
+        )
+      ).toBe(true);
+    });
+
+    it("should search by thing IDs", async () => {
+      const anotherThingId = "another-thing-id";
+
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        thingIds: [anotherThingId],
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.diaries.some((d) => d.title === "水やり作業")).toBe(true);
+      expect(result.diaries.some((d) => d.title === "収穫作業")).toBe(true);
+    });
+
+    it("should search by weather", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        weather: ["晴れ"],
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.diaries.every((d) => d.weather === "晴れ")).toBe(true);
+    });
+
+    it("should combine multiple search criteria", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        search: "トマト",
+        workTypes: ["PLANTING"],
+        weather: ["晴れ"],
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.diaries[0]!.title).toBe("トマト植え付け");
+    });
+
+    it("should handle pagination correctly", async () => {
+      const page1 = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 2,
+        offset: 0,
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(page1.diaries).toHaveLength(2);
+      expect(page1.total).toBe(4);
+      expect(page1.hasNext).toBe(true);
+
+      const page2 = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 2,
+        offset: 2,
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(page2.diaries).toHaveLength(2);
+      expect(page2.total).toBe(4);
+      expect(page2.hasNext).toBe(false);
+
+      // ページ間で重複がないことを確認
+      const page1Ids = page1.diaries.map((d) => d.id);
+      const page2Ids = page2.diaries.map((d) => d.id);
+      expect(page1Ids.some((id) => page2Ids.includes(id))).toBe(false);
+    });
+
+    it("should order results by date desc", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(4);
+
+      // 日付の降順で並んでいることを確認
+      for (let i = 0; i < result.diaries.length - 1; i++) {
+        expect(result.diaries[i]!.date >= result.diaries[i + 1]!.date).toBe(
+          true
+        );
+      }
+    });
+
+    it("should include thing relationships", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        search: "水やり",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(1);
+      expect(result.diaries[0]!.diaryThings).toBeDefined();
+      expect(result.diaries[0]!.diaryThings).toHaveLength(2);
+
+      const thingNames = result.diaries[0]!.diaryThings!.map(
+        (dt) => dt.thing.name
+      );
+      expect(thingNames).toContain("Test Field");
+      expect(thingNames).toContain("Another Field");
+    });
+
+    it("should return empty results for no matches", async () => {
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        search: "存在しないキーワード",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(0);
+      expect(result.total).toBe(0);
+      expect(result.hasNext).toBe(false);
+    });
+
+    it("should only return results for the specified organization", async () => {
+      // 別の組織を作成
+      const otherOrgId = "other-org-id";
+      await db.insert(organizationsTable).values({
+        id: otherOrgId,
+        name: "Other Organization",
+      });
+
+      // 別の組織で日誌を作成
+      await createDiary(db, testUserId, {
+        organizationId: otherOrgId,
+        date: "2025-06-01",
+        title: "他組織のトマト作業",
+        content: "他組織でのトマト植え付け",
+        workType: "PLANTING",
+        thingIds: [],
+      });
+
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        search: "トマト",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(2);
+      expect(
+        result.diaries.every((d) => d.organizationId === testOrganizationId)
+      ).toBe(true);
+      expect(result.diaries.some((d) => d.title === "他組織のトマト作業")).toBe(
+        false
+      );
+    });
+
+    it("should handle edge cases for date ranges", async () => {
+      // 存在しない日付範囲で検索
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        dateFrom: "2025-07-01",
+        dateTo: "2025-07-31",
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+
+    it("should handle multiple thing IDs correctly", async () => {
+      const anotherThingId = "another-thing-id";
+
+      const result = await searchDiaries(db, {
+        organizationId: testOrganizationId,
+        limit: 10,
+        offset: 0,
+        thingIds: [testThingId, anotherThingId],
+        sortBy: "date",
+        sortOrder: "desc",
+      });
+
+      expect(result.diaries).toHaveLength(3);
+      expect(result.total).toBe(3);
+      // 除草作業（thingIds: []）は含まれないはず
+      expect(result.diaries.some((d) => d.title === "除草作業")).toBe(false);
     });
   });
 });

@@ -4,12 +4,16 @@ import { protectedProcedure } from "../trpc";
 import {
   createDiary,
   getDiary,
-  listDiaries,
   updateDiary,
   deleteDiary,
+  getDiariesByDate,
+  getDiariesByMonth,
+  searchDiaries,
   CreateDiaryInputSchema,
   UpdateDiaryInputSchema,
-  ListDiariesInputSchema,
+  GetDiariesByDateInputSchema,
+  GetDiariesByMonthInputSchema,
+  SearchDiariesInputSchema,
   DiaryParamsSchema,
 } from "@repo/core";
 import {
@@ -20,44 +24,6 @@ import {
 import { guardOrganizationMembership } from "../guard/organization";
 
 export const diaryRouter = {
-  // 日誌一覧取得（認証が必要）
-  list: protectedProcedure
-    .input(ListDiariesInputSchema)
-    .query(async ({ ctx, input }) => {
-      // 組織メンバーシップをチェック
-      await guardOrganizationMembership(
-        ctx.db,
-        ctx.session.user.id,
-        input.organizationId
-      );
-
-      try {
-        return await listDiaries(ctx.db, input);
-      } catch (error) {
-        console.error("Diary list error:", error);
-
-        // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof UnauthorizedError) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: error.message,
-          });
-        }
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "日誌一覧の取得に失敗しました",
-        });
-      }
-    }),
-
   // 日誌詳細取得（認証が必要）
   detail: protectedProcedure
     .input(DiaryParamsSchema)
@@ -236,6 +202,117 @@ export const diaryRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "日誌の削除中にエラーが発生しました",
+        });
+      }
+    }),
+
+  // 指定日の日誌フルデータ取得
+  byDate: protectedProcedure
+    .input(GetDiariesByDateInputSchema)
+    .query(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId
+      );
+
+      try {
+        return await getDiariesByDate(ctx.db, input);
+      } catch (error) {
+        console.error("Diaries by date error:", error);
+
+        if (error instanceof UnauthorizedError) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: error.message,
+          });
+        }
+
+        if (error instanceof ValidationError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "指定日の日誌取得に失敗しました",
+        });
+      }
+    }),
+
+  // 指定月の日誌サマリーデータ取得
+  byMonth: protectedProcedure
+    .input(GetDiariesByMonthInputSchema)
+    .query(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId
+      );
+
+      try {
+        return await getDiariesByMonth(ctx.db, input);
+      } catch (error) {
+        console.error("Diaries by month error:", error);
+
+        if (error instanceof UnauthorizedError) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: error.message,
+          });
+        }
+
+        if (error instanceof ValidationError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "指定月の日誌取得に失敗しました",
+        });
+      }
+    }),
+
+  // 高機能検索エンドポイント
+  search: protectedProcedure
+    .input(SearchDiariesInputSchema)
+    .query(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId
+      );
+
+      try {
+        return await searchDiaries(ctx.db, input);
+      } catch (error) {
+        console.error("Diary search error:", error);
+
+        if (error instanceof UnauthorizedError) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: error.message,
+          });
+        }
+
+        if (error instanceof ValidationError) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "日誌検索に失敗しました",
         });
       }
     }),

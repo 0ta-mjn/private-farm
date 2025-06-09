@@ -51,10 +51,21 @@ export function DiaryDrawerContainer() {
   // 作成 mutation
   const createDiaryMutation = useMutation(
     trpc.diary.create.mutationOptions({
-      onSuccess: () => {
+      onSuccess: ({ date }, { organizationId }) => {
         // 日誌一覧のキャッシュを無効化
+        const dateObj = new Date(date);
         queryClient.invalidateQueries({
-          queryKey: trpc.diary.list.queryKey(),
+          queryKey: trpc.diary.byDate.queryKey({
+            organizationId,
+            date: format(dateObj, "yyyy-MM-dd"),
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.diary.byMonth.queryKey({
+            organizationId,
+            year: dateObj.getFullYear(),
+            month: dateObj.getMonth() + 1,
+          }),
         });
         actions.closeAll();
       },
@@ -68,13 +79,24 @@ export function DiaryDrawerContainer() {
   // 更新 mutation
   const updateDiaryMutation = useMutation(
     trpc.diary.update.mutationOptions({
-      onSuccess: () => {
+      onSuccess: ({ date: d }, { diaryId, organizationId }) => {
+        const date = new Date(d);
         // 日誌一覧と詳細のキャッシュを無効化
         queryClient.invalidateQueries({
-          queryKey: trpc.diary.list.queryKey(),
+          queryKey: trpc.diary.byDate.queryKey({
+            organizationId,
+            date: format(date, "yyyy-MM-dd"),
+          }),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.diary.detail.queryKey({ diaryId: diaryId || "" }),
+          queryKey: trpc.diary.byMonth.queryKey({
+            organizationId,
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: trpc.diary.detail.queryKey({ diaryId: diaryId }),
         });
         actions.closeAll();
       },

@@ -41,13 +41,27 @@ export const UpdateDiaryInputSchema = z.object({
   thingIds: z.array(z.string()).optional(),
 });
 
-export const ListDiariesInputSchema = z.object({
+// 新しい3つのエンドポイント用のスキーマ
+export const GetDiariesByDateInputSchema = z.object({
+  organizationId: z.string().min(1, "組織IDは必須です"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
+});
+
+export const GetDiariesByMonthInputSchema = z.object({
+  organizationId: z.string().min(1, "組織IDは必須です"),
+  year: z.number().int().min(1900).max(3000),
+  month: z.number().int().min(1).max(12),
+});
+
+export const SearchDiariesInputSchema = z.object({
   organizationId: z.string().min(1, "組織IDは必須です"),
   limit: z.number().int().min(1).max(100).optional().default(20),
   offset: z.number().int().min(0).optional().default(0),
   search: z.string().optional(),
-  workType: z.string().optional(),
-  thingId: z.string().optional(),
+  workTypes: z.array(z.string()).optional(),
+  thingIds: z.array(z.string()).optional(),
   dateFrom: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -56,7 +70,9 @@ export const ListDiariesInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
-  includeThings: z.boolean().optional(),
+  weather: z.array(z.string()).optional(),
+  sortBy: z.enum(["date", "created_at", "updated_at"]).default("date"),
+  sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
 export const DiaryParamsSchema = z.object({
@@ -67,7 +83,11 @@ export const DiaryParamsSchema = z.object({
 // 型定義（Zodスキーマから推論）
 export type CreateDiaryInput = z.infer<typeof CreateDiaryInputSchema>;
 export type UpdateDiaryInput = z.infer<typeof UpdateDiaryInputSchema>;
-export type ListDiariesInput = z.infer<typeof ListDiariesInputSchema>;
+export type GetDiariesByDateInput = z.infer<typeof GetDiariesByDateInputSchema>;
+export type GetDiariesByMonthInput = z.infer<
+  typeof GetDiariesByMonthInputSchema
+>;
+export type SearchDiariesInput = z.infer<typeof SearchDiariesInputSchema>;
 export type DiaryParams = z.infer<typeof DiaryParamsSchema>;
 
 /**
@@ -248,175 +268,6 @@ type DiaryWithOptionalThings = {
 };
 
 /**
- * 日誌の一覧を取得します
- *
- * @param db - データベース接続
- * @param input - 検索・フィルタリング条件
- * @returns 日誌一覧と総数
- */
-export async function listDiaries(
-  db: Database,
-  input: ListDiariesInput
-): Promise<{
-  diaries: DiaryWithOptionalThings[];
-  total: number;
-  hasNext: boolean;
-}> {
-  // デフォルト値の設定
-  const limit = input.limit ?? 20;
-  const offset = input.offset ?? 0;
-  const includeThings = input.includeThings ?? false;
-
-  // 基本的なクエリ条件
-  let whereConditions = [eq(diariesTable.organizationId, input.organizationId)];
-
-  // thingIdフィルタがある場合は、そのほ場に関連する日誌IDsを先に取得
-  let filteredDiaryIds: string[] | null = null;
-  if (input.thingId) {
-    // まず、指定されたthingIdが組織に属することを確認
-    const thingResult = await db
-      .select({ id: thingsTable.id })
-      .from(thingsTable)
-      .where(
-        and(
-          eq(thingsTable.id, input.thingId),
-          eq(thingsTable.organizationId, input.organizationId)
-        )
-      );
-
-    if (thingResult.length === 0) {
-      // 指定されたthingIdが組織に属していない場合は空の結果を返す
-      return {
-        diaries: [],
-        total: 0,
-        hasNext: false,
-      };
-    }
-
-    const diaryThingsResult = await db
-      .select({ diaryId: diaryThingsTable.diaryId })
-      .from(diaryThingsTable)
-      .where(eq(diaryThingsTable.thingId, input.thingId));
-
-    filteredDiaryIds = diaryThingsResult.map((row) => row.diaryId);
-
-    if (filteredDiaryIds.length === 0) {
-      // 該当する日誌がない場合は空の結果を返す
-      return {
-        diaries: [],
-        total: 0,
-        hasNext: false,
-      };
-    }
-
-    whereConditions.push(inArray(diariesTable.id, filteredDiaryIds));
-  }
-
-  // 検索条件の追加
-  if (input.search) {
-    // 単純な実装として、contentにlike検索を適用
-    // 本格的には全文検索エンジンを使用する
-    whereConditions.push(
-      sql`${diariesTable.content} ILIKE ${`%${input.search}%`}`
-    );
-  }
-
-  if (input.workType) {
-    whereConditions.push(eq(diariesTable.workType, input.workType));
-  }
-
-  if (input.dateFrom) {
-    whereConditions.push(gte(diariesTable.date, input.dateFrom));
-  }
-
-  if (input.dateTo) {
-    whereConditions.push(lte(diariesTable.date, input.dateTo));
-  }
-
-  // 総数の取得
-  const totalResult = await db
-    .select({ count: sql<number>`count(*)`.mapWith(Number) })
-    .from(diariesTable)
-    .where(and(...whereConditions));
-
-  const total = totalResult[0]?.count || 0;
-
-  // 日誌一覧の取得
-  const diariesResult = await db
-    .select({
-      id: diariesTable.id,
-      date: diariesTable.date,
-      title: diariesTable.title,
-      content: diariesTable.content,
-      workType: diariesTable.workType,
-      weather: diariesTable.weather,
-      temperature: diariesTable.temperature,
-      userId: diariesTable.userId,
-      organizationId: diariesTable.organizationId,
-      createdAt: diariesTable.createdAt,
-      updatedAt: diariesTable.updatedAt,
-      userName: usersTable.name,
-    })
-    .from(diariesTable)
-    .leftJoin(usersTable, eq(diariesTable.userId, usersTable.id))
-    .where(and(...whereConditions))
-    .orderBy(desc(diariesTable.date), desc(diariesTable.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  const hasNext = offset + limit < total;
-
-  // includeThingsがtrueの場合、ほ場情報も含める
-  if (includeThings === true) {
-    const diariesWithThings = await Promise.all(
-      diariesResult.map(async (diary) => {
-        const diaryThingsResult = await db
-          .select({
-            thingId: diaryThingsTable.thingId,
-            thingName: thingsTable.name,
-            thingType: thingsTable.type,
-            thingDescription: thingsTable.description,
-            thingLocation: thingsTable.location,
-            thingArea: thingsTable.area,
-          })
-          .from(diaryThingsTable)
-          .innerJoin(thingsTable, eq(diaryThingsTable.thingId, thingsTable.id))
-          .where(eq(diaryThingsTable.diaryId, diary.id));
-
-        const diaryThings = diaryThingsResult.map((row) => ({
-          thingId: row.thingId,
-          thing: {
-            id: row.thingId,
-            name: row.thingName,
-            type: row.thingType,
-            description: row.thingDescription,
-            location: row.thingLocation,
-            area: row.thingArea,
-          },
-        }));
-
-        return {
-          ...diary,
-          diaryThings,
-        };
-      })
-    );
-
-    return {
-      diaries: diariesWithThings,
-      total,
-      hasNext,
-    };
-  }
-
-  return {
-    diaries: diariesResult,
-    total,
-    hasNext,
-  };
-}
-
-/**
  * 日誌を更新します
  *
  * @param db - データベース接続
@@ -524,4 +375,350 @@ export async function deleteDiary(
     .returning();
 
   return deleteResult.length > 0;
+}
+
+/**
+ * 指定した日付の日誌の全データを取得します
+ *
+ * @param db - データベース接続
+ * @param input - 組織ID と日付
+ * @returns 指定日の全日誌のフルデータ
+ */
+export async function getDiariesByDate(
+  db: Database,
+  input: GetDiariesByDateInput
+): Promise<DiaryWithOptionalThings[]> {
+  // 指定日の日誌を取得（全フィールド含む）
+  const diariesResult = await db
+    .select({
+      id: diariesTable.id,
+      date: diariesTable.date,
+      title: diariesTable.title,
+      content: diariesTable.content,
+      workType: diariesTable.workType,
+      weather: diariesTable.weather,
+      temperature: diariesTable.temperature,
+      userId: diariesTable.userId,
+      organizationId: diariesTable.organizationId,
+      createdAt: diariesTable.createdAt,
+      updatedAt: diariesTable.updatedAt,
+      userName: usersTable.name,
+    })
+    .from(diariesTable)
+    .leftJoin(usersTable, eq(diariesTable.userId, usersTable.id))
+    .where(
+      and(
+        eq(diariesTable.organizationId, input.organizationId),
+        eq(diariesTable.date, input.date)
+      )
+    )
+    .orderBy(desc(diariesTable.createdAt));
+
+  // 各日誌に対してほ場情報を取得
+  const diariesWithThings = await Promise.all(
+    diariesResult.map(async (diary) => {
+      const diaryThingsResult = await db
+        .select({
+          thingId: diaryThingsTable.thingId,
+          thingName: thingsTable.name,
+          thingType: thingsTable.type,
+          thingDescription: thingsTable.description,
+          thingLocation: thingsTable.location,
+          thingArea: thingsTable.area,
+        })
+        .from(diaryThingsTable)
+        .innerJoin(thingsTable, eq(diaryThingsTable.thingId, thingsTable.id))
+        .where(eq(diaryThingsTable.diaryId, diary.id));
+
+      const diaryThings = diaryThingsResult.map((row) => ({
+        thingId: row.thingId,
+        thing: {
+          id: row.thingId,
+          name: row.thingName,
+          type: row.thingType,
+          description: row.thingDescription,
+          location: row.thingLocation,
+          area: row.thingArea,
+        },
+      }));
+
+      return {
+        ...diary,
+        diaryThings,
+      };
+    })
+  );
+
+  return diariesWithThings;
+}
+
+/**
+ * 指定した月の日誌のサマリーデータを取得します（日付、ほ場、天気、作業種別のみ）
+ *
+ * @param db - データベース接続
+ * @param input - 組織ID、年、月
+ * @returns 指定月の日誌サマリーデータ
+ */
+export async function getDiariesByMonth(
+  db: Database,
+  input: GetDiariesByMonthInput
+): Promise<
+  Array<{
+    id: string;
+    date: string;
+    weather: string | null;
+    workType: string | null;
+    fields: Array<{
+      id: string;
+      name: string;
+    }>;
+  }>
+> {
+  const { year, month } = input;
+
+  // 月の範囲を計算
+  const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
+  const endDate = new Date(year, month, 0).toISOString().split("T")[0]!; // 月末日
+
+  // 指定月の日誌を取得（サマリー情報のみ）
+  const diariesResult = await db
+    .select({
+      id: diariesTable.id,
+      date: diariesTable.date,
+      weather: diariesTable.weather,
+      workType: diariesTable.workType,
+    })
+    .from(diariesTable)
+    .where(
+      and(
+        eq(diariesTable.organizationId, input.organizationId),
+        gte(diariesTable.date, startDate),
+        lte(diariesTable.date, endDate)
+      )
+    )
+    .orderBy(desc(diariesTable.date));
+
+  // 各日誌に対してほ場の基本情報のみ取得
+  const diariesWithFields = await Promise.all(
+    diariesResult.map(async (diary) => {
+      const fieldsResult = await db
+        .select({
+          id: thingsTable.id,
+          name: thingsTable.name,
+        })
+        .from(diaryThingsTable)
+        .innerJoin(thingsTable, eq(diaryThingsTable.thingId, thingsTable.id))
+        .where(eq(diaryThingsTable.diaryId, diary.id));
+
+      return {
+        id: diary.id,
+        date: diary.date,
+        weather: diary.weather,
+        workType: diary.workType,
+        fields: fieldsResult,
+      };
+    })
+  );
+
+  return diariesWithFields;
+}
+
+/**
+ * 検索・フィルタリング機能付きの日誌一覧を取得します
+ *
+ * @param db - データベース接続
+ * @param input - 検索・フィルタリング条件
+ * @returns 日誌一覧、総数、ページング情報
+ */
+export async function searchDiaries(
+  db: Database,
+  input: SearchDiariesInput
+): Promise<{
+  diaries: DiaryWithOptionalThings[];
+  total: number;
+  hasNext: boolean;
+}> {
+  const {
+    organizationId,
+    limit,
+    offset,
+    search,
+    workTypes,
+    thingIds,
+    dateFrom,
+    dateTo,
+    weather,
+    sortBy,
+    sortOrder,
+  } = input;
+
+  // WHERE条件の構築
+  const whereConditions = [eq(diariesTable.organizationId, organizationId)];
+
+  // 検索条件
+  if (search) {
+    whereConditions.push(sql`${diariesTable.content} ILIKE ${`%${search}%`}`);
+  }
+
+  // 作業種別フィルタ（複数選択対応）
+  if (workTypes && workTypes.length > 0) {
+    whereConditions.push(inArray(diariesTable.workType, workTypes));
+  }
+
+  // 天候フィルタ（複数選択対応）
+  if (weather && weather.length > 0) {
+    whereConditions.push(inArray(diariesTable.weather, weather));
+  }
+
+  // 日付範囲フィルタ
+  if (dateFrom) {
+    whereConditions.push(gte(diariesTable.date, dateFrom));
+  }
+  if (dateTo) {
+    whereConditions.push(lte(diariesTable.date, dateTo));
+  }
+
+  // ほ場フィルタ（複数選択対応）
+  let filteredDiaryIds: string[] = [];
+  if (thingIds && thingIds.length > 0) {
+    // 指定されたほ場IDが組織に属しているかチェック
+    const thingResult = await db
+      .select({ id: thingsTable.id })
+      .from(thingsTable)
+      .where(
+        and(
+          inArray(thingsTable.id, thingIds),
+          eq(thingsTable.organizationId, organizationId)
+        )
+      );
+
+    if (thingResult.length === 0) {
+      // 指定されたほ場IDが組織に属していない場合は空の結果を返す
+      return {
+        diaries: [],
+        total: 0,
+        hasNext: false,
+      };
+    }
+
+    // 指定されたほ場IDに関連する日誌IDを取得
+    const diaryThingsResult = await db
+      .select({ diaryId: diaryThingsTable.diaryId })
+      .from(diaryThingsTable)
+      .where(inArray(diaryThingsTable.thingId, thingIds));
+
+    filteredDiaryIds = [
+      ...new Set(diaryThingsResult.map((row) => row.diaryId)),
+    ];
+
+    if (filteredDiaryIds.length === 0) {
+      return {
+        diaries: [],
+        total: 0,
+        hasNext: false,
+      };
+    }
+
+    whereConditions.push(inArray(diariesTable.id, filteredDiaryIds));
+  }
+
+  // ソート順の構築
+  const orderConditions = [];
+  switch (sortBy) {
+    case "date":
+      orderConditions.push(
+        sortOrder === "asc" ? diariesTable.date : desc(diariesTable.date)
+      );
+      break;
+    case "created_at":
+      orderConditions.push(
+        sortOrder === "asc"
+          ? diariesTable.createdAt
+          : desc(diariesTable.createdAt)
+      );
+      break;
+    case "updated_at":
+      orderConditions.push(
+        sortOrder === "asc"
+          ? diariesTable.updatedAt
+          : desc(diariesTable.updatedAt)
+      );
+      break;
+  }
+  // 同じ値の場合の副次ソート
+  orderConditions.push(desc(diariesTable.createdAt));
+
+  // 総数を取得
+  const totalResult = await db
+    .select({ count: sql`count(*)` })
+    .from(diariesTable)
+    .where(and(...whereConditions));
+
+  const total = Number(totalResult[0]?.count) || 0;
+
+  // 日誌一覧を取得
+  const diariesResult = await db
+    .select({
+      id: diariesTable.id,
+      date: diariesTable.date,
+      title: diariesTable.title,
+      content: diariesTable.content,
+      workType: diariesTable.workType,
+      weather: diariesTable.weather,
+      temperature: diariesTable.temperature,
+      userId: diariesTable.userId,
+      organizationId: diariesTable.organizationId,
+      createdAt: diariesTable.createdAt,
+      updatedAt: diariesTable.updatedAt,
+      userName: usersTable.name,
+    })
+    .from(diariesTable)
+    .leftJoin(usersTable, eq(diariesTable.userId, usersTable.id))
+    .where(and(...whereConditions))
+    .orderBy(...orderConditions)
+    .limit(limit)
+    .offset(offset);
+
+  const hasNext = offset + limit < total;
+
+  // 各日誌にほ場情報を追加
+  const diariesWithThings = await Promise.all(
+    diariesResult.map(async (diary) => {
+      const diaryThingsResult = await db
+        .select({
+          thingId: diaryThingsTable.thingId,
+          thingName: thingsTable.name,
+          thingType: thingsTable.type,
+          thingDescription: thingsTable.description,
+          thingLocation: thingsTable.location,
+          thingArea: thingsTable.area,
+        })
+        .from(diaryThingsTable)
+        .innerJoin(thingsTable, eq(diaryThingsTable.thingId, thingsTable.id))
+        .where(eq(diaryThingsTable.diaryId, diary.id));
+
+      const diaryThings = diaryThingsResult.map((row) => ({
+        thingId: row.thingId,
+        thing: {
+          id: row.thingId,
+          name: row.thingName,
+          type: row.thingType,
+          description: row.thingDescription,
+          location: row.thingLocation,
+          area: row.thingArea,
+        },
+      }));
+
+      return {
+        ...diary,
+        diaryThings,
+      };
+    })
+  );
+
+  return {
+    diaries: diariesWithThings,
+    total,
+    hasNext,
+  };
 }
