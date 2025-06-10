@@ -147,6 +147,12 @@ export function AppSidebar() {
       title: "データ管理",
       items: [
         {
+          id: "things",
+          label: "区画・センサー管理",
+          icon: MapIcon,
+          href: "/things",
+        },
+        {
           id: "realtime",
           label: "リアルタイムデータ",
           icon: ChartIcon,
@@ -173,14 +179,6 @@ export function AppSidebar() {
           label: "組織設定",
           icon: BuildingIcon,
           href: "/organization/settings",
-          children: [
-            {
-              id: "things",
-              label: "区画・センサー管理",
-              icon: MapIcon,
-              href: "/organization/things",
-            },
-          ],
         },
         {
           id: "notifications",
