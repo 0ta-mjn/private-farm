@@ -5,15 +5,17 @@ import { Plus } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { useOrganization } from "@/contexts/organization-context";
 import { Button } from "@/shadcn/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
-import { getThingTypeDisplay } from "@/constants/agricultural-constants";
 import { useThingDrawerActions } from "@/contexts/thing-drawer-context";
+import { ThingAccordionItem } from "@/components/thing/thing-accordion";
+import { useState } from "react";
+import { DeleteThingDialog } from "@/components/thing/delete-thing-dialog";
 
-export default function FieldsPage() {
+export default function ThingsPage() {
   const trpc = useTRPC();
   const { currentOrganizationId } = useOrganization();
 
   const actions = useThingDrawerActions();
+  const [deletingThingId, setDeletingThingId] = useState<string | null>(null);
 
   // 区画一覧の取得
   const { data: fields, isLoading: isLoadingFields } = useQuery(
@@ -25,7 +27,7 @@ export default function FieldsPage() {
     )
   );
 
-  if (isLoadingFields) {
+  if (isLoadingFields || !currentOrganizationId) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-muted-foreground">読み込み中...</div>
@@ -50,11 +52,17 @@ export default function FieldsPage() {
 
       {/* 区画一覧 */}
       {fields && fields.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        // TODO センサー設定が追加されたらアコーディオンで実装
+        <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 w-full gap-2">
           {fields.map((field) => (
-            <FieldCard key={field.id} field={field} />
+            <ThingAccordionItem
+              key={field.id}
+              field={field}
+              onEdit={() => actions.openEdit(field.id)}
+              onDelete={(id) => setDeletingThingId(id)}
+            />
           ))}
-        </div>
+        </ul>
       ) : (
         <div className="flex flex-col items-center justify-center h-64 space-y-4">
           <div className="text-muted-foreground text-center">
@@ -69,60 +77,13 @@ export default function FieldsPage() {
           </Button>
         </div>
       )}
+
+      {/* 削除確認ダイアログ */}
+      <DeleteThingDialog
+        thingId={deletingThingId}
+        organizationId={currentOrganizationId}
+        onClose={() => setDeletingThingId(null)}
+      />
     </div>
-  );
-}
-
-// 区画カードコンポーネント
-interface FieldCardProps {
-  field: {
-    id: string;
-    name: string;
-    type: string;
-    description: string | null;
-    location: string | null;
-    area: number | null;
-  };
-}
-
-function FieldCard({ field }: FieldCardProps) {
-  const { openEdit } = useThingDrawerActions();
-  return (
-    <Card
-      className="hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => openEdit(field.id)}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{field.name}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {field.location || field.area ? (
-          <div className="flex items-center gap-2">
-            <span className="flex-1 rounded-full text-xs font-medium">
-              {getThingTypeDisplay(field.type)?.label}
-            </span>
-
-            {field.location && (
-              <div className="text-sm text-muted-foreground">
-                📍 {field.location}
-              </div>
-            )}
-            {field.area && (
-              <div className="text-sm text-muted-foreground">
-                📏 {field.area}㎡
-              </div>
-            )}
-          </div>
-        ) : null}
-
-        {field.description && (
-          <div className="text-sm text-muted-foreground">
-            {field.description}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }
