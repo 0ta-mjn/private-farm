@@ -23,12 +23,20 @@ export const CreateThingInputSchema = z.object({
   description: z
     .string()
     .max(1000, "説明は1000文字以内で入力してください")
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
     .optional(),
   location: z
     .string()
     .max(255, "場所は255文字以内で入力してください")
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
     .optional(),
-  area: z.number().positive("面積は正の数で入力してください").optional(),
+  area: z
+    .number()
+    .positive("面積は正の数で入力してください")
+    .nullable()
+    .optional(),
 });
 
 export const UpdateThingInputSchema = z.object({
@@ -45,12 +53,20 @@ export const UpdateThingInputSchema = z.object({
   description: z
     .string()
     .max(1000, "説明は1000文字以内で入力してください")
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
     .optional(),
   location: z
     .string()
     .max(255, "場所は255文字以内で入力してください")
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
     .optional(),
-  area: z.number().positive("面積は正の数で入力してください").optional(),
+  area: z
+    .number()
+    .positive("面積は正の数で入力してください")
+    .nullable()
+    .optional(),
 });
 
 export const ThingParamsSchema = z.object({

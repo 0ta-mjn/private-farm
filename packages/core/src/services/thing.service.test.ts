@@ -133,6 +133,30 @@ describe("Thing Service", () => {
       expect(result.area).toBeNull();
       expect(result.organizationId).toBe(testOrganizationId);
     });
+
+    it("オプショナルフィールドに明示的にnullを設定してほ場を作成できる", async () => {
+      // Arrange
+      const input: CreateThingInput = {
+        organizationId: testOrganizationId,
+        name: "テスト圃場",
+        type: "field",
+        description: null,
+        location: null,
+        area: null,
+      };
+
+      // Act
+      const result = await createThing(db, input);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.name).toBe("テスト圃場");
+      expect(result.type).toBe("field");
+      expect(result.description).toBeNull();
+      expect(result.location).toBeNull();
+      expect(result.area).toBeNull();
+      expect(result.organizationId).toBe(testOrganizationId);
+    });
   });
 
   describe("getThingsByOrganization", () => {
@@ -282,6 +306,29 @@ describe("Thing Service", () => {
       // Assert
       expect(result.name).toBe("部分更新圃場");
       expect(result.description).toBe("更新前の説明"); // 変更されていない
+      expect(result.type).toBe("field"); // 変更されていない
+    });
+
+    it("フィールドをnullにリセットできる", async () => {
+      // Arrange
+      const input: UpdateThingInput = {
+        description: null,
+        location: null,
+        area: null,
+      };
+
+      // Act
+      const result = await updateThing(db, {
+        thingId: testThingId,
+        organizationId: testOrganizationId,
+        ...input,
+      });
+
+      // Assert
+      expect(result.name).toBe("更新前圃場"); // 変更されていない
+      expect(result.description).toBeNull(); // nullにリセット
+      expect(result.location).toBeNull(); // nullにリセット
+      expect(result.area).toBeNull(); // nullにリセット
       expect(result.type).toBe("field"); // 変更されていない
     });
 
