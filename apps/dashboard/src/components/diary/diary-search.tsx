@@ -17,12 +17,10 @@ import {
 import { Badge } from "@/shadcn/badge";
 import { Skeleton } from "@/shadcn/skeleton";
 import { CalendarIcon, MapPinIcon } from "lucide-react";
-import {
-  getWeatherDisplay,
-  getWorkTypeDisplay,
-} from "@/constants/agricultural-constants";
+import { getWeatherDisplay } from "@/constants/agricultural-constants";
 import { cn } from "@/lib/utils";
 import { RouterOutputs } from "@repo/api";
+import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
 
 interface DiarySearchProps {
   onDiarySelect?: (
@@ -101,7 +99,6 @@ function DiarySearchList({
         <CommandGroup heading="検索結果">
           {diaries.map((diary) => {
             const weatherDisplay = getWeatherDisplay(diary.weather);
-            const workTypeDisplay = getWorkTypeDisplay(diary.workType);
 
             return (
               <CommandItem
@@ -127,11 +124,9 @@ function DiarySearchList({
                           {diary.temperature && ` ${diary.temperature}°C`}
                         </Badge>
                       )}
-                      {workTypeDisplay && (
-                        <Badge variant="outline" className="text-xs h-5">
-                          {workTypeDisplay.label}
-                        </Badge>
-                      )}
+
+                      <DiaryWorkTypeChip workType={diary.workType} />
+
                       {diary.diaryThings && diary.diaryThings.length > 0 && (
                         <Badge variant="outline" className="text-xs h-5">
                           <MapPinIcon className="h-2.5 w-2.5 mr-1" />

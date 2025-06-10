@@ -109,7 +109,9 @@ describe("DiaryFormDrawer", () => {
     test("区画オプションが空の場合の処理", () => {
       render(<DiaryFormDrawer {...defaultProps} fieldOptions={[]} />);
 
-      expect(screen.getByTestId("field-options-container")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("field-options-container")
+      ).not.toBeInTheDocument();
       expect(
         screen.queryByTestId("selected-fields-badges")
       ).not.toBeInTheDocument();
@@ -882,7 +884,9 @@ describe("DiaryFormDrawer", () => {
       expect(
         screen.queryByTestId("field-option-field-3")
       ).not.toBeInTheDocument();
-      expect(screen.getByTestId("field-options-container")).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("field-options-container")
+      ).not.toBeInTheDocument();
     });
 
     test("コールバック関数の変更", async () => {

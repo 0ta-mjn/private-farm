@@ -29,10 +29,8 @@ import {
   EditIcon,
   TrashIcon,
 } from "lucide-react";
-import {
-  getWeatherDisplay,
-  getWorkTypeDisplay,
-} from "@/constants/agricultural-constants";
+import { getWeatherDisplay } from "@/constants/agricultural-constants";
+import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
 
 interface DiaryDateDetailProps {
   selectedDate: Date | null;
@@ -196,7 +194,6 @@ export function DiaryDateDetailContent({
         <div className="space-y-3">
           {diaries.map((diary) => {
             const isCurrentUser = currentUserId === diary.userId;
-            const workTypeDisplay = getWorkTypeDisplay(diary.workType);
             const weatherDisplay = getWeatherDisplay(diary.weather);
             return (
               <div key={diary.id} className="p-4 border rounded-lg">
@@ -204,9 +201,8 @@ export function DiaryDateDetailContent({
                   {/* ヘッダー: 作業種別、タイトルと操作メニュー */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {workTypeDisplay?.label || "未設定"}
-                      </Badge>
+                      <DiaryWorkTypeChip workType={diary.workType} />
+
                       {diary.title && (
                         <span className="text-sm font-medium text-foreground">
                           {diary.title}

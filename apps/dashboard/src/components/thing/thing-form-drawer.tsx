@@ -185,6 +185,10 @@ export function ThingFormDrawer({
                       value={type.value}
                       data-testid={`type-option-${type.value}`}
                     >
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ background: type.color }}
+                      ></span>
                       {type.label}
                     </SelectItem>
                   ))}

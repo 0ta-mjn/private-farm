@@ -7,9 +7,6 @@ import {
   thingTypeOptions,
 } from "@repo/config";
 
-/**
- * 天候の選択肢（キー: 内部値、値: 表示名）
- */
 export const WEATHER_OPTIONS: Record<
   WeatherKey,
   { label: string; icon: string }
@@ -22,39 +19,33 @@ export const WEATHER_OPTIONS: Record<
   CLOUDY_THEN_RAINY: { label: "曇りのち雨", icon: "🌦️" },
 };
 
-/**
- * 作業種別の選択肢（キー: 内部値、値: 表示名）
- */
 export const WORK_TYPE_OPTIONS: Record<
   WorkTypeKey,
   { label: string; color: string }
 > = {
-  SEEDING: { label: "播種", color: "green" },
-  PLANTING: { label: "植付け", color: "blue" },
-  WATERING: { label: "水やり", color: "cyan" },
-  WEEDING: { label: "除草", color: "yellow" },
-  FERTILIZING: { label: "施肥", color: "orange" },
-  SPRAYING: { label: "散布", color: "purple" },
-  HARVESTING: { label: "収穫", color: "red" },
-  PRUNING: { label: "剪定", color: "pink" },
-  OTHER: { label: "その他", color: "gray" },
+  SEEDING: { label: "播種", color: "#047857" }, // emerald-700
+  PLANTING: { label: "植付け", color: "#0369A1" }, // sky-700
+  WATERING: { label: "水やり", color: "#0891B2" }, // cyan-600
+  WEEDING: { label: "除草", color: "#65A30D" }, // lime-600
+  FERTILIZING: { label: "施肥", color: "#CA8A04" }, // amber-600
+  SPRAYING: { label: "散布", color: "#6D28D9" }, // purple-700
+  HARVESTING: { label: "収穫", color: "#B91C1C" }, // red-700
+  PRUNING: { label: "剪定", color: "#DB2777" }, // pink-600
+  OTHER: { label: "その他", color: "#4B5563" }, // slate-600
 };
 
-/**
- * 区画の種類の選択肢（キー: 内部値、値: 表示名）
- */
 export const THING_TYPE_OPTIONS: Record<
   ThingTypeKey,
   { label: string; color: string }
 > = {
-  PADDY: { label: "水田", color: "cyan" },
-  FIELD: { label: "畑（露地）", color: "green" },
-  HOUSE: { label: "温室・ハウス", color: "blue" },
-  ORCHARD: { label: "果樹園", color: "orange" },
-  OTHER: { label: "その他", color: "gray" },
+  PADDY: { label: "水田", color: "#0891B2" }, // cyan-600
+  FIELD: { label: "畑（露地）", color: "#047857" }, // emerald-700
+  HOUSE: { label: "温室・ハウス", color: "#0369A1" }, // sky-700
+  ORCHARD: { label: "果樹園", color: "#CA8A04" }, // amber-600
+  OTHER: { label: "その他", color: "#4B5563" }, // slate-600
 };
 
-// 表示用の配列（UIコンポーネントで使用）
+// ...existing code...
 export const WEATHER_DISPLAY_OPTIONS = Object.entries(WEATHER_OPTIONS).map(
   ([key, label]) => ({ ...label, value: key })
 );

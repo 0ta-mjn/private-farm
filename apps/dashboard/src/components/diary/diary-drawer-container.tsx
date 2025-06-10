@@ -91,22 +91,25 @@ export function DiaryDrawerContainer() {
   // 更新 mutation
   const updateDiaryMutation = useMutation(
     trpc.diary.update.mutationOptions({
-      onSuccess: ({ date: d }, { diaryId, organizationId }) => {
-        const date = new Date(d);
+      onSuccess: (_, { diaryId, organizationId }) => {
         // 日誌一覧と詳細のキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byDate.queryKey({
-            organizationId,
-            date: format(date, "yyyy-MM-dd"),
-          }),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byMonth.queryKey({
-            organizationId,
-            year: date.getFullYear(),
-            month: date.getMonth() + 1,
-          }),
-        });
+        if (diaryData) {
+          const date = new Date(diaryData.date);
+          queryClient.invalidateQueries({
+            queryKey: trpc.diary.byDate.queryKey({
+              organizationId,
+              date: format(diaryData.date, "yyyy-MM-dd"),
+            }),
+          });
+          queryClient.invalidateQueries({
+            queryKey: trpc.diary.byMonth.queryKey({
+              organizationId,
+              year: date.getFullYear(),
+              month: date.getMonth() + 1,
+            }),
+          });
+        }
+
         queryClient.invalidateQueries({
           queryKey: trpc.diary.detail.queryKey({ diaryId: diaryId }),
         });

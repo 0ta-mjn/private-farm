@@ -12,12 +12,11 @@ import {
   getDay,
 } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Badge } from "@/shadcn/badge";
 import { Button } from "@/shadcn/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RouterOutputs } from "@repo/api";
-import { getWorkTypeDisplay } from "@/constants/agricultural-constants";
+import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
 
 // tRPCの型定義を利用 - 月の日誌サマリーの配列型
 type DiaryMonthSummaryData = Pick<
@@ -239,17 +238,12 @@ export function DiaryCalendarView({
                     {dayDiaries
                       .slice(0, MAX_VISIBLE_DIARIES_PER_DAY)
                       .map((diary, diaryIndex) => (
-                        <Badge
-                          key={diaryIndex}
-                          variant="secondary"
-                          className="text-xs w-full justify-center truncate"
-                          style={{ fontSize: "10px", padding: "1px 4px" }}
+                        <DiaryWorkTypeChip
+                          key={diary.id}
+                          workType={diary.workType}
                           data-testid={`diary-calendar-diary-badge-${dateKey}-${diaryIndex}`}
-                          data-work-type={diary.workType}
-                        >
-                          {getWorkTypeDisplay(diary.workType)?.label ||
-                            "未設定"}
-                        </Badge>
+                          className="w-full"
+                        />
                       ))}
                     {dayDiaries.length > MAX_VISIBLE_DIARIES_PER_DAY && (
                       <div

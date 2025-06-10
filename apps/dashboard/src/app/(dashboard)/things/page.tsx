@@ -18,7 +18,7 @@ export default function ThingsPage() {
   const [deletingThingId, setDeletingThingId] = useState<string | null>(null);
 
   // 区画一覧の取得
-  const { data: fields, isLoading: isLoadingFields } = useQuery(
+  const { data: things, isLoading: isLoadingFields } = useQuery(
     trpc.thing.list.queryOptions(
       { organizationId: currentOrganizationId || "" },
       {
@@ -51,14 +51,14 @@ export default function ThingsPage() {
       </div>
 
       {/* 区画一覧 */}
-      {fields && fields.length > 0 ? (
+      {things && things.length > 0 ? (
         // TODO センサー設定が追加されたらアコーディオンで実装
         <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 w-full gap-2">
-          {fields.map((field) => (
+          {things.map((thing) => (
             <ThingAccordionItem
-              key={field.id}
-              field={field}
-              onEdit={() => actions.openEdit(field.id)}
+              key={thing.id}
+              thing={thing}
+              onEdit={() => actions.openEdit(thing.id)}
               onDelete={(id) => setDeletingThingId(id)}
             />
           ))}

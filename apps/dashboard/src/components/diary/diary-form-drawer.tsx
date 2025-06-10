@@ -51,6 +51,7 @@ import {
   WORK_TYPE_DISPLAY_OPTIONS,
 } from "@/constants/agricultural-constants";
 import { useMediaQuery } from "@/hooks/use-mobile";
+import { ThingTypeChip } from "@/components/thing/thing-type-chip";
 
 // フォームスキーマ定義
 const DiaryFormSchema = z.object({
@@ -185,6 +186,11 @@ export function DiaryFormDrawer({
                       value={workType.value}
                       data-testid={`work-type-option-${workType.value}`}
                     >
+                      <span
+                        className="inline-block size-2 rounded-full"
+                        style={{ background: workType.color }}
+                      ></span>
+
                       {workType.label}
                     </SelectItem>
                   ))}
@@ -264,7 +270,6 @@ export function DiaryFormDrawer({
                     {selectedFields.map((field) => (
                       <Badge
                         key={field.id}
-                        variant="secondary"
                         data-testid={`field-badge-${field.id}`}
                       >
                         {field.name}
@@ -293,8 +298,9 @@ export function DiaryFormDrawer({
                         data-testid={`field-checkbox-${field.id}`}
                       />
                       <div className="grid gap-1.5 font-normal">
-                        <p className="text-sm leading-none font-medium">
-                          {field.name}
+                        <p className="flex items-center text-sm leading-none font-medium gap-1">
+                          <span>{field.name}</span>
+                          <ThingTypeChip thingType={field.type} />
                         </p>
                         <p className="text-muted-foreground text-sm">
                           {field.type === "field" ? "区画" : "温室"} •{" "}

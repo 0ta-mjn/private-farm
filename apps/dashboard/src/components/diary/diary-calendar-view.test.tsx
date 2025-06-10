@@ -99,7 +99,6 @@ describe("DiaryCalendarView", () => {
         "diary-calendar-diary-badge-2025-06-01-0"
       );
       expect(plantingBadge).toHaveAttribute("data-work-type", "PLANTING");
-      expect(plantingBadge).toHaveTextContent("植付け");
 
       // 日誌数が多い日の「+N件」表示確認
       const moreDiaries = screen.getByTestId(
