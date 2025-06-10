@@ -33,7 +33,6 @@ import {
   UserIcon,
   BuildingIcon,
   PlusIcon,
-  Cpu as SensorIcon,
   BarChart3 as ChartIcon,
   History as HistoryIcon,
   BellIcon,
@@ -148,14 +147,6 @@ export function AppSidebar() {
       title: "データ管理",
       items: [
         {
-          id: "sensors",
-          label: "センサー管理",
-          icon: SensorIcon,
-          disabled: true,
-          badge: "準備中",
-          onClick: handleComingSoon,
-        },
-        {
           id: "realtime",
           label: "リアルタイムデータ",
           icon: ChartIcon,
@@ -182,12 +173,14 @@ export function AppSidebar() {
           label: "組織設定",
           icon: BuildingIcon,
           href: "/organization/settings",
-        },
-        {
-          id: "fields",
-          label: "区画管理",
-          icon: MapIcon,
-          href: "/organization/fields",
+          children: [
+            {
+              id: "things",
+              label: "区画・センサー管理",
+              icon: MapIcon,
+              href: "/organization/things",
+            },
+          ],
         },
         {
           id: "notifications",
