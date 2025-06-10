@@ -18,10 +18,10 @@ import {
   parse,
   isValid,
 } from "date-fns";
-import { Card, CardContent } from "@/shadcn/card";
 import { DiaryDateDetail } from "@/components/diary/diary-date-detail";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
 import { useTRPC } from "@/trpc/client";
+import { useMediaQuery } from "@/hooks/use-mobile";
 
 function DiaryPageContent() {
   const actions = useDiaryDrawerActions();
@@ -156,6 +156,8 @@ function DiaryPageContent() {
     setDeletingDiaryId(diaryId);
   };
 
+  const isDrawer = useMediaQuery("(max-width: 1024px)");
+
   if (!userId) return null; // ユーザーが未ログインの場合は何も表示しない
 
   // 組織が選択されていない場合の表示
@@ -187,9 +189,9 @@ function DiaryPageContent() {
       </div>
 
       {/* メインコンテンツ - カレンダー表示 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-6">
         {/* カレンダー部分 */}
-        <div className="lg:col-span-2">
+        <div className="col-span-2">
           <DiaryCalendarView
             currentMonth={currentMonth}
             selectedDate={selectedDate}
@@ -200,28 +202,17 @@ function DiaryPageContent() {
         </div>
 
         {/* 選択した日付の日誌一覧 */}
-        {selectedDate ? (
+        <div>
           <DiaryDateDetail
             selectedDate={selectedDate}
             organizationId={currentOrganizationId}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onClose={() => setSelectedDate(null)}
             currentUserId={userId}
+            isDrawer={isDrawer}
           />
-        ) : (
-          <Card className="w-full">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="text-center text-muted-foreground">
-                <div className="text-lg font-medium mb-2">
-                  日付を選択してください
-                </div>
-                <div className="text-sm">
-                  カレンダーから日付をクリックすると、その日の日誌が表示されます
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        </div>
       </div>
 
       {/* 削除確認ダイアログ */}

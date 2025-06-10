@@ -9,6 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
 import { Badge } from "@/shadcn/badge";
 import { Button } from "@/shadcn/button";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/shadcn/drawer";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -28,32 +34,97 @@ import {
 } from "@/constants/agricultural-constants";
 
 interface DiaryDateDetailProps {
-  selectedDate: Date;
+  selectedDate: Date | null;
   organizationId: string;
   onDiaryClick?: (diaryId: string) => void;
   onEdit?: (diaryId: string) => void;
   onDelete?: (diaryId: string) => void;
+  onClose?: () => void;
   currentUserId?: string;
+  isDrawer?: boolean;
 }
 
-export function DiaryDateDetail({
+export function DiaryDateDetail(props: DiaryDateDetailProps) {
+  const dateTitle = (
+    <div className="text-lg font-semibold flex items-center gap-2">
+      <CalendarIcon className="h-5 w-5" />
+      {props.selectedDate &&
+        format(props.selectedDate, "M月d日(E)", { locale: ja })}
+    </div>
+  );
+
+  if (props.isDrawer) {
+    return (
+      <Drawer open={!!props.selectedDate} onClose={props.onClose}>
+        <DrawerContent className="min-h-[80vh]">
+          <DrawerHeader>
+            <DrawerTitle>{dateTitle}</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-y-auto">
+            {props.selectedDate && (
+              <DiaryDateDetailContent
+                {...props}
+                selectedDate={props.selectedDate}
+              />
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Card>
+      {props.selectedDate ? (
+        <>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              {format(props.selectedDate, "M月d日(E)", { locale: ja })}
+            </CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <DiaryDateDetailContent
+              {...props}
+              selectedDate={props.selectedDate}
+            />
+          </CardContent>
+        </>
+      ) : (
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="text-center text-muted-foreground">
+            <div className="text-lg font-medium mb-2">
+              日付を選択してください
+            </div>
+            <div className="text-sm">
+              カレンダーから日付をクリックすると、その日の日誌が表示されます
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+export function DiaryDateDetailContent({
   selectedDate,
   organizationId,
   onEdit,
   onDelete,
   currentUserId,
-}: DiaryDateDetailProps) {
+}: DiaryDateDetailProps & { selectedDate: Date }) {
   const trpc = useTRPC();
 
   // 選択した日付の日誌データをフェッチ
-  const dateString = format(selectedDate, "yyyy-MM-dd");
+  const dateString = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const diariesQueryOptions = trpc.diary.byDate.queryOptions(
     {
       organizationId,
       date: dateString,
     },
     {
-      enabled: !!organizationId && !!selectedDate,
+      enabled: !!organizationId && !!dateString,
       staleTime: 5 * 60 * 1000, // 5分間キャッシュ
     }
   );
@@ -76,157 +147,139 @@ export function DiaryDateDetail({
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
-            {format(selectedDate, "M月d日(E)", { locale: ja })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </div>
-              ))}
+    <>
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="animate-pulse">
+              <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-muted rounded w-1/2"></div>
             </div>
-          ) : diaries.length > 0 ? (
-            <div className="space-y-3">
-              {diaries.map((diary) => {
-                const isCurrentUser = currentUserId === diary.userId;
-                const workTypeDisplay = getWorkTypeDisplay(diary.workType);
-                const weatherDisplay = getWeatherDisplay(diary.weather);
-                return (
-                  <div key={diary.id} className="p-4 border rounded-lg">
-                    <div className="space-y-3">
-                      {/* ヘッダー: 作業種別、タイトルと操作メニュー */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {workTypeDisplay?.label || "未設定"}
-                          </Badge>
-                          {diary.title && (
-                            <span className="text-sm font-medium text-foreground">
-                              {diary.title}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {/* 天気・気温情報 */}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {weatherDisplay && (
-                              <span>{weatherDisplay.label}</span>
-                            )}
-                            {diary.temperature && (
-                              <>
-                                {weatherDisplay && <span>•</span>}
-                                <span>{diary.temperature}°C</span>
-                              </>
-                            )}
-                          </div>
-                          {/* 操作メニュー */}
-                          {isCurrentUser && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <MoreHorizontalIcon className="h-4 w-4" />
-                                  <span className="sr-only">
-                                    メニューを開く
-                                  </span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(diary.id)}
-                                >
-                                  <EditIcon className="mr-2 h-4 w-4 text-current" />
-                                  編集
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(diary.id)}
-                                  className="text-destructive"
-                                >
-                                  <TrashIcon className="mr-2 h-4 w-4 text-current" />
-                                  削除
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 作業内容 */}
-                      {diary.content && (
-                        <div>
-                          <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                            {diary.content}
-                          </p>
-                        </div>
+          ))}
+        </div>
+      ) : diaries.length > 0 ? (
+        <div className="space-y-3">
+          {diaries.map((diary) => {
+            const isCurrentUser = currentUserId === diary.userId;
+            const workTypeDisplay = getWorkTypeDisplay(diary.workType);
+            const weatherDisplay = getWeatherDisplay(diary.weather);
+            return (
+              <div key={diary.id} className="p-4 border rounded-lg">
+                <div className="space-y-3">
+                  {/* ヘッダー: 作業種別、タイトルと操作メニュー */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {workTypeDisplay?.label || "未設定"}
+                      </Badge>
+                      {diary.title && (
+                        <span className="text-sm font-medium text-foreground">
+                          {diary.title}
+                        </span>
                       )}
-
-                      {/* 対象ほ場 */}
-                      {diary.diaryThings && diary.diaryThings.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <MapPinIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <div className="flex flex-wrap gap-1">
-                            {diary.diaryThings.map((dt, index: number) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {dt.thing.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* メタ情報: 作成者・作成日時・更新日時 */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>作成者: {diary.userName || "未知"}</span>
-                        <div className="flex items-center gap-2">
-                          <span>
-                            作成:{" "}
-                            {format(new Date(diary.createdAt), "MM/dd HH:mm")}
-                          </span>
-                          {format(
-                            new Date(diary.createdAt),
-                            "yyyy-MM-dd HH:mm"
-                          ) !==
-                            format(
-                              new Date(diary.updatedAt),
-                              "yyyy-MM-dd HH:mm"
-                            ) && (
-                            <span>
-                              更新:{" "}
-                              {format(new Date(diary.updatedAt), "MM/dd HH:mm")}
-                            </span>
-                          )}
-                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* 天気・気温情報 */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {weatherDisplay && <span>{weatherDisplay.label}</span>}
+                        {diary.temperature && (
+                          <>
+                            {weatherDisplay && <span>•</span>}
+                            <span>{diary.temperature}°C</span>
+                          </>
+                        )}
                       </div>
+                      {/* 操作メニュー */}
+                      {isCurrentUser && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreHorizontalIcon className="h-4 w-4" />
+                              <span className="sr-only">メニューを開く</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(diary.id)}
+                            >
+                              <EditIcon className="mr-2 h-4 w-4 text-current" />
+                              編集
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(diary.id)}
+                              className="text-destructive"
+                            >
+                              <TrashIcon className="mr-2 h-4 w-4 text-current" />
+                              削除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="text-sm">この日の日誌はありません</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+
+                  {/* 作業内容 */}
+                  {diary.content && (
+                    <div>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                        {diary.content}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 対象ほ場 */}
+                  {diary.diaryThings && diary.diaryThings.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <MapPinIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex flex-wrap gap-1">
+                        {diary.diaryThings.map((dt, index: number) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {dt.thing.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* メタ情報: 作成者・作成日時・更新日時 */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>作成者: {diary.userName || "未知"}</span>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        作成: {format(new Date(diary.createdAt), "MM/dd HH:mm")}
+                      </span>
+                      {format(new Date(diary.createdAt), "yyyy-MM-dd HH:mm") !==
+                        format(
+                          new Date(diary.updatedAt),
+                          "yyyy-MM-dd HH:mm"
+                        ) && (
+                        <span>
+                          更新:{" "}
+                          {format(new Date(diary.updatedAt), "MM/dd HH:mm")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-sm">この日の日誌はありません</p>
+        </div>
+      )}
+    </>
   );
 }
