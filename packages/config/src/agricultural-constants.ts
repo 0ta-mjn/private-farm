@@ -22,3 +22,12 @@ export const workTypeOptions = z.enum([
   "OTHER",
 ]);
 export type WorkTypeKey = z.infer<typeof workTypeOptions>;
+
+export const thingTypeOptions = z.enum([
+  "PADDY", // 水田（稲作）
+  "FIELD", // 畑（露地栽培）
+  "GREENHOUSE", // ハウス（温室栽培）
+  "ORCHARD", // 果樹園
+  "OTHER", // その他
+]);
+export type ThingTypeKey = z.infer<typeof thingTypeOptions>;
