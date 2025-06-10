@@ -33,12 +33,12 @@ export const UpdateDiaryInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください")
     .optional(),
-  title: z.string().optional(),
-  content: z.string().optional(),
-  workType: z.string().optional(),
-  weather: z.string().optional(),
-  temperature: z.number().optional(),
-  thingIds: z.array(z.string()).optional(),
+  title: z.string().nullable().optional(),
+  content: z.string().nullable().optional(),
+  workType: z.string().nullable().optional(),
+  weather: z.string().nullable().optional(),
+  temperature: z.number().nullable().optional(),
+  thingIds: z.array(z.string()).nullable().optional(),
 });
 
 // 新しい3つのエンドポイント用のスキーマ
@@ -285,7 +285,7 @@ export async function updateDiary(
   console.info("Updating diary with params:", params, "and input:", input);
   return await db.transaction(async (tx) => {
     // thingIdsが指定されている場合、権限チェックを実行
-    if (input.thingIds !== undefined && input.thingIds.length > 0) {
+    if (input.thingIds != undefined && input.thingIds.length > 0) {
       const thingsResult = await tx
         .select({ id: thingsTable.id })
         .from(thingsTable)
@@ -330,7 +330,7 @@ export async function updateDiary(
     }
 
     // ほ場関連付けの更新
-    if (thingIds !== undefined) {
+    if (thingIds != undefined) {
       // 既存の関連付けを削除
       await tx
         .delete(diaryThingsTable)
