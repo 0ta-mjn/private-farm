@@ -103,7 +103,7 @@ function DiarySearchList({
             return (
               <CommandItem
                 key={diary.id}
-                value={`${diary.title || ""} ${diary.content || ""} ${diary.date}`}
+                value={diary.id}
                 onSelect={() => onDiarySelect(diary)}
                 className="flex flex-col items-start gap-2 p-3 cursor-pointer hover:bg-accent"
               >
