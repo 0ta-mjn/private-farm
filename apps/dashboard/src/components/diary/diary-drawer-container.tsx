@@ -19,8 +19,8 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
   { id: "field-2", name: "B区画（きゅうり）", type: "field", area: 150 },
   { id: "field-3", name: "C区画（ナス）", type: "field", area: 80 },
-  { id: "greenhouse-1", name: "第1温室", type: "greenhouse", area: 200 },
-  { id: "greenhouse-2", name: "第2温室", type: "greenhouse", area: 180 },
+  { id: "house-1", name: "第1温室", type: "house", area: 200 },
+  { id: "house-2", name: "第2温室", type: "house", area: 180 },
 ];
 
 export function DiaryDrawerContainer() {

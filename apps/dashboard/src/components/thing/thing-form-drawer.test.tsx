@@ -92,7 +92,7 @@ describe("ThingFormDrawer", () => {
       // 種類オプションが表示されること
       expect(screen.getByTestId("type-options")).toBeInTheDocument();
       expect(screen.getByTestId("type-option-FIELD")).toBeInTheDocument();
-      expect(screen.getByTestId("type-option-GREENHOUSE")).toBeInTheDocument();
+      expect(screen.getByTestId("type-option-HOUSE")).toBeInTheDocument();
     });
   });
 
@@ -405,8 +405,8 @@ describe("ThingFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("type-options")).toBeInTheDocument();
       });
-      const greenhouseOption = screen.getByTestId("type-option-GREENHOUSE");
-      await user.click(greenhouseOption);
+      const houseOption = screen.getByTestId("type-option-HOUSE");
+      await user.click(houseOption);
 
       const locationInput = screen.getByTestId(
         "location-input"
@@ -443,7 +443,7 @@ describe("ThingFormDrawer", () => {
 
       submittedData = defaultProps.onSubmit.mock.calls[0]?.[0];
       expect(submittedData?.name).toBe("更新された区画");
-      expect(submittedData?.type).toBe("GREENHOUSE");
+      expect(submittedData?.type).toBe("HOUSE");
       expect(submittedData?.location).toBe("東側圃場");
       expect(submittedData?.area).toBe("200");
       expect(submittedData?.description).toBe("更新された説明");
@@ -693,7 +693,7 @@ describe("ThingFormDrawer", () => {
       // 異なる初期データに変更
       const initialData2: ThingFormData = {
         name: "初期区画2",
-        type: "GREENHOUSE",
+        type: "HOUSE",
         description: "初期説明2",
         location: "初期場所2",
         area: "200",

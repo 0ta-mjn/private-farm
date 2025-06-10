@@ -49,7 +49,7 @@ export const THING_TYPE_OPTIONS: Record<
 > = {
   PADDY: { label: "水田", color: "cyan" },
   FIELD: { label: "畑（露地）", color: "green" },
-  GREENHOUSE: { label: "温室・ハウス", color: "blue" },
+  HOUSE: { label: "温室・ハウス", color: "blue" },
   ORCHARD: { label: "果樹園", color: "orange" },
   OTHER: { label: "その他", color: "gray" },
 };

@@ -13,7 +13,7 @@ import {
 const mockFieldOptions: FieldOption[] = [
   { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
   { id: "field-2", name: "B区画（きゅうり）", type: "field", area: 150 },
-  { id: "greenhouse-1", name: "第1温室", type: "greenhouse", area: 200 },
+  { id: "house-1", name: "第1温室", type: "house", area: 200 },
 ];
 
 const mockInitialData: DiaryFormData = {
@@ -100,9 +100,7 @@ describe("DiaryFormDrawer", () => {
       expect(screen.getByTestId("field-options-container")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-1")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-2")).toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-option-greenhouse-1")
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("field-option-house-1")).toBeInTheDocument();
       expect(screen.getByText("A区画（トマト）")).toBeInTheDocument();
       expect(screen.getByText("B区画（きゅうり）")).toBeInTheDocument();
       expect(screen.getByText("第1温室")).toBeInTheDocument();
@@ -198,11 +196,9 @@ describe("DiaryFormDrawer", () => {
         const field2Option = screen.getByTestId("field-option-field-2");
         await user.click(field2Option);
         expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
-        const greenhouse1Option = screen.getByTestId(
-          "field-option-greenhouse-1"
-        );
-        await user.click(greenhouse1Option);
-        expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
+        const house1Option = screen.getByTestId("field-option-house-1");
+        await user.click(house1Option);
+        expect(screen.getByTestId("field-checkbox-house-1")).toBeChecked();
       }
 
       // チェックされている区画の数を確認
@@ -228,10 +224,8 @@ describe("DiaryFormDrawer", () => {
       {
         const field2Option = screen.getByTestId("field-option-field-2");
         await user.click(field2Option);
-        const greenhouse1Option = screen.getByTestId(
-          "field-option-greenhouse-1"
-        );
-        await user.click(greenhouse1Option);
+        const house1Option = screen.getByTestId("field-option-house-1");
+        await user.click(house1Option);
         expect(
           screen.queryByTestId("selected-fields-badges")
         ).not.toBeInTheDocument();
@@ -525,10 +519,10 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
       });
-      const greenhouse1Option = screen.getByTestId("field-option-greenhouse-1");
-      await user.click(greenhouse1Option);
+      const house1Option = screen.getByTestId("field-option-house-1");
+      await user.click(house1Option);
       await waitFor(() => {
-        expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
+        expect(screen.getByTestId("field-checkbox-house-1")).toBeChecked();
       });
 
       // 送信
@@ -551,7 +545,7 @@ describe("DiaryFormDrawer", () => {
       expect(submittedData?.thingIds).toEqual([
         "field-1",
         "field-2",
-        "greenhouse-1",
+        "house-1",
       ]);
     });
 
@@ -788,7 +782,7 @@ describe("DiaryFormDrawer", () => {
         workType: "HARVESTING",
         weather: "RAINY",
         temperature: 15,
-        thingIds: ["field-2", "greenhouse-1"],
+        thingIds: ["field-2", "house-1"],
       };
 
       rerender(
@@ -811,7 +805,7 @@ describe("DiaryFormDrawer", () => {
 
       expect(screen.getByTestId("field-checkbox-field-1")).not.toBeChecked();
       expect(screen.getByTestId("field-checkbox-field-2")).toBeChecked();
-      expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
+      expect(screen.getByTestId("field-checkbox-house-1")).toBeChecked();
 
       // undefinedの場合のデフォルト値設定
       rerender(
@@ -853,13 +847,13 @@ describe("DiaryFormDrawer", () => {
       expect(screen.getByTestId("field-option-field-1")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-2")).toBeInTheDocument();
       expect(
-        screen.queryByTestId("field-option-greenhouse-1")
+        screen.queryByTestId("field-option-house-1")
       ).not.toBeInTheDocument();
 
       // fieldOptionsを更新
       const updatedFieldOptions: FieldOption[] = [
         { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
-        { id: "greenhouse-1", name: "第1温室", type: "greenhouse", area: 200 },
+        { id: "house-1", name: "第1温室", type: "house", area: 200 },
         { id: "field-3", name: "C区画（なす）", type: "field", area: 120 },
       ];
 
@@ -872,9 +866,7 @@ describe("DiaryFormDrawer", () => {
       expect(
         screen.queryByTestId("field-option-field-2")
       ).not.toBeInTheDocument();
-      expect(
-        screen.getByTestId("field-option-greenhouse-1")
-      ).toBeInTheDocument();
+      expect(screen.getByTestId("field-option-house-1")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-3")).toBeInTheDocument();
 
       // 空の配列に変更
@@ -885,7 +877,7 @@ describe("DiaryFormDrawer", () => {
         screen.queryByTestId("field-option-field-1")
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByTestId("field-option-greenhouse-1")
+        screen.queryByTestId("field-option-house-1")
       ).not.toBeInTheDocument();
       expect(
         screen.queryByTestId("field-option-field-3")
