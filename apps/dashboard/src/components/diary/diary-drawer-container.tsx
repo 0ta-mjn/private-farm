@@ -14,15 +14,6 @@ import {
   type FieldOption,
 } from "./diary-form-drawer";
 
-// スタブデータ：区画選択のオプション
-const FIELD_OPTIONS: FieldOption[] = [
-  { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
-  { id: "field-2", name: "B区画（きゅうり）", type: "field", area: 150 },
-  { id: "field-3", name: "C区画（ナス）", type: "field", area: 80 },
-  { id: "house-1", name: "第1温室", type: "house", area: 200 },
-  { id: "house-2", name: "第2温室", type: "house", area: 180 },
-];
-
 export function DiaryDrawerContainer() {
   // コンテキストとtRPCクライアント
   const state = useDiaryDrawerState();
@@ -34,6 +25,27 @@ export function DiaryDrawerContainer() {
   const open = state.createOpen || state.editOpen;
   const isEdit = state.editOpen;
   const diaryId = state.editId;
+
+  // thingsデータを取得してFieldOptionに変換
+  const { data: thingsData, isLoading: isLoadingThings } = useQuery(
+    trpc.thing.list.queryOptions(
+      {
+        organizationId: currentOrganizationId || "",
+      },
+      {
+        enabled: !!currentOrganizationId,
+      }
+    )
+  );
+
+  // thingsデータをFieldOptionフォーマットに変換
+  const fieldOptions: FieldOption[] =
+    thingsData?.map((thing) => ({
+      id: thing.id,
+      name: thing.name,
+      type: thing.type,
+      area: thing.area || 0, // areaがnullの場合は0にする
+    })) || [];
 
   // 日誌の詳細データを取得（編集モードの場合）
   const { data: diaryData, isLoading: isLoadingDiary } = useQuery(
@@ -161,7 +173,7 @@ export function DiaryDrawerContainer() {
   };
 
   // ローディング中は何も表示しない
-  if (isEdit && !diaryData) {
+  if ((isEdit && !diaryData) || isLoadingThings) {
     return null;
   }
 
@@ -175,7 +187,7 @@ export function DiaryDrawerContainer() {
       }
       initialData={initialData}
       onSubmit={handleSubmit}
-      fieldOptions={FIELD_OPTIONS}
+      fieldOptions={fieldOptions}
     />
   );
 }

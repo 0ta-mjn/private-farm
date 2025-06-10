@@ -245,68 +245,70 @@ export function DiaryFormDrawer({
           )}
         />
 
-        {/* 対象区画選択（スタブ実装） */}
-        <FormField
-          control={form.control}
-          name="thingIds"
-          render={() => (
-            <FormItem>
-              <FormLabel>対象区画</FormLabel>
-              <FormDescription>
-                作業を行った区画や温室を選択してください（複数選択可）
-              </FormDescription>
-              {selectedFields.length > 0 && (
+        {/* 対象区画選択 */}
+        {fieldOptions.length > 0 && (
+          <FormField
+            control={form.control}
+            name="thingIds"
+            render={() => (
+              <FormItem>
+                <FormLabel>対象区画</FormLabel>
+                <FormDescription>
+                  作業を行った区画や温室を選択してください（複数選択可）
+                </FormDescription>
+                {selectedFields.length > 0 && (
+                  <div
+                    className="flex flex-wrap gap-2 mb-3"
+                    data-testid="selected-fields-badges"
+                  >
+                    {selectedFields.map((field) => (
+                      <Badge
+                        key={field.id}
+                        variant="secondary"
+                        data-testid={`field-badge-${field.id}`}
+                      >
+                        {field.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div
-                  className="flex flex-wrap gap-2 mb-3"
-                  data-testid="selected-fields-badges"
+                  className="grid grid-cols-1 gap-3"
+                  data-testid="field-options-container"
                 >
-                  {selectedFields.map((field) => (
-                    <Badge
+                  {fieldOptions.map((field) => (
+                    <Label
                       key={field.id}
-                      variant="secondary"
-                      data-testid={`field-badge-${field.id}`}
+                      className={cn(
+                        "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                        selectedThingIds.includes(field.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      )}
+                      data-testid={`field-option-${field.id}`}
                     >
-                      {field.name}
-                    </Badge>
+                      <Checkbox
+                        checked={selectedThingIds.includes(field.id)}
+                        onCheckedChange={() => handleFieldToggle(field.id)}
+                        data-testid={`field-checkbox-${field.id}`}
+                      />
+                      <div className="grid gap-1.5 font-normal">
+                        <p className="text-sm leading-none font-medium">
+                          {field.name}
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          {field.type === "field" ? "区画" : "温室"} •{" "}
+                          {field.area}㎡
+                        </p>
+                      </div>
+                    </Label>
                   ))}
                 </div>
-              )}
-              <div
-                className="grid grid-cols-1 gap-3"
-                data-testid="field-options-container"
-              >
-                {fieldOptions.map((field) => (
-                  <Label
-                    key={field.id}
-                    className={cn(
-                      "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
-                      selectedThingIds.includes(field.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    )}
-                    data-testid={`field-option-${field.id}`}
-                  >
-                    <Checkbox
-                      checked={selectedThingIds.includes(field.id)}
-                      onCheckedChange={() => handleFieldToggle(field.id)}
-                      data-testid={`field-checkbox-${field.id}`}
-                    />
-                    <div className="grid gap-1.5 font-normal">
-                      <p className="text-sm leading-none font-medium">
-                        {field.name}
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        {field.type === "field" ? "区画" : "温室"} •{" "}
-                        {field.area}㎡
-                      </p>
-                    </div>
-                  </Label>
-                ))}
-              </div>
-              <FormMessage data-testid="fields-error" />
-            </FormItem>
-          )}
-        />
+                <FormMessage data-testid="fields-error" />
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           {/* 天気 */}
@@ -415,13 +417,6 @@ export function DiaryFormDrawer({
             data-testid="desktop-actions"
           >
             <Button
-              data-testid="submit-button-desktop"
-              onClick={form.handleSubmit(handleSubmit)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
-            </Button>
-            <Button
               data-testid="cancel-button-desktop"
               type="button"
               variant="outline"
@@ -429,6 +424,14 @@ export function DiaryFormDrawer({
               disabled={isSubmitting}
             >
               キャンセル
+            </Button>
+
+            <Button
+              data-testid="submit-button-desktop"
+              onClick={form.handleSubmit(handleSubmit)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
             </Button>
           </div>
         </SheetContent>
@@ -454,13 +457,6 @@ export function DiaryFormDrawer({
           data-testid="mobile-actions"
         >
           <Button
-            data-testid="submit-button-mobile"
-            onClick={form.handleSubmit(handleSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
-          </Button>
-          <Button
             data-testid="cancel-button-mobile"
             type="button"
             variant="outline"
@@ -468,6 +464,14 @@ export function DiaryFormDrawer({
             disabled={isSubmitting}
           >
             キャンセル
+          </Button>
+
+          <Button
+            data-testid="submit-button-mobile"
+            onClick={form.handleSubmit(handleSubmit)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
           </Button>
         </div>
       </DrawerContent>

@@ -284,13 +284,6 @@ export function ThingFormDrawer({
             data-testid="desktop-actions"
           >
             <Button
-              data-testid="submit-button-desktop"
-              onClick={form.handleSubmit(handleSubmit)}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
-            </Button>
-            <Button
               data-testid="cancel-button-desktop"
               type="button"
               variant="outline"
@@ -298,6 +291,14 @@ export function ThingFormDrawer({
               disabled={isSubmitting}
             >
               キャンセル
+            </Button>
+
+            <Button
+              data-testid="submit-button-desktop"
+              onClick={form.handleSubmit(handleSubmit)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -321,13 +322,6 @@ export function ThingFormDrawer({
           data-testid="mobile-actions"
         >
           <Button
-            data-testid="submit-button-mobile"
-            onClick={form.handleSubmit(handleSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
-          </Button>
-          <Button
             data-testid="cancel-button-mobile"
             type="button"
             variant="outline"
@@ -335,6 +329,14 @@ export function ThingFormDrawer({
             disabled={isSubmitting}
           >
             キャンセル
+          </Button>
+
+          <Button
+            data-testid="submit-button-mobile"
+            onClick={form.handleSubmit(handleSubmit)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "保存中..." : isEdit ? "更新" : "作成"}
           </Button>
         </DrawerFooter>
       </DrawerContent>
