@@ -71,3 +71,23 @@ export class ValidationError extends Error {
     this.name = "ValidationError";
   }
 }
+
+/**
+ * ほ場作成関連のエラー
+ */
+export class ThingCreationError extends Error {
+  constructor(message: string = "ほ場の作成に失敗しました") {
+    super(message);
+    this.name = "ThingCreationError";
+  }
+}
+
+/**
+ * ほ場更新関連のエラー
+ */
+export class ThingUpdateError extends Error {
+  constructor(message: string = "ほ場の更新に失敗しました") {
+    super(message);
+    this.name = "ThingUpdateError";
+  }
+}
