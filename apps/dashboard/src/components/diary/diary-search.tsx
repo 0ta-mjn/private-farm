@@ -15,6 +15,7 @@ import {
   CommandItem,
 } from "@/shadcn/command";
 import { Badge } from "@/shadcn/badge";
+import { Skeleton } from "@/shadcn/skeleton";
 import { CalendarIcon, MapPinIcon } from "lucide-react";
 import {
   getWeatherDisplay,
@@ -65,11 +66,37 @@ function DiarySearchList({
 
   const diaries = diariesQuery.data?.diaries || [];
 
+  // ローディング中はスケルトンを表示
+  if (diariesQuery.isLoading) {
+    return (
+      <CommandList>
+        <CommandGroup heading="検索中...">
+          <div className="flex flex-col items-start gap-2 p-3">
+            <div className="w-full">
+              {/* ヘッダースケルトン */}
+              <div className="flex items-center gap-2 mb-1">
+                <Skeleton className="h-3 w-3 rounded" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-12 rounded-md" />
+                <Skeleton className="h-5 w-16 rounded-md" />
+              </div>
+
+              {/* タイトルスケルトン */}
+              <Skeleton className="h-4 w-3/4 mb-1" />
+
+              {/* 内容スケルトン */}
+              <Skeleton className="h-3 w-full mb-2" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          </div>
+        </CommandGroup>
+      </CommandList>
+    );
+  }
+
   return (
     <CommandList>
-      <CommandEmpty>
-        {diariesQuery.isLoading ? "検索中..." : "該当する日誌が見つかりません"}
-      </CommandEmpty>
+      <CommandEmpty>該当する日誌が見つかりません</CommandEmpty>
       {diaries.length > 0 && (
         <CommandGroup heading="検索結果">
           {diaries.map((diary) => {
