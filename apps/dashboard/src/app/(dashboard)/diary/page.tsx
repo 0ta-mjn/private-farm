@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  Suspense,
+  useMemo,
+} from "react";
 import { useUserId } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
@@ -33,7 +39,6 @@ function DiaryPageContent() {
 
   // 状態管理
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   // 月のサマリーデータを取得（カレンダー表示用）
@@ -84,10 +89,19 @@ function DiaryPageContent() {
     [router, searchParams]
   );
 
+  const selectedDate = useMemo(() => {
+    const dateParam = searchParams.get("date");
+    if (dateParam) {
+      const parsedDate = parse(dateParam, "yyyy-MM-dd", new Date());
+      return isValid(parsedDate) ? parsedDate : null;
+    }
+    return null;
+  }, [searchParams]);
+
   // URLパラメータの変更を監視して状態を同期、初期化も行う
   useEffect(() => {
-    const monthParam = searchParams.get("month");
     const dateParam = searchParams.get("date");
+    const monthParam = searchParams.get("month");
 
     // 初期値の設定
     let initialMonth = new Date();
@@ -108,7 +122,6 @@ function DiaryPageContent() {
     }
 
     setCurrentMonth(initialMonth);
-    setSelectedDate(initialDate);
 
     // dateクエリが指定されていてmonthがないか異なる月が指定されている場合のみクエリを更新
     if (dateParam && initialDate) {
@@ -127,14 +140,12 @@ function DiaryPageContent() {
         ? subMonths(currentMonth, 1)
         : addMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
-    setSelectedDate(null); // 月変更時は選択日をクリア
     updateUrlParams(newMonth, null); // 月を更新し、日付をクリア
   };
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
+  const handleDateClick = (date: Date | null) => {
     // 選択された日付に基づいて月も更新
-    if (!isSameMonth(date, currentMonth)) {
+    if (date && !isSameMonth(date, currentMonth)) {
       setCurrentMonth(date);
     }
     updateUrlParams(undefined, date); // 日付のみ更新（月は自動的に設定される）
@@ -208,7 +219,7 @@ function DiaryPageContent() {
             organizationId={currentOrganizationId}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            onClose={() => setSelectedDate(null)}
+            onClose={() => handleDateClick(null)}
             currentUserId={userId}
             isDrawer={isDrawer}
           />
