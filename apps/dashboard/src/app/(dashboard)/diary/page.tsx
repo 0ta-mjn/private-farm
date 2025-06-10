@@ -183,20 +183,15 @@ function DiaryPageContent() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto pb-6">
       {/* ヘッダー */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex justify-between items-start">
-          <DiarySearch
-            onDiarySelect={handleDiaryClick}
-            currentUserId={userId}
-          />
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <DiarySearch onDiarySelect={handleDiaryClick} currentUserId={userId} />
 
-          <Button onClick={actions.openCreate}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            新規作成
-          </Button>
-        </div>
+        <Button onClick={actions.openCreate}>
+          <PlusIcon className="h-4 w-4 mr-2" />
+          新規作成
+        </Button>
       </div>
 
       {/* メインコンテンツ - カレンダー表示 */}
