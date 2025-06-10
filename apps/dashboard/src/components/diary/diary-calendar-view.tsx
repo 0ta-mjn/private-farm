@@ -78,10 +78,10 @@ export function getDayClassNames(
   const isInCurrentMonth = isSameMonth(date, currentMonth);
 
   return cn(
-    "min-h-[5rem] lg:min-h-[7.5rem] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
+    "min-h-[5rem] md:min-h-[7.5rem] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
     isTodayDate && "bg-primary/20 border-primary",
     isSelected && "bg-accent/20 border-accent",
-    !isInCurrentMonth && "hidden lg:block opacity-40"
+    !isInCurrentMonth && "hidden md:block opacity-40"
   );
 }
 
@@ -168,7 +168,7 @@ export function DiaryCalendarView({
       <div className="w-full">
         {/* 曜日ヘッダー */}
         <div
-          className="hidden lg:grid grid-cols-7 gap-1 mb-2"
+          className="hidden md:grid grid-cols-7 gap-1 mb-2"
           data-testid="diary-calendar-weekdays"
         >
           {WEEKDAYS.map((day, index) => (
@@ -191,7 +191,7 @@ export function DiaryCalendarView({
 
         {/* カレンダーグリッド */}
         <div
-          className="grid grid-cols-1 lg:grid-cols-7 gap-1"
+          className="grid grid-cols-1 md:grid-cols-7 gap-1"
           data-testid="diary-calendar-grid"
         >
           {calendarDays.map((date, index) => {
