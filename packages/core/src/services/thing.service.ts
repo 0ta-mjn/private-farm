@@ -23,8 +23,6 @@ export const CreateThingInputSchema = z.object({
   description: z
     .string()
     .max(1000, "説明は1000文字以内で入力してください")
-    .transform((val) => (val === "" ? null : val))
-    .nullable()
     .optional(),
   location: z
     .string()
@@ -53,8 +51,6 @@ export const UpdateThingInputSchema = z.object({
   description: z
     .string()
     .max(1000, "説明は1000文字以内で入力してください")
-    .transform((val) => (val === "" ? null : val))
-    .nullable()
     .optional(),
   location: z
     .string()
@@ -101,7 +97,7 @@ export async function createThing(db: Database, input: CreateThingInput) {
           id: thingId,
           name: input.name,
           type: input.type,
-          description: input.description || null,
+          description: input.description || "",
           location: input.location || null,
           area: input.area || null,
           organizationId: input.organizationId,

@@ -11,7 +11,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "@repo/config";
-import type { Database, Transaction } from "@repo/db/client";
+import type { Database } from "@repo/db/client";
 import { z } from "zod";
 
 // Zodスキーマ定義
@@ -23,8 +23,8 @@ export const CreateDiaryInputSchema = z.object({
   title: z.string().optional(),
   content: z.string().optional(),
   workType: z.string().min(1, "作業種別を選択してください"),
-  weather: z.string().optional(),
-  temperature: z.number().optional(),
+  weather: z.string().nullable().optional(),
+  temperature: z.number().nullable().optional(),
   thingIds: z.array(z.string()).optional().default([]),
 });
 
@@ -33,12 +33,12 @@ export const UpdateDiaryInputSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください")
     .optional(),
-  title: z.string().nullable().optional(),
-  content: z.string().nullable().optional(),
-  workType: z.string().nullable().optional(),
+  title: z.string().optional(),
+  content: z.string().optional(),
+  workType: z.string().optional(),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
-  thingIds: z.array(z.string()).nullable().optional(),
+  thingIds: z.array(z.string()).optional(),
 });
 
 // 新しい3つのエンドポイント用のスキーマ

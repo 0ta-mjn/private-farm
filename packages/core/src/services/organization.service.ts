@@ -19,7 +19,7 @@ export const CreateOrganizationSchema = z.object({
     .string()
     .min(1, "組織名を入力してください")
     .max(100, "組織名は100文字以下で入力してください"),
-  description: z.string().nullable().optional(),
+  description: z.string().optional(),
 });
 
 export type CreateOrganizationInput = z.infer<typeof CreateOrganizationSchema>;
@@ -30,7 +30,7 @@ export const UpdateOrganizationSchema = z.object({
     .string()
     .min(1, "組織名を入力してください")
     .max(100, "組織名は100文字以下で入力してください"),
-  description: z.string().nullable().optional(),
+  description: z.string().optional(),
 });
 
 export type UpdateOrganizationInput = z.infer<typeof UpdateOrganizationSchema>;

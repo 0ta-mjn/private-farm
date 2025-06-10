@@ -128,7 +128,7 @@ describe("Thing Service", () => {
       expect(result).toBeDefined();
       expect(result.name).toBe("ハウス1");
       expect(result.type).toBe("greenhouse");
-      expect(result.description).toBeNull();
+      expect(result.description).toBe("");
       expect(result.location).toBeNull();
       expect(result.area).toBeNull();
       expect(result.organizationId).toBe(testOrganizationId);
@@ -140,7 +140,6 @@ describe("Thing Service", () => {
         organizationId: testOrganizationId,
         name: "テスト圃場",
         type: "field",
-        description: null,
         location: null,
         area: null,
       };
@@ -152,7 +151,7 @@ describe("Thing Service", () => {
       expect(result).toBeDefined();
       expect(result.name).toBe("テスト圃場");
       expect(result.type).toBe("field");
-      expect(result.description).toBeNull();
+      expect(result.description).toBe("");
       expect(result.location).toBeNull();
       expect(result.area).toBeNull();
       expect(result.organizationId).toBe(testOrganizationId);
@@ -312,7 +311,6 @@ describe("Thing Service", () => {
     it("フィールドをnullにリセットできる", async () => {
       // Arrange
       const input: UpdateThingInput = {
-        description: null,
         location: null,
         area: null,
       };
@@ -326,7 +324,6 @@ describe("Thing Service", () => {
 
       // Assert
       expect(result.name).toBe("更新前圃場"); // 変更されていない
-      expect(result.description).toBeNull(); // nullにリセット
       expect(result.location).toBeNull(); // nullにリセット
       expect(result.area).toBeNull(); // nullにリセット
       expect(result.type).toBe("field"); // 変更されていない
