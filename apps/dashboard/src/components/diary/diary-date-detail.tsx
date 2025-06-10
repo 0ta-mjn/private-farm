@@ -8,6 +8,7 @@ import { useTRPC } from "@/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
 import { Badge } from "@/shadcn/badge";
 import { Button } from "@/shadcn/button";
+import { Skeleton } from "@/shadcn/skeleton";
 import {
   Drawer,
   DrawerContent,
@@ -149,13 +150,47 @@ export function DiaryDateDetailContent({
   return (
     <>
       {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
+        <div className="space-y-4">
+          <div className="p-4 border rounded-lg">
+            <div className="space-y-3">
+              {/* ヘッダーのスケルトン */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                </div>
+              </div>
+
+              {/* 作業内容のスケルトン */}
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-3/5" />
+              </div>
+
+              {/* 対象ほ場のスケルトン */}
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-4 rounded" />
+                <div className="flex gap-1">
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                  <Skeleton className="h-5 w-20 rounded-md" />
+                </div>
+              </div>
+
+              {/* メタ情報のスケルトン */}
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-24" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       ) : diaries.length > 0 ? (
         <div className="space-y-3">
