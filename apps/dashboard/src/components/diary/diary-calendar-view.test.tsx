@@ -9,6 +9,7 @@ import {
   getDayClassNames,
   getDateTextClassNames,
 } from "./diary-calendar-view";
+import { WorkTypeKey } from "@repo/config";
 
 // モックデータ
 const mockDiaries = [
@@ -59,22 +60,34 @@ describe("DiaryCalendarView", () => {
 
       // 主要コンポーネントの表示確認
       expect(screen.getByTestId("diary-calendar")).toBeInTheDocument();
-      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent("2025年 6月");
-      expect(screen.getByTestId("diary-calendar-prev-month")).toBeInTheDocument();
-      expect(screen.getByTestId("diary-calendar-next-month")).toBeInTheDocument();
+      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent(
+        "2025年 6月"
+      );
+      expect(
+        screen.getByTestId("diary-calendar-prev-month")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("diary-calendar-next-month")
+      ).toBeInTheDocument();
       expect(screen.getByTestId("diary-calendar-weekdays")).toBeInTheDocument();
       expect(screen.getByTestId("diary-calendar-grid")).toBeInTheDocument();
 
       // 曜日ヘッダーの表示確認
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
       weekdays.forEach((day, index) => {
-        const weekdayElement = screen.getByTestId(`diary-calendar-weekday-${index}`);
+        const weekdayElement = screen.getByTestId(
+          `diary-calendar-weekday-${index}`
+        );
         expect(weekdayElement).toHaveTextContent(day);
       });
 
       // 日曜日・土曜日の色確認
-      expect(screen.getByTestId("diary-calendar-weekday-0")).toHaveClass("text-red-500");
-      expect(screen.getByTestId("diary-calendar-weekday-6")).toHaveClass("text-blue-500");
+      expect(screen.getByTestId("diary-calendar-weekday-0")).toHaveClass(
+        "text-red-500"
+      );
+      expect(screen.getByTestId("diary-calendar-weekday-6")).toHaveClass(
+        "text-blue-500"
+      );
 
       // 日付セルの基本属性確認
       const june1 = screen.getByTestId("diary-calendar-day-2025-06-01");
@@ -82,22 +95,30 @@ describe("DiaryCalendarView", () => {
       expect(june1).toHaveAttribute("data-is-current-month", "true");
 
       // 日誌バッジの表示確認
-      const plantingBadge = screen.getByTestId("diary-calendar-diary-badge-2025-06-01-0");
+      const plantingBadge = screen.getByTestId(
+        "diary-calendar-diary-badge-2025-06-01-0"
+      );
       expect(plantingBadge).toHaveAttribute("data-work-type", "PLANTING");
       expect(plantingBadge).toHaveTextContent("植付け");
 
       // 日誌数が多い日の「+N件」表示確認
-      const moreDiaries = screen.getByTestId("diary-calendar-more-diaries-2025-06-02");
+      const moreDiaries = screen.getByTestId(
+        "diary-calendar-more-diaries-2025-06-02"
+      );
       expect(moreDiaries).toHaveTextContent("+1件");
       expect(moreDiaries).toHaveAttribute("data-remaining-count", "1");
     });
 
     test("空データでもエラーにならないこと", () => {
       render(<DiaryCalendarView {...defaultProps} diaries={[]} />);
-      
+
       expect(screen.getByTestId("diary-calendar")).toBeInTheDocument();
-      expect(screen.queryByTestId(/diary-calendar-diaries-/)).not.toBeInTheDocument();
-      expect(screen.getByTestId("diary-calendar-day-2025-06-01")).toHaveAttribute("data-diary-count", "0");
+      expect(
+        screen.queryByTestId(/diary-calendar-diaries-/)
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("diary-calendar-day-2025-06-01")
+      ).toHaveAttribute("data-diary-count", "0");
     });
   });
 
@@ -139,7 +160,7 @@ describe("DiaryCalendarView", () => {
       // 当月外日付の薄い表示確認
       const nextMonthCell = screen.getByTestId("diary-calendar-day-2025-07-01");
       expect(nextMonthCell).toHaveAttribute("data-is-current-month", "false");
-      
+
       // 当月外日付のクリック
       await user.click(nextMonthCell);
       expect(mockOnDateSelect).toHaveBeenCalledTimes(2);
@@ -167,7 +188,7 @@ describe("DiaryCalendarView", () => {
 
       await user.click(nextButton);
       expect(mockOnMonthChange).toHaveBeenCalledWith("next");
-      
+
       expect(mockOnMonthChange).toHaveBeenCalledTimes(2);
     });
   });
@@ -183,7 +204,9 @@ describe("DiaryCalendarView", () => {
       );
 
       // 初期状態確認
-      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent("2025年 6月");
+      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent(
+        "2025年 6月"
+      );
       const june15Cell = screen.getByTestId("diary-calendar-day-2025-06-15");
       expect(june15Cell).toHaveAttribute("data-is-selected", "false");
 
@@ -197,7 +220,9 @@ describe("DiaryCalendarView", () => {
       );
 
       // 更新確認
-      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent("2025年 7月");
+      expect(screen.getByTestId("diary-calendar-title")).toHaveTextContent(
+        "2025年 7月"
+      );
       const july10Cell = screen.getByTestId("diary-calendar-day-2025-07-10");
       expect(july10Cell).toHaveAttribute("data-is-selected", "true");
 
@@ -221,7 +246,9 @@ describe("DiaryCalendarView", () => {
       );
 
       // 新しい日誌バッジが表示されることを確認
-      const newBadge = screen.getByTestId("diary-calendar-diary-badge-2025-07-05-0");
+      const newBadge = screen.getByTestId(
+        "diary-calendar-diary-badge-2025-07-05-0"
+      );
       expect(newBadge).toHaveTextContent("播種");
     });
   });
@@ -232,8 +259,16 @@ describe("DiaryCalendarView", () => {
       const manyDiaries = Array.from({ length: 10 }, (_, index) => ({
         id: `diary-${index + 1}`,
         date: "2025-06-15",
-        workType: ["PLANTING", "WATERING", "FERTILIZING", "HARVESTING", "WEEDING"][index % 5] as any,
-        workTypeDisplay: ["植付け", "水やり", "施肥", "収穫", "除草"][index % 5]!,
+        workType: [
+          "PLANTING",
+          "WATERING",
+          "FERTILIZING",
+          "HARVESTING",
+          "WEEDING",
+        ][index % 5] as WorkTypeKey,
+        workTypeDisplay: ["植付け", "水やり", "施肥", "収穫", "除草"][
+          index % 5
+        ]!,
       }));
 
       render(
@@ -248,12 +283,20 @@ describe("DiaryCalendarView", () => {
       expect(dateCell).toHaveAttribute("data-diary-count", "10");
 
       // 最大表示数（2件）確認
-      expect(screen.getByTestId("diary-calendar-diary-badge-2025-06-15-0")).toBeInTheDocument();
-      expect(screen.getByTestId("diary-calendar-diary-badge-2025-06-15-1")).toBeInTheDocument();
-      expect(screen.queryByTestId("diary-calendar-diary-badge-2025-06-15-2")).not.toBeInTheDocument();
+      expect(
+        screen.getByTestId("diary-calendar-diary-badge-2025-06-15-0")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("diary-calendar-diary-badge-2025-06-15-1")
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByTestId("diary-calendar-diary-badge-2025-06-15-2")
+      ).not.toBeInTheDocument();
 
       // 「+N件」表示確認
-      const moreDiaries = screen.getByTestId("diary-calendar-more-diaries-2025-06-15");
+      const moreDiaries = screen.getByTestId(
+        "diary-calendar-more-diaries-2025-06-15"
+      );
       expect(moreDiaries).toHaveTextContent("+8件");
     });
 
@@ -386,25 +429,45 @@ describe("ユーティリティ関数", () => {
       expect(todayTextClasses).toContain("font-bold");
 
       // 選択日のクラス
-      const selectedClasses = getDayClassNames(testDate, selectedDate, new Date("2025-06-01"));
+      const selectedClasses = getDayClassNames(
+        testDate,
+        selectedDate,
+        new Date("2025-06-01")
+      );
       expect(selectedClasses).toContain("bg-accent/20");
       expect(selectedClasses).toContain("border-accent");
 
-      const selectedTextClasses = getDateTextClassNames(testDate, selectedDate, new Date("2025-06-01"));
+      const selectedTextClasses = getDateTextClassNames(
+        testDate,
+        selectedDate,
+        new Date("2025-06-01")
+      );
       expect(selectedTextClasses).toContain("text-accent");
       expect(selectedTextClasses).toContain("font-bold");
 
       // 当月外のクラス
       const prevMonthDate = new Date("2025-05-31");
-      const prevMonthClasses = getDayClassNames(prevMonthDate, null, new Date("2025-06-01"));
+      const prevMonthClasses = getDayClassNames(
+        prevMonthDate,
+        null,
+        new Date("2025-06-01")
+      );
       expect(prevMonthClasses).toContain("opacity-40");
 
-      const prevMonthTextClasses = getDateTextClassNames(prevMonthDate, null, new Date("2025-06-01"));
+      const prevMonthTextClasses = getDateTextClassNames(
+        prevMonthDate,
+        null,
+        new Date("2025-06-01")
+      );
       expect(prevMonthTextClasses).toContain("text-muted-foreground");
 
       // null値でもエラーにならないこと
-      expect(() => getDayClassNames(testDate, null, currentMonth)).not.toThrow();
-      expect(() => getDateTextClassNames(testDate, null, currentMonth)).not.toThrow();
+      expect(() =>
+        getDayClassNames(testDate, null, currentMonth)
+      ).not.toThrow();
+      expect(() =>
+        getDateTextClassNames(testDate, null, currentMonth)
+      ).not.toThrow();
     });
   });
 });
