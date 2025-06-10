@@ -233,7 +233,7 @@ function DiaryPageContent() {
 
 export default function DiaryPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense>
       <DiaryPageContent />
     </Suspense>
   );

@@ -29,6 +29,7 @@ import { Textarea } from "@/shadcn/textarea";
 import { Button } from "@/shadcn/button";
 import { Separator } from "@/shadcn/separator";
 import { Badge } from "@/shadcn/badge";
+import { Skeleton } from "@/shadcn/skeleton";
 import {
   BuildingIcon,
   SaveIcon,
@@ -127,34 +128,50 @@ export default function OrganizationSettingsPage() {
 
   const isSubmitting = updateOrganizationMutation.isPending;
 
-  if (!currentOrganizationId) {
-    return (
-      <div className="container mx-auto py-8">
-        <Card>
-          <CardContent className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <BuildingIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">
-                組織が選択されていません
-              </h3>
-              <p className="text-muted-foreground">
-                サイドバーから組織を選択してください。
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (isLoading || !currentOrganizationId) {
     return (
       <div className="container mx-auto py-8">
         <div className="space-y-6">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          {/* ページヘッダーのスケルトン */}
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-80" />
           </div>
+
+          <Separator />
+
+          {/* 基本情報カードのスケルトン */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* 組織名フィールド */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-10 w-full rounded-md" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+
+                {/* 説明フィールド */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-20 w-full rounded-md" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+
+                {/* ボタン */}
+                <div className="flex justify-end">
+                  <Skeleton className="h-10 w-32 rounded-md" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -179,7 +196,7 @@ export default function OrganizationSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto pb-8 space-y-6">
       {/* ページヘッダー */}
       <div>
         <h1 className="text-3xl font-bold">組織設定</h1>

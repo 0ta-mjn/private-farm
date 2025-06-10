@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 
-export default function Home() {
+export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const trpc = useTRPC();
 
@@ -24,13 +24,7 @@ export default function Home() {
   // ボタンのレンダリング
   const renderButtons = () => {
     if (isLoading) {
-      return (
-        <div className="flex w-full justify-center items-center gap-3">
-          <Button disabled className="w-full max-w-xs">
-            読み込み中...
-          </Button>
-        </div>
-      );
+      return null;
     }
 
     if (isAuthenticated && isSetupCompleted) {
