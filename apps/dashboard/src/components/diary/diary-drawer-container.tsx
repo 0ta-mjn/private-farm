@@ -129,9 +129,14 @@ export function DiaryDrawerContainer() {
 
     try {
       const formData = {
-        ...data,
         date: format(data.date, "yyyy-MM-dd"),
         organizationId: currentOrganizationId,
+        title: data.title,
+        content: data.content || "",
+        workType: data.workType,
+        weather: data.weather || null,
+        temperature: data.temperature ?? null,
+        thingIds: data.thingIds || [],
       };
 
       if (isEdit && diaryId) {
