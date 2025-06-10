@@ -3,6 +3,8 @@ import {
   weatherOptions,
   WorkTypeKey,
   workTypeOptions,
+  ThingTypeKey,
+  thingTypeOptions,
 } from "@repo/config";
 
 /**
@@ -38,6 +40,20 @@ export const WORK_TYPE_OPTIONS: Record<
   OTHER: { label: "その他", color: "gray" },
 };
 
+/**
+ * 区画の種類の選択肢（キー: 内部値、値: 表示名）
+ */
+export const THING_TYPE_OPTIONS: Record<
+  ThingTypeKey,
+  { label: string; color: string }
+> = {
+  PADDY: { label: "水田", color: "cyan" },
+  FIELD: { label: "畑（露地）", color: "green" },
+  GREENHOUSE: { label: "温室・ハウス", color: "blue" },
+  ORCHARD: { label: "果樹園", color: "orange" },
+  OTHER: { label: "その他", color: "gray" },
+};
+
 // 表示用の配列（UIコンポーネントで使用）
 export const WEATHER_DISPLAY_OPTIONS = Object.entries(WEATHER_OPTIONS).map(
   ([key, label]) => ({ ...label, value: key })
@@ -46,6 +62,10 @@ export const WEATHER_DISPLAY_OPTIONS = Object.entries(WEATHER_OPTIONS).map(
 export const WORK_TYPE_DISPLAY_OPTIONS = Object.entries(WORK_TYPE_OPTIONS).map(
   ([key, label]) => ({ ...label, value: key })
 );
+
+export const THING_TYPE_DISPLAY_OPTIONS = Object.entries(
+  THING_TYPE_OPTIONS
+).map(([key, label]) => ({ ...label, value: key }));
 
 export const getWorkTypeDisplay = (
   workType: string | null | undefined
@@ -61,4 +81,12 @@ export const getWeatherDisplay = (
   if (!weather) return null;
   const parsed = weatherOptions.safeParse(weather).data;
   return parsed ? WEATHER_OPTIONS[parsed] : null;
+};
+
+export const getThingTypeDisplay = (
+  thingType: string | null | undefined
+): { label: string; color?: string } | null => {
+  if (!thingType) return null;
+  const parsed = thingTypeOptions.safeParse(thingType).data;
+  return parsed ? THING_TYPE_OPTIONS[parsed] : THING_TYPE_OPTIONS["OTHER"]!;
 };

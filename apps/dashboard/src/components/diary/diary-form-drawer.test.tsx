@@ -93,10 +93,10 @@ describe("DiaryFormDrawer", () => {
       expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
     });
 
-    test("フィールドオプションの表示", () => {
+    test("区画オプションの表示", () => {
       render(<DiaryFormDrawer {...defaultProps} />);
 
-      // フィールドオプションが正しく表示されること
+      // 区画オプションが正しく表示されること
       expect(screen.getByTestId("field-options-container")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-1")).toBeInTheDocument();
       expect(screen.getByTestId("field-option-field-2")).toBeInTheDocument();
@@ -108,7 +108,7 @@ describe("DiaryFormDrawer", () => {
       expect(screen.getByText("第1温室")).toBeInTheDocument();
     });
 
-    test("フィールドオプションが空の場合の処理", () => {
+    test("区画オプションが空の場合の処理", () => {
       render(<DiaryFormDrawer {...defaultProps} fieldOptions={[]} />);
 
       expect(screen.getByTestId("field-options-container")).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe("DiaryFormDrawer", () => {
   });
 
   describe("フォーム操作", () => {
-    test("全てのフィールドの操作", async () => {
+    test("全ての区画の操作", async () => {
       const user = userEvent.setup();
       render(<DiaryFormDrawer {...defaultProps} />);
 
@@ -174,7 +174,7 @@ describe("DiaryFormDrawer", () => {
       expect(contentTextarea.value).toBe(testContent);
     });
 
-    test("ほ場の選択・解除とバッジ表示", async () => {
+    test("区画の選択・解除とバッジ表示", async () => {
       const user = userEvent.setup();
       render(<DiaryFormDrawer {...defaultProps} />);
 
@@ -205,7 +205,7 @@ describe("DiaryFormDrawer", () => {
         expect(screen.getByTestId("field-checkbox-greenhouse-1")).toBeChecked();
       }
 
-      // チェックされているフィールドの数を確認
+      // チェックされている区画の数を確認
       {
         const checkedCheckboxes = screen.getAllByRole("checkbox", {
           checked: true,
@@ -240,7 +240,7 @@ describe("DiaryFormDrawer", () => {
   });
 
   describe("バリデーション", () => {
-    test("必須・非必須フィールドのバリデーション", async () => {
+    test("必須・非必須区画のバリデーション", async () => {
       const user = userEvent.setup();
       render(<DiaryFormDrawer {...defaultProps} />);
 
@@ -271,10 +271,10 @@ describe("DiaryFormDrawer", () => {
       const plantingOption = screen.getByTestId("work-type-option-PLANTING");
       await user.click(plantingOption);
 
-      // 他のフィールドは空のまま送信
+      // 他の区画は空のまま送信
       await user.click(submitButton);
 
-      // 非必須フィールドのエラーが表示されないこと
+      // 非必須区画のエラーが表示されないこと
       expect(screen.queryByTestId("content-error")).not.toBeInTheDocument();
       expect(screen.queryByTestId("weather-error")).not.toBeInTheDocument();
       expect(screen.queryByTestId("temperature-error")).not.toBeInTheDocument();
@@ -309,7 +309,7 @@ describe("DiaryFormDrawer", () => {
       await user.type(temperatureInput, "abc");
       expect(temperatureInput.value).toBe(""); // type="number"により無効な文字は入力されない
 
-      // 必須フィールドを入力して送信
+      // 必須区画を入力して送信
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       await waitFor(() => {
@@ -342,7 +342,7 @@ describe("DiaryFormDrawer", () => {
       const user = userEvent.setup();
       render(<DiaryFormDrawer {...defaultProps} isEdit={false} />);
 
-      // 全フィールドを入力
+      // 全区画を入力
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       await waitFor(() => {
@@ -472,7 +472,7 @@ describe("DiaryFormDrawer", () => {
       contentTextarea.value = "";
       await user.type(contentTextarea, "更新された作業内容");
 
-      // ほ場選択を変更
+      // 区画選択を変更
       const field1Option = screen.getByTestId("field-option-field-1");
       await user.click(field1Option); // 既存の選択を解除
       const field2Option = screen.getByTestId("field-option-field-2");
@@ -500,11 +500,11 @@ describe("DiaryFormDrawer", () => {
       expect(submittedData?.thingIds).toEqual(["field-2"]);
     });
 
-    test("複数ほ場選択での送信", async () => {
+    test("複数区画選択での送信", async () => {
       const user = userEvent.setup();
       render(<DiaryFormDrawer {...defaultProps} />);
 
-      // 必須フィールドを入力
+      // 必須区画を入力
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       await waitFor(() => {
@@ -513,7 +513,7 @@ describe("DiaryFormDrawer", () => {
       const plantingOption = screen.getByTestId("work-type-option-PLANTING");
       await user.click(plantingOption);
 
-      // 複数ほ場を選択
+      // 複数区画を選択
       const field1Option = screen.getByTestId("field-option-field-1");
 
       await user.click(field1Option);
@@ -542,7 +542,7 @@ describe("DiaryFormDrawer", () => {
 
       await user.click(submitButton);
 
-      // 複数のほ場IDが送信されること
+      // 複数の区画IDが送信されること
       await waitFor(() => {
         expect(defaultProps.onSubmit).toHaveBeenCalledTimes(1);
       });
@@ -559,7 +559,7 @@ describe("DiaryFormDrawer", () => {
       const user = userEvent.setup();
       const { unmount } = render(<DiaryFormDrawer {...defaultProps} />);
 
-      // 必須フィールドを入力
+      // 必須区画を入力
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       await waitFor(() => {
@@ -583,7 +583,7 @@ describe("DiaryFormDrawer", () => {
       // バリデーションエラーがある場合の送信防止
       render(<DiaryFormDrawer {...defaultProps} />);
 
-      // 必須フィールドを入力せずに送信
+      // 必須区画を入力せずに送信
       const submitButton = screen.getByTestId("submit-button-desktop");
       await user.click(submitButton);
 
@@ -938,7 +938,7 @@ describe("DiaryFormDrawer", () => {
       await user.click(secondCancelButton);
       expect(mockOnClose2).toHaveBeenCalledOnce();
 
-      // 送信テスト用に必須フィールドを入力
+      // 送信テスト用に必須区画を入力
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       await waitFor(() => {

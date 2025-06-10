@@ -245,15 +245,15 @@ export function DiaryFormDrawer({
           )}
         />
 
-        {/* 対象ほ場選択（スタブ実装） */}
+        {/* 対象区画選択（スタブ実装） */}
         <FormField
           control={form.control}
           name="thingIds"
           render={() => (
             <FormItem>
-              <FormLabel>対象ほ場</FormLabel>
+              <FormLabel>対象区画</FormLabel>
               <FormDescription>
-                作業を行ったほ場や温室を選択してください（複数選択可）
+                作業を行った区画や温室を選択してください（複数選択可）
               </FormDescription>
               {selectedFields.length > 0 && (
                 <div
@@ -296,7 +296,7 @@ export function DiaryFormDrawer({
                         {field.name}
                       </p>
                       <p className="text-muted-foreground text-sm">
-                        {field.type === "field" ? "ほ場" : "温室"} •{" "}
+                        {field.type === "field" ? "区画" : "温室"} •{" "}
                         {field.area}㎡
                       </p>
                     </div>
@@ -402,7 +402,7 @@ export function DiaryFormDrawer({
               {isEdit ? "農業日誌を編集" : "農業日誌を作成"}
             </SheetTitle>
             <SheetDescription>
-              作業内容や対象ほ場の情報を記録してください。
+              作業内容や対象区画の情報を記録してください。
             </SheetDescription>
           </SheetHeader>
 

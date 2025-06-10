@@ -14,7 +14,7 @@ import {
   type FieldOption,
 } from "./diary-form-drawer";
 
-// スタブデータ：ほ場選択のオプション
+// スタブデータ：区画選択のオプション
 const FIELD_OPTIONS: FieldOption[] = [
   { id: "field-1", name: "A区画（トマト）", type: "field", area: 100 },
   { id: "field-2", name: "B区画（きゅうり）", type: "field", area: 150 },

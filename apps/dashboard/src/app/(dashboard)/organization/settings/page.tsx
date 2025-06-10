@@ -151,14 +151,14 @@ export default function OrganizationSettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {/* 組織名フィールド */}
+                {/* 組織名区画 */}
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-16" />
                   <Skeleton className="h-10 w-full rounded-md" />
                   <Skeleton className="h-3 w-48" />
                 </div>
 
-                {/* 説明フィールド */}
+                {/* 説明区画 */}
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-12" />
                   <Skeleton className="h-20 w-full rounded-md" />

@@ -172,7 +172,7 @@ export function DiaryDateDetailContent({
                 <Skeleton className="h-4 w-3/5" />
               </div>
 
-              {/* 対象ほ場のスケルトン */}
+              {/* 対象区画のスケルトン */}
               <div className="flex items-center gap-2">
                 <Skeleton className="h-4 w-4 rounded" />
                 <div className="flex gap-1">
@@ -267,7 +267,7 @@ export function DiaryDateDetailContent({
                     </div>
                   )}
 
-                  {/* 対象ほ場 */}
+                  {/* 対象区画 */}
                   {diary.diaryThings && diary.diaryThings.length > 0 && (
                     <div className="flex items-center gap-2">
                       <MapPinIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />

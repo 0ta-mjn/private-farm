@@ -38,6 +38,7 @@ import {
   History as HistoryIcon,
   BellIcon,
   SettingsIcon,
+  Map as MapIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
@@ -183,6 +184,12 @@ export function AppSidebar() {
           href: "/organization/settings",
         },
         {
+          id: "fields",
+          label: "区画管理",
+          icon: MapIcon,
+          href: "/organization/fields",
+        },
+        {
           id: "notifications",
           label: "通知設定",
           icon: BellIcon,
@@ -235,7 +242,7 @@ export function AppSidebar() {
           {/* データ管理セクション */}
           <SidebarGroup>
             <SidebarGroupLabel>
-              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-20 bg-sidebar-foreground/40" />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -251,7 +258,7 @@ export function AppSidebar() {
           {/* 設定セクション */}
           <SidebarGroup>
             <SidebarGroupLabel>
-              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-12 bg-sidebar-foreground/40" />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
