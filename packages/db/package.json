@@ -24,6 +24,7 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "push": "dotenv -e .env -- pnpm drizzle-kit push",
+    "push:testing": "dotenv -e .env.testing -- pnpm drizzle-kit push",
     "studio": "pnpm drizzle-kit studio",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },

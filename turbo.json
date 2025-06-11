@@ -21,7 +21,7 @@
       "cache": true
     },
     "test": {
-      "dependsOn": ["lint", "@repo/supabase#setup", "@repo/db#push"],
+      "dependsOn": ["lint"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": [
         "DATABASE_URL",
@@ -32,18 +32,20 @@
       ]
     },
     "e2e": {
-      "dependsOn": ["@repo/supabase#setup", "@repo/db#push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": [
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SITE_URL",
         "ACCEPT_ORIGINS",
         "SUPABASE_URL",
         "SUPABASE_KEY",
         "DATABASE_URL",
         "API_PORT",
         "DASHBOARD_PORT",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_INBUCKET_URL",
         "CI"
       ],
       "cache": false
@@ -55,7 +57,6 @@
       "dependsOn": ["^typecheck"]
     },
     "dev": {
-      "dependsOn": ["@repo/supabase#setup", "@repo/db#push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "cache": false,
       "persistent": true,
@@ -63,6 +64,7 @@
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SITE_URL",
         "ACCEPT_ORIGINS",
         "SUPABASE_URL",
         "SUPABASE_KEY",
@@ -73,11 +75,6 @@
     },
     "push": {
       "dependsOn": ["^push"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["DATABASE_URL"],
-      "cache": false
-    },
-    "setup": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["DATABASE_URL"],
       "cache": false

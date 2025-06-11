@@ -6,15 +6,14 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "turbo -F @repo/db push",
-    "db:studio": "turbo -F @repo/db studio",
     "typecheck": "turbo run typecheck",
-    "db:push:testing": "dotenv -e .env.testing -- turbo -F @repo/db push",
-    "emulator:start": "turbo -F @repo/supabase dev",
-    "stop": "turbo run stop",
-    "stopd": "turbo run stopd",
-    "emulator:setup": "pnpm emulator:start && pnpm db:push:testing",
-    "test": "turbo run test --concurrency=1",
-    "e2e": "dotenv -e .env.testing -- turbo run e2e --concurrency=1"
+    "db:push:testing": "pnpm --filter @repo/db push:testing",
+    "emulator:start": "pnpm --filter @repo/supabase run setup",
+    "emulator:stop": "pnpm --filter @repo/supabase run stop",
+    "emulator:stopd": "pnpm --filter @repo/supabase run stopd",
+    "setup:testing": "pnpm emulator:start && pnpm db:push:testing",
+    "test": "pnpm setup:testing && turbo run test --concurrency=1",
+    "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1"
   },
   "devDependencies": {
     "dotenv-cli": "catalog:",

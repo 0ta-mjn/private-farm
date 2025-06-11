@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "e2e": "pnpm playwright test",
-    "e2e:headless": "pnpm playwright test --reporter=dot",
-    "e2e:ui": "pnpm playwright test --ui",
+    "e2e": "dotenv -e .env.testing -- pnpm playwright test --reporter=null",
+    "e2e:headless": "dotenv -e .env.testing -- pnpm playwright test --reporter=dot",
+    "e2e:ui": "dotenv -e .env.testing -- pnpm playwright test --ui",
     "lint": "eslint",
     "install-browsers": "playwright install"
   },
