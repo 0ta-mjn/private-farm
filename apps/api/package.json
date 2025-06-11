@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "dotenv -e .env -e ../../.env tsx watch src/server.ts",
-    "start": "dotenv -e .env -e ../../.env tsx src/server.ts",
+    "dev": "dotenv -e .env tsx watch src/server.ts",
+    "start": "dotenv -e .env tsx src/server.ts",
+    "start:testing": "dotenv -e .env.testing tsx src/server.ts",
+    "setup-serve": "pnpm start & wait-on tcp:8000",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
@@ -28,6 +30,7 @@
     "dotenv-cli": "^8.0.0",
     "eslint": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wait-on": "catalog:"
   }
 }

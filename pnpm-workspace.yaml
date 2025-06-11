@@ -22,5 +22,6 @@ catalog:
   "drizzle-kit": "^0.31.1"
   "@types/node": "^20.17.57"
   "dotenv-cli": "^8.0.0"
+  "wait-on": "^8.0.3"
 onlyBuiltDependencies:
   - supabase
