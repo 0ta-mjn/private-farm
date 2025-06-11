@@ -12,7 +12,8 @@
     "emulator:start": "turbo -F @repo/emulator dev",
     "emulator:stop": "turbo -F @repo/emulator stop",
     "emulator:stopd": "turbo -F @repo/emulator stopd",
-    "test": "turbo run test",
+    "emulator:setup": "pnpm emulator:start && pnpm db:push:testing",
+    "test": "dotenv -e .env.testing -- turbo run test --concurrency=1",
     "test:ci": "bash ./scripts/test_ci.sh"
   },
   "devDependencies": {

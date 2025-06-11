@@ -5,7 +5,23 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "!.cache/**"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "ACCEPT_ORIGINS",
+        "SUPABASE_URL",
+        "SUPABASE_KEY",
+        "DATABASE_URL",
+        "API_PORT",
+        "CI"
+      ]
+    },
+    "start": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "!.cache/**"],
       "env": [
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -19,7 +35,7 @@
       ]
     },
     "test": {
-      "dependsOn": ["lint", "push"],
+      "dependsOn": ["lint", "@repo/emulator#start", "@repo/db#push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": [
         "DATABASE_URL",
@@ -51,18 +67,22 @@
       ]
     },
     "push": {
+      "dependsOn": ["^push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["DATABASE_URL"],
-      "cache": false,
-      "interactive": true
+      "cache": false
+    },
+    "emulator:setup": {
+      "dependsOn": ["^emulator:setup"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["DATABASE_URL"],
+      "cache": false
     },
     "stop": {
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "stopd": {
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "studio": {
       "cache": false,
