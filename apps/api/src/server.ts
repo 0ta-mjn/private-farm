@@ -20,7 +20,7 @@ const server = fastify({
 });
 
 // 全てのオリジンを許可する場合
-await server.register(cors, {
+server.register(cors, {
   origin: process.env.ACCEPT_ORIGINS
     ? process.env.ACCEPT_ORIGINS.split(",") // Use environment variable for allowed domains
     : "*", // Default to "*" for development purposes
