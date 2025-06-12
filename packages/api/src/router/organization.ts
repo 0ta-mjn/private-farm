@@ -6,6 +6,7 @@ import {
   getUserOrganizations,
   getOrganizationById,
   updateOrganization,
+  deleteOrganization,
   CreateOrganizationSchema,
   UpdateOrganizationSchema,
 } from "@repo/core";
@@ -142,6 +143,30 @@ export const organizationRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "組織の更新中にエラーが発生しました",
+        });
+      }
+    }),
+
+  // 組織を削除（認証が必要、管理者権限が必要）
+  delete: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await deleteOrganization(ctx.db, input.organizationId);
+      } catch (error) {
+        console.error("Organization deletion error:", error);
+
+        // ビジネスエラーをtRPCエラーに変換
+        if (error instanceof OrganizationUpdateError) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "組織の削除中にエラーが発生しました",
         });
       }
     }),

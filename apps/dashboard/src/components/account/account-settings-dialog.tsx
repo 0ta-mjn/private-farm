@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,7 @@ export function AccountSettingsDialog({
   );
 
   // 名前更新の初期化
-  React.useEffect(() => {
+  useEffect(() => {
     if (userData?.user?.name) {
       setName(userData.user.name);
     }

@@ -244,3 +244,39 @@ export async function updateOrganization(
 
   return updatedOrganization;
 }
+
+/**
+ * 組織削除のコア処理
+ *
+ * @param db - データベース接続
+ * @param organizationId - 削除する組織のID
+ * @param userId - 削除を実行するユーザーのID（権限チェック用）
+ * @returns 削除された組織の情報
+ */
+export async function deleteOrganization(
+  db: Database,
+  organizationId: string
+): Promise<{ id: string; name: string }> {
+  return await db.transaction(async (tx) => {
+    // 関連するメンバーシップを削除
+    await tx
+      .delete(organizationMembersTable)
+      .where(eq(organizationMembersTable.organizationId, organizationId));
+
+    // 組織を削除
+    const deletedOrganizations = await tx
+      .delete(organizationsTable)
+      .where(eq(organizationsTable.id, organizationId))
+      .returning({
+        id: organizationsTable.id,
+        name: organizationsTable.name,
+      });
+
+    const deletedOrganization = deletedOrganizations[0];
+    if (!deletedOrganization) {
+      throw new OrganizationUpdateError("組織の削除に失敗しました");
+    }
+
+    return deletedOrganization;
+  });
+}

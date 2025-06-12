@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useOrganization } from "@/contexts/organization-context";
 import { toast } from "sonner";
+import { DeleteOrganizationDialog } from "@/components/organization/delete-organization-dialog";
 import {
   Card,
   CardContent,
@@ -36,6 +37,7 @@ import {
   UsersIcon,
   CalendarIcon,
   ShieldIcon,
+  TrashIcon,
 } from "lucide-react";
 
 // バリデーションスキーマ
@@ -57,6 +59,11 @@ export default function OrganizationSettingsPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  // 削除ダイヤログの状態管理
+  const [deleteDialogOrganizationId, setDeleteDialogOrganizationId] = useState<
+    string | null
+  >(null);
+
   // 現在の組織情報を取得
   const { data: organization, isLoading } = useQuery({
     ...trpc.organization.getById.queryOptions({
@@ -75,7 +82,7 @@ export default function OrganizationSettingsPage() {
   });
 
   // フォームにデータを設定
-  React.useEffect(() => {
+  useEffect(() => {
     if (organization) {
       form.reset({
         name: organization.name,
@@ -351,6 +358,59 @@ export default function OrganizationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 危険ゾーン */}
+      <Card className="border-destructive">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <TrashIcon className="h-5 w-5" />
+            危険ゾーン
+          </CardTitle>
+          <CardDescription>
+            組織を削除すると、すべてのデータが永久に失われます。この操作は取り消すことができません。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+              <div className="flex items-start gap-3">
+                <ShieldIcon className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <h4 className="font-medium text-destructive">
+                    組織の削除について
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• 組織に関連するすべてのデータが削除されます</li>
+                    <li>• 区画、活動記録、メンバーの情報がすべて失われます</li>
+                    <li>• この操作は取り消すことができません</li>
+                    <li>• 削除後はアクセスできなくなります</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  setDeleteDialogOrganizationId(currentOrganizationId)
+                }
+                disabled={!currentOrganizationId}
+              >
+                <TrashIcon className="h-4 w-4 mr-2" />
+                組織を削除
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 削除確認ダイヤログ */}
+      <DeleteOrganizationDialog
+        organizationId={deleteDialogOrganizationId}
+        organizationName={organization?.name}
+        onClose={() => setDeleteDialogOrganizationId(null)}
+      />
     </div>
   );
 }

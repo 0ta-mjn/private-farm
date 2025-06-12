@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, expect } from "vitest";
 import { dbClient } from "@repo/db/client";
+import { eq } from "@repo/db";
 import {
   organizationMembersTable,
   organizationsTable,
@@ -10,6 +11,7 @@ import {
   getUserOrganizations,
   getOrganizationById,
   updateOrganization,
+  deleteOrganization,
   CreateOrganizationSchema,
 } from "./organization.service";
 
@@ -231,6 +233,100 @@ describe("OrganizationService", () => {
       expect(organizations).toHaveLength(1);
       expect(organizations[0]?.name).toBe(updateInput.name);
       expect(organizations[0]?.description).toBe(updateInput.description);
+    });
+  });
+
+  describe("deleteOrganization", () => {
+    it("should delete an organization and all related memberships", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      const testUserId2 = "test-user-id-2";
+
+      await db.insert(usersTable).values([
+        {
+          id: testUserId,
+          name: "Test User 1",
+        },
+        {
+          id: testUserId2,
+          name: "Test User 2",
+        },
+      ]);
+
+      // 組織を作成
+      const createdOrg = await createOrganization(db, testUserId, {
+        organizationName: "Test Organization to Delete",
+        description: "This organization will be deleted",
+      });
+
+      // 追加メンバーを作成
+      await db.insert(organizationMembersTable).values({
+        id: "member-id-2",
+        userId: testUserId2,
+        organizationId: createdOrg.organization.id,
+        role: "member",
+      });
+
+      // 削除前の状態確認
+      const organizationsBeforeDelete = await db.select().from(organizationsTable);
+      const membershipsBeforeDelete = await db.select().from(organizationMembersTable);
+      expect(organizationsBeforeDelete).toHaveLength(1);
+      expect(membershipsBeforeDelete).toHaveLength(2); // 管理者 + メンバー
+
+      // 組織を削除
+      const deleteResult = await deleteOrganization(db, createdOrg.organization.id);
+
+      // 結果の検証
+      expect(deleteResult.id).toBe(createdOrg.organization.id);
+      expect(deleteResult.name).toBe("Test Organization to Delete");
+
+      // データベースでの確認：組織が削除されている
+      const organizationsAfterDelete = await db.select().from(organizationsTable);
+      expect(organizationsAfterDelete).toHaveLength(0);
+
+      // データベースでの確認：関連するメンバーシップも削除されている
+      const membershipsAfterDelete = await db.select().from(organizationMembersTable);
+      expect(membershipsAfterDelete).toHaveLength(0);
+    });
+
+    it("should throw error when organization does not exist", async () => {
+      const nonExistentOrgId = "non-existent-org-id";
+
+      // 存在しない組織を削除しようとするとエラーが発生する
+      await expect(deleteOrganization(db, nonExistentOrgId)).rejects.toThrow(
+        "組織の削除に失敗しました"
+      );
+    });
+
+    it("should delete organization even when no memberships exist", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 組織を作成
+      const createdOrg = await createOrganization(db, testUserId, {
+        organizationName: "Organization with No Extra Members",
+        description: "Only admin member",
+      });
+
+      // メンバーシップを手動で削除（異常なケースをシミュレート）
+      await db.delete(organizationMembersTable).where(
+        eq(organizationMembersTable.organizationId, createdOrg.organization.id)
+      );
+
+      // 組織のみ残っている状態で削除
+      const deleteResult = await deleteOrganization(db, createdOrg.organization.id);
+
+      // 結果の検証
+      expect(deleteResult.id).toBe(createdOrg.organization.id);
+      expect(deleteResult.name).toBe("Organization with No Extra Members");
+
+      // データベースでの確認
+      const organizationsAfterDelete = await db.select().from(organizationsTable);
+      expect(organizationsAfterDelete).toHaveLength(0);
     });
   });
 });

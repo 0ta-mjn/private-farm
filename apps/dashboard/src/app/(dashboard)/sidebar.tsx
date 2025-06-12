@@ -44,8 +44,8 @@ import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
-import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
-import { AccountSettingsDialog } from "@/components/account-settings-dialog";
+import { CreateOrganizationDialog } from "@/components/organization/create-organization-dialog";
+import { AccountSettingsDialog } from "@/components/account/account-settings-dialog";
 import { Button } from "@/shadcn/button";
 import { SidebarMenuItemButton } from "./sidebar-menu-item-button";
 
