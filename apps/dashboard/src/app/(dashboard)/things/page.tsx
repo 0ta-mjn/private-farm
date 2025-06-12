@@ -73,7 +73,7 @@ export default function ThingsPage() {
           </div>
           <Button onClick={() => actions.openCreate()}>
             <Plus className="mr-2 h-4 w-4" />
-            区画を追加
+            最初の区画を追加
           </Button>
         </div>
       )}
