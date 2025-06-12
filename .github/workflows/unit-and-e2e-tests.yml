@@ -37,10 +37,10 @@ jobs:
         run: pnpm dlx playwright install --with-deps
 
       - name: Run unit tests
-        run: pnpm test:ci
+        run: pnpm run test:ci
 
       - name: Run E2E tests
-        run: pnpm e2e:ci
+        run: pnpm run e2e:ci
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
