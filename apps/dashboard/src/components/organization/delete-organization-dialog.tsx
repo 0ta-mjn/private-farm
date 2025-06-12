@@ -38,6 +38,9 @@ export function DeleteOrganizationDialog({
         });
         // 関連するキャッシュを無効化
         queryClient.invalidateQueries({
+          queryKey: trpc.user.setupCheck.queryKey(),
+        });
+        queryClient.invalidateQueries({
           queryKey: trpc.organization.list.queryKey(),
         });
         queryClient.invalidateQueries({
