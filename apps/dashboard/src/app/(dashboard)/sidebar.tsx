@@ -207,7 +207,7 @@ export function AppSidebar() {
   // ローディング状態の表示
   if (isLoading) {
     return (
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" data-testid="sidebar-skeleton">
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>

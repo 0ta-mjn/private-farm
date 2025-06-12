@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { SidebarMenuButton, SidebarMenuSubButton } from "@/shadcn/sidebar";
+import {
+  SidebarMenuButton,
+  SidebarMenuSubButton,
+  useSidebar,
+} from "@/shadcn/sidebar";
 
 interface SidebarItem {
   id: string;
@@ -25,6 +29,7 @@ export function SidebarMenuItemButton({
   isSubItem = false,
 }: SidebarMenuItemButtonProps) {
   const ButtonComponent = isSubItem ? SidebarMenuSubButton : SidebarMenuButton;
+  const { setOpenMobile } = useSidebar();
 
   const content = (
     <>
@@ -46,6 +51,9 @@ export function SidebarMenuItemButton({
         isActive={isActive}
         disabled={item.disabled}
         tooltip={item.disabled ? item.badge : undefined}
+        onClick={() => {
+          setOpenMobile(false);
+        }}
       >
         <Link href={item.href}>{content}</Link>
       </ButtonComponent>
@@ -55,7 +63,12 @@ export function SidebarMenuItemButton({
   // onClickがある場合はボタンとして表示
   return (
     <ButtonComponent
-      onClick={item.onClick}
+      onClick={() => {
+        if (item.onClick) {
+          item.onClick();
+        }
+        setOpenMobile(false);
+      }}
       disabled={item.disabled}
       tooltip={item.disabled ? item.badge : undefined}
       isActive={isActive}

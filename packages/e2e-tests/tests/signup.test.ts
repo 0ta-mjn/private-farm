@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { getLatestInbucketLink, typeString } from "./util";
 
 test.describe("Sign Up Test", () => {
   test.beforeEach(async ({ page }) => {
@@ -28,9 +29,9 @@ test.describe("Sign Up Test", () => {
     const testPassword = "Test123456";
 
     // Fill out the form
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirmPassword"]', testPassword);
+    await typeString(page, 'input[name="email"]', testEmail);
+    await typeString(page, 'input[name="password"]', testPassword);
+    await typeString(page, 'input[name="confirmPassword"]', testPassword);
 
     // Check the agreement checkboxes using role and label
     await page
@@ -52,6 +53,16 @@ test.describe("Sign Up Test", () => {
 
     // Verify the email address is displayed in the success message
     await expect(page.locator(`text=${testEmail}`)).toBeVisible();
+
+    // Check if the confirmation link was sent
+    const link = await getLatestInbucketLink(testEmail);
+    expect(link).toMatch(/\/auth\/confirm($|\/)/);
+
+    // click the confirmation link
+    await page.goto(link);
+    await expect(page).toHaveURL(/\/setup/, {
+      timeout: 10000,
+    });
   });
 
   test("show validation errors for invalid inputs", async ({ page }) => {
@@ -85,7 +96,7 @@ test.describe("Sign Up Test", () => {
     await page.goto("/signup");
 
     // Fill weak password and submit to trigger validation
-    await page.fill('input[name="password"]', "weak");
+    await typeString(page, 'input[name="password"]', "weak");
     await page.click('button[type="submit"]');
 
     // Wait for validation to process
@@ -102,8 +113,8 @@ test.describe("Sign Up Test", () => {
     await page.goto("/signup");
 
     // Fill different passwords and submit to trigger validation
-    await page.fill('input[name="password"]', "Test123456");
-    await page.fill('input[name="confirmPassword"]', "Different123");
+    await typeString(page, 'input[name="password"]', "Test123456");
+    await typeString(page, 'input[name="confirmPassword"]', "Different123");
     await page.click('button[type="submit"]');
 
     // Wait for validation to process
@@ -118,7 +129,7 @@ test.describe("Sign Up Test", () => {
     await page.goto("/signup");
 
     // Fill password
-    await page.fill('input[name="password"]', "Test123456");
+    await typeString(page, 'input[name="password"]', "Test123456");
 
     // Check initial password input type is "password"
     await expect(page.locator('input[name="password"]')).toHaveAttribute(
@@ -153,9 +164,9 @@ test.describe("Sign Up Test", () => {
     const testEmail = `test+${Date.now()}@example.com`;
     const testPassword = "Test123456";
 
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirmPassword"]', testPassword);
+    await typeString(page, 'input[name="email"]', testEmail);
+    await typeString(page, 'input[name="password"]', testPassword);
+    await typeString(page, 'input[name="confirmPassword"]', testPassword);
     await page
       .getByRole("checkbox", { name: /利用規約.*に同意します/ })
       .check();
@@ -179,9 +190,9 @@ test.describe("Sign Up Test", () => {
     const testEmail = `test+${Date.now()}@example.com`;
     const testPassword = "Test123456";
 
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.fill('input[name="confirmPassword"]', testPassword);
+    await typeString(page, 'input[name="email"]', testEmail);
+    await typeString(page, 'input[name="password"]', testPassword);
+    await typeString(page, 'input[name="confirmPassword"]', testPassword);
     await page
       .getByRole("checkbox", { name: /利用規約.*に同意します/ })
       .check();

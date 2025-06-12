@@ -1,44 +1,26 @@
 import { test, expect } from "@playwright/test";
-import { setupUser } from "./util";
+import { openSidebarIfNotVisible, setupUser } from "./util";
 
 test.describe("Thing CRUD Test", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the base URL and setup user for each test
     await page.goto("/");
     await setupUser(page);
-  });
 
-  test("should navigate to things page", async ({ page }) => {
-    // Navigate to things page via sidebar
+    // ページに移動
+    await openSidebarIfNotVisible(page);
     await page.click('[href="/things"]');
-
-    // Wait for things page to load
-    await page.waitForURL(/.*things/, { timeout: 10000 });
-
-    // Check if the page contains the correct heading
-    await expect(page.locator("h1")).toHaveText("区画・センサー管理");
+    await page.waitForSelector('h1:has-text("区画・センサー管理")');
   });
 
   test("should display empty state when no things exist", async ({ page }) => {
-    // Navigate to things page
-    await page.goto("/things");
-
-    // Wait for the page to load
-    await page.waitForSelector("h1", { timeout: 10000 });
-
     // Check for empty state message - using more specific selectors instead of text=
     await expect(
       page.locator("button:has-text('最初の区画を追加')")
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should create a new thing", async ({ page }) => {
-    // Navigate to things page
-    await page.goto("/things");
-
-    // Wait for the page to load
-    await page.waitForSelector("h1", { timeout: 10000 });
-
     // Click on create thing button using data-slot attribute
     await page.click('[data-slot="button"]:has-text("区画を追加")');
 
@@ -83,12 +65,6 @@ test.describe("Thing CRUD Test", () => {
   test("should validate required fields when creating a thing", async ({
     page,
   }) => {
-    // Navigate to things page
-    await page.goto("/things");
-
-    // Wait for the page to load
-    await page.waitForSelector("h1", { timeout: 10000 });
-
     // Click on create thing button using data-slot attribute
     await page.click('[data-slot="button"]:has-text("区画を追加")');
 
@@ -300,8 +276,6 @@ test.describe("Thing CRUD Test", () => {
   });
 
   test("should handle area input validation", async ({ page }) => {
-    // Navigate to things page
-    await page.goto("/things");
     await page.waitForSelector("h1", { timeout: 10000 });
 
     // Click on create thing button using data-slot attribute

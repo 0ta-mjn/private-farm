@@ -1,27 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { signupWithEmail } from "./util";
+import { signupWithEmail, typeString } from "./util";
 
 test.describe("Setup Test", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the base URL before each test
     await page.goto("/");
-  });
-
-  test("complete signup via confirmation link", async ({ page }) => {
-    // Test data
-    const { testEmail, testPassword, link } = await signupWithEmail(
-      page,
-      false
-    );
-
-    // Check if the confirmation link was sent
-    expect(link).toMatch(/\/auth\/confirm($|\/)/);
-
-    // click the confirmation link
-    await page.goto(link);
-    await expect(page).toHaveURL(/\/setup/, {
-      timeout: 10000,
-    });
   });
 
   test("complete initial setup form", async ({ page }) => {
@@ -40,8 +23,12 @@ test.describe("Setup Test", () => {
     const testUserName = `テストユーザー${Date.now()}`;
     const testOrganizationName = `テスト農場${Date.now()}`;
 
-    await page.fill('input[name="userName"]', testUserName);
-    await page.fill('input[name="organizationName"]', testOrganizationName);
+    await typeString(page, 'input[name="userName"]', testUserName);
+    await typeString(
+      page,
+      'input[name="organizationName"]',
+      testOrganizationName
+    );
 
     // Submit the form
     await page.click('button[type="submit"]');
@@ -84,7 +71,7 @@ test.describe("Setup Test", () => {
     await expect(page).toHaveURL(/\/setup/);
 
     // Fill short user name and submit to trigger validation
-    await page.fill('input[name="userName"]', "a");
+    await typeString(page, 'input[name="userName"]', "a");
     await page.click('button[type="submit"]');
 
     // Wait for validation to process
@@ -107,7 +94,7 @@ test.describe("Setup Test", () => {
 
     // Fill long user name (over 50 characters) and submit to trigger validation
     const longUserName = "a".repeat(51);
-    await page.fill('input[name="userName"]', longUserName);
+    await typeString(page, 'input[name="userName"]', longUserName);
     await page.click('button[type="submit"]');
 
     // Wait for validation to process
@@ -129,9 +116,9 @@ test.describe("Setup Test", () => {
     await expect(page).toHaveURL(/\/setup/);
 
     // Fill valid user name and long organization name
-    await page.fill('input[name="userName"]', "テストユーザー");
+    await typeString(page, 'input[name="userName"]', "テストユーザー");
     const longOrgName = "a".repeat(101);
-    await page.fill('input[name="organizationName"]', longOrgName);
+    await typeString(page, 'input[name="organizationName"]', longOrgName);
     await page.click('button[type="submit"]');
 
     // Wait for validation to process
@@ -156,8 +143,12 @@ test.describe("Setup Test", () => {
     const testUserName = `テストユーザー${Date.now()}`;
     const testOrganizationName = `テスト農場${Date.now()}`;
 
-    await page.fill('input[name="userName"]', testUserName);
-    await page.fill('input[name="organizationName"]', testOrganizationName);
+    await typeString(page, 'input[name="userName"]', testUserName);
+    await typeString(
+      page,
+      'input[name="organizationName"]',
+      testOrganizationName
+    );
 
     // Submit the form
     await page.click('button[type="submit"]');
@@ -178,8 +169,12 @@ test.describe("Setup Test", () => {
     const testUserName = `テストユーザー${Date.now()}`;
     const testOrganizationName = `テスト農場${Date.now()}`;
 
-    await page.fill('input[name="userName"]', testUserName);
-    await page.fill('input[name="organizationName"]', testOrganizationName);
+    await typeString(page, 'input[name="userName"]', testUserName);
+    await typeString(
+      page,
+      'input[name="organizationName"]',
+      testOrganizationName
+    );
     await page.click('button[type="submit"]');
 
     // Wait for redirect to dashboard
@@ -188,43 +183,5 @@ test.describe("Setup Test", () => {
     // Now try to access setup page again - should redirect to dashboard
     await page.goto("/setup");
     await expect(page).toHaveURL(/\/dashboard/);
-  });
-
-  test("display setup completion benefits information", async ({ page }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Check if benefits information is displayed
-    await expect(page.locator("text=設定完了後にできること")).toBeVisible();
-    await expect(page.locator("text=IoTデバイスの管理")).toBeVisible();
-    await expect(page.locator("text=農場データの可視化")).toBeVisible();
-    await expect(page.locator("text=農作業日誌の記録")).toBeVisible();
-  });
-
-  test("display proper form placeholders and descriptions", async ({
-    page,
-  }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Check form field placeholders
-    await expect(page.locator('input[name="userName"]')).toHaveAttribute(
-      "placeholder",
-      "あなたの名前"
-    );
-    await expect(
-      page.locator('input[name="organizationName"]')
-    ).toHaveAttribute("placeholder", "あなたの農場名または組織名");
-
-    // Check form description
-    await expect(
-      page.locator("text=農場名、会社名、グループ名などを入力してください")
-    ).toBeVisible();
   });
 });

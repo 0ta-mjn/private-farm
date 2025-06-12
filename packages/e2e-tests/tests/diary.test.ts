@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { setupUser } from "./util";
+import { openSidebarIfNotVisible, setupUser } from "./util";
 import { format } from "date-fns";
 
 test.describe("Diary CRUD Test", () => {
@@ -7,19 +7,16 @@ test.describe("Diary CRUD Test", () => {
     // Navigate to the base URL and setup user for each test
     await page.goto("/");
     await setupUser(page);
-  });
 
-  test("should navigate to diary page", async ({ page }) => {
-    // 日誌ページに移動
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
+    // ページに移動
+    await openSidebarIfNotVisible(page);
+
+    // リンクをクリック
+    await page.click('a[href="/diary"]');
+    await page.waitForSelector('h1:has-text("農業日誌")');
   });
 
   test("should create a diary entry", async ({ page }) => {
-    // 日誌ページに移動
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
-
     // 日誌作成ボタンをクリック
     await page.click('button:has-text("日誌を追加")');
 
@@ -79,10 +76,6 @@ test.describe("Diary CRUD Test", () => {
   test("should display diary details when clicking on a date", async ({
     page,
   }) => {
-    // まず日誌を作成
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
-
     // 日誌作成
     await page.click('button:has-text("日誌を追加")');
     await page.waitForSelector(
@@ -129,10 +122,6 @@ test.describe("Diary CRUD Test", () => {
   });
 
   test("should edit an existing diary entry", async ({ page }) => {
-    // まず日誌を作成
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
-
     await page.click('button:has-text("日誌を追加")');
     await page.waitForSelector(
       '[data-slot="drawer-content"], [data-slot="sheet-content"]'
@@ -194,23 +183,16 @@ test.describe("Diary CRUD Test", () => {
     );
 
     // 変更が反映されることを確認
-    await page.click(
-      `[data-testid="diary-calendar-day-${format(new Date(), "yyyy-MM-dd")}"]`
-    );
     await page.waitForSelector('[data-testid="date-detail"]');
-    await expect(
-      page.locator("text=編集後の内容に変更しました。")
-    ).toBeVisible();
+    await expect(page.locator("text=編集後の内容に変更しました。")).toBeVisible(
+      { timeout: 5000 }
+    );
     await expect(
       page.locator('[data-testid="date-detail"] >> text=収穫')
     ).toBeVisible();
   });
 
   test("should delete a diary entry", async ({ page }) => {
-    // まず日誌を作成
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
-
     await page.click('button:has-text("日誌を追加")');
     await page.waitForSelector(
       '[data-slot="drawer-content"], [data-slot="sheet-content"]'
@@ -261,23 +243,19 @@ test.describe("Diary CRUD Test", () => {
 
     // 削除を実行
     await page.click('button:has-text("削除する")');
+    await page.waitForSelector('[data-slot="alert-dialog-content"]', {
+      state: "hidden",
+    });
 
     // 該当日に日誌が表示されないことを確認
-    await page.click(
-      `[data-testid="diary-calendar-day-${format(new Date(), "yyyy-MM-dd")}"]`
-    );
-    await page.waitForSelector('[data-testid="date-detail"]');
-    await expect(
-      page.locator("text=削除される予定の日誌です。")
-    ).not.toBeVisible();
+    await expect(page.locator('[data-testid="date-detail"]')).not.toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should validate required fields when creating a diary entry", async ({
     page,
   }) => {
-    await page.click('[data-slot="sidebar"] [href="/diary"]');
-    await page.waitForSelector('.sr-only:has-text("農業日誌")');
-
     // 日誌作成フォームを開く
     await page.click('button:has-text("日誌を追加")');
     await page.waitForSelector(

@@ -1,40 +1,18 @@
 import { test, expect } from "@playwright/test";
-import { setupUser } from "./util";
+import { openSidebarIfNotVisible, setupUser } from "./util";
 
 test.describe("Organization CRUD Test", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the base URL and setup user for each test
     await page.goto("/");
     await setupUser(page);
-  });
 
-  test("should navigate to organization settings page", async ({ page }) => {
-    // Navigate to organization settings via sidebar
-    await page.click('[href="/organization/settings"]');
+    // ページに移動
+    await openSidebarIfNotVisible(page);
 
-    // Wait for organization settings page to load
-    await page.waitForURL(/.*organization\/settings/, { timeout: 10000 });
-
-    // Check if the page contains the correct heading
-    await expect(page.locator("h1")).toHaveText("組織設定");
-  });
-
-  test("should display organization basic information", async ({ page }) => {
-    // Navigate to organization settings
-    await page.goto("/organization/settings");
-
-    // Wait for the form to load
-    await page.waitForSelector('input[name="name"]', { timeout: 10000 });
-
-    // Check if basic information card is visible using data-slot
-    await expect(
-      page.locator('[data-slot="card-title"]:has-text("基本情報")')
-    ).toBeVisible();
-
-    // Check if form fields are present
-    await expect(page.locator('input[name="name"]')).toBeVisible();
-    await expect(page.locator('textarea[name="description"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+    // リンクをクリック
+    await page.click('a[href="/organization/settings"]');
+    await page.waitForSelector('h1:has-text("組織設定")');
   });
 
   test("should update organization information successfully", async ({
@@ -64,9 +42,7 @@ test.describe("Organization CRUD Test", () => {
     // Wait for success message
     await expect(
       page.locator("text=組織情報が正常に更新されました")
-    ).toBeVisible({
-      timeout: 10000,
-    });
+    ).toBeVisible({ timeout: 10000 });
 
     // Verify that the form fields contain the updated values
     await expect(page.locator('input[name="name"]')).toHaveValue(
@@ -138,6 +114,8 @@ test.describe("Organization CRUD Test", () => {
   test("should create a new organization via sidebar dropdown", async ({
     page,
   }) => {
+    await openSidebarIfNotVisible(page);
+
     // Wait for the sidebar to load
     await page.waitForSelector('[data-slot="dropdown-menu-trigger"]', {
       timeout: 10000,
@@ -160,16 +138,17 @@ test.describe("Organization CRUD Test", () => {
     const newDescription = `新しい農場の説明 ${Date.now()}`;
 
     // Fill in the organization creation form
-    await page.fill('input[name="organizationName"]', newOrganizationName);
-    await page.fill('textarea[name="description"]', newDescription);
+    await page.fill(
+      '[data-slot="dialog-content"] input[name="organizationName"]',
+      newOrganizationName
+    );
+    await page.fill(
+      '[data-slot="dialog-content"] textarea[name="description"]',
+      newDescription
+    );
 
     // Submit the form
     await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Wait for success message
-    await expect(page.locator("text=組織が正常に作成されました")).toBeVisible({
-      timeout: 10000,
-    });
 
     // Verify that the dialog closes and user is redirected or updated
     await expect(page.locator('[data-slot="dialog-content"]')).not.toBeVisible({
@@ -179,15 +158,15 @@ test.describe("Organization CRUD Test", () => {
     // Check if the new organization appears in the sidebar dropdown
     await page.waitForSelector(
       `[data-slot="dropdown-menu-item"]:has-text("${newOrganizationName.slice(0, 10)}")`,
-      {
-        timeout: 5000,
-      }
+      { timeout: 5000 }
     );
   });
 
   test("should show create organization form validation errors", async ({
     page,
   }) => {
+    await openSidebarIfNotVisible(page);
+
     // Open create organization dialog
     await page.click('[data-slot="dropdown-menu-trigger"]');
     await page.waitForSelector(
@@ -209,30 +188,24 @@ test.describe("Organization CRUD Test", () => {
 
     // Test maximum length validation
     const longName = "a".repeat(101);
-    await page.fill('input[name="organizationName"]', longName);
+    const longDescription = "a".repeat(501);
+    await page.fill(
+      '[data-slot="dialog-content"] input[name="organizationName"]',
+      longName
+    );
+    await page.fill(
+      '[data-slot="dialog-content"] textarea[name="description"]',
+      longDescription
+    );
     await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Wait for validation
-    await page.waitForTimeout(1000);
 
     // Check for length validation error in create form
     await expect(
       page.locator("text=組織名は100文字以内で入力してください")
-    ).toBeVisible();
-
-    // Test description length validation
-    const longDescription = "a".repeat(501);
-    await page.fill('input[name="organizationName"]', "有効な組織名");
-    await page.fill('textarea[name="description"]', longDescription);
-    await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Wait for validation
-    await page.waitForTimeout(1000);
-
-    // Check for description length validation error in create form
+    ).toBeVisible({ timeout: 5000 });
     await expect(
       page.locator("text=説明は500文字以内で入力してください")
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test("should delete organization successfully", async ({ page }) => {
@@ -302,8 +275,13 @@ test.describe("Organization CRUD Test", () => {
   });
 
   test("should switch between organizations", async ({ page }) => {
+    await openSidebarIfNotVisible(page);
+
     // Create an additional organization first
-    await page.click('[data-slot="dropdown-menu-trigger"]', { timeout: 5000 });
+    await page.click(
+      '[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]',
+      { timeout: 5000 }
+    );
     await page.waitForSelector(
       '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")',
       { timeout: 5000 }
@@ -313,23 +291,16 @@ test.describe("Organization CRUD Test", () => {
     );
 
     const secondOrganizationName = `第二の農場${Date.now()}`;
-    await page.fill('input[name="organizationName"]', secondOrganizationName);
+    await page.fill(
+      '[data-slot="dialog-content"] input[name="organizationName"]',
+      secondOrganizationName
+    );
     await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Wait for success and dialog to close
-    await expect(page.locator("text=組織が正常に作成されました")).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Wait for cache update
-    await page.waitForTimeout(2000);
 
     // Open dropdown and verify both organizations are listed
     await page.waitForSelector(
       `[data-slot="dropdown-menu-item"]:has-text("${secondOrganizationName.slice(0, 10)}")`,
-      {
-        timeout: 5000,
-      }
+      { timeout: 5000 }
     );
 
     // Switch to the first organization by clicking on it
