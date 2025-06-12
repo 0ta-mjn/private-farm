@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && tsup",
-    "dev": "dotenv -e .env tsup --watch --onSuccess \"node dist/server.cjs\"",
+    "dev": "dotenv -e .env -- tsup --watch --onSuccess \"node dist/server.cjs\"",
     "start": "dotenv -e .env node dist/server.cjs",
     "start:testing": "pnpm build && dotenv -e .env.testing tsx src/server.ts",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
