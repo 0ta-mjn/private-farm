@@ -41,3 +41,53 @@ export class OrganizationUpdateError extends Error {
     this.name = "OrganizationUpdateError";
   }
 }
+
+/**
+ * データが見つからない場合のエラー
+ */
+export class NotFoundError extends Error {
+  constructor(message: string = "データが見つかりません") {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
+/**
+ * アクセス権限がない場合のエラー
+ */
+export class UnauthorizedError extends Error {
+  constructor(message: string = "この操作を実行する権限がありません") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+/**
+ * バリデーションエラー
+ */
+export class ValidationError extends Error {
+  constructor(message: string = "入力データが無効です") {
+    super(message);
+    this.name = "ValidationError";
+  }
+}
+
+/**
+ * ほ場作成関連のエラー
+ */
+export class ThingCreationError extends Error {
+  constructor(message: string = "ほ場の作成に失敗しました") {
+    super(message);
+    this.name = "ThingCreationError";
+  }
+}
+
+/**
+ * ほ場更新関連のエラー
+ */
+export class ThingUpdateError extends Error {
+  constructor(message: string = "ほ場の更新に失敗しました") {
+    super(message);
+    this.name = "ThingUpdateError";
+  }
+}

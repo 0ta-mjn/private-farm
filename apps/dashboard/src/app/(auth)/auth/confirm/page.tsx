@@ -13,7 +13,7 @@ import { Button } from "@/shadcn/button";
 import { CheckCircleIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-export default function AuthCallbackPage() {
+export default function AuthConfirmPage() {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
@@ -21,47 +21,22 @@ export default function AuthCallbackPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // URLからハッシュパラメータを取得
-        const hashParams = new URLSearchParams(
-          window.location.hash.substring(1)
-        );
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-
-        if (accessToken && refreshToken) {
-          // セッションを設定
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (error) {
-            throw error;
-          }
-
-          if (data.user) {
-            setStatus("success");
-            setMessage("アカウントの確認が完了しました。");
-
-            router.push("/setup");
-          }
-        } else {
-          throw new Error("認証情報が見つかりません");
-        }
-      } catch (error) {
-        console.error("Auth callback error:", error);
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user.confirmed_at) {
+        // 成功時の処理
+        setStatus("success");
+        setMessage("アカウントの確認が完了しました。");
+        router.push("/setup");
+      } else {
+        // 認証に失敗した場合
         setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "認証の処理中にエラーが発生しました"
-        );
+        setMessage("認証に失敗しました。もう一度お試しください。");
       }
-    };
+    });
 
-    handleAuthCallback();
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, [router]);
 
   const handleRetry = () => {

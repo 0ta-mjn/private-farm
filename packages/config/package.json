@@ -22,5 +22,8 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   }
 }

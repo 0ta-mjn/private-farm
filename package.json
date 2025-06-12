@@ -6,20 +6,22 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "turbo -F @repo/db push",
-    "db:studio": "turbo -F @repo/db studio",
     "typecheck": "turbo run typecheck",
-    "db:push:testing": "dotenv -e .env.testing -- turbo -F @repo/db push",
-    "emulator:start": "turbo -F @repo/emulator dev",
-    "emulator:stop": "turbo -F @repo/emulator stop",
-    "emulator:stopd": "turbo -F @repo/emulator stopd",
-    "test": "turbo run test",
-    "test:ci": "bash ./scripts/test_ci.sh"
+    "db:push:testing": "pnpm --filter @repo/db push:testing",
+    "emulator:start": "pnpm --filter @repo/supabase run setup",
+    "emulator:stop": "pnpm --filter @repo/supabase run stop",
+    "emulator:stopd": "pnpm --filter @repo/supabase run stopd",
+    "setup:testing": "pnpm emulator:start && pnpm db:push:testing",
+    "test": "pnpm setup:testing && turbo run test --concurrency=1",
+    "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1",
+    "test:ci": "CI=true pnpm test",
+    "e2e:ci": "CI=true pnpm e2e"
   },
   "devDependencies": {
+    "dotenv-cli": "catalog:",
     "prettier": "catalog:",
     "turbo": "^2.5.4",
-    "typescript": "catalog:",
-    "dotenv-cli": "catalog:"
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }

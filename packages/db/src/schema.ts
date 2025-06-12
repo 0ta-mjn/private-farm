@@ -35,7 +35,7 @@ import { z } from "zod";
 export const organizationsTable = pgTable("organizations", {
   id: varchar("id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(), // 組織名（例：○○農場、○○生産組合）
-  description: text("description"), // 組織の説明・概要
+  description: text("description").default(""), // 組織の説明・概要
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -106,7 +106,7 @@ export const thingsTable = pgTable("things", {
   id: varchar("thing_id", { length: 255 }).primaryKey(),
   name: varchar("name", { length: 255 }).notNull(), // ほ場名（例：第1圃場、南のハウス）
   type: varchar("type", { length: 100 }).notNull(), // field: 露地, greenhouse: ハウス, paddy: 水田 等
-  description: text("description"), // ほ場の詳細説明（土質、過去の作付け履歴等）
+  description: text("description").default(""), // ほ場の詳細説明（土質、過去の作付け履歴等）
   location: varchar("location", { length: 255 }), // 所在地（住所や GPS座標）
   area: real("area"), // 面積（平方メートル）
   organizationId: varchar("organization_id", { length: 255 })
@@ -129,7 +129,7 @@ export const diariesTable = pgTable(
     id: varchar("id", { length: 255 }).primaryKey(),
     date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD 形式（日付での検索・ソートが頻繁）
     title: varchar("title", { length: 255 }), // 作業タイトル（例：「トマト定植作業」）
-    content: text("content").notNull(), // 作業内容の詳細
+    content: text("content").default(""), // 作業内容の詳細（任意）
     workType: varchar("work_type", { length: 100 }), // 作業種別（播種、施肥、収穫、防除等）
     weather: varchar("weather", { length: 50 }), // 作業日の天気（晴れ、曇り、雨等）
     temperature: real("temperature"), // 作業日の気温（℃）
@@ -164,6 +164,8 @@ export const diariesTable = pgTable(
  * 農作業日誌と対象ほ場の多対多関係を管理する。
  * 一つの日誌で複数のほ場を対象にできる（例：複数圃場での同時作業）。
  *
+ * @note 複合主キー(diaryId, thingId)を使用して重複を防ぎ、パフォーマンスを向上
+ *
  * @example
  * - 「トマト定植」日誌 → 第1圃場、第2圃場
  * - 「追肥作業」日誌 → ハウス1のみ
@@ -171,7 +173,6 @@ export const diariesTable = pgTable(
 export const diaryThingsTable = pgTable(
   "diary_things",
   {
-    id: varchar("id", { length: 255 }).primaryKey(),
     diaryId: varchar("diary_id", { length: 255 })
       .references(() => diariesTable.id, { onDelete: "cascade" })
       .notNull(),
@@ -181,11 +182,11 @@ export const diaryThingsTable = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    // 同一日誌に同一ほ場が重複して関連付けられることを防ぐ
-    uniqueDiaryThing: unique("unique_diary_thing").on(
-      table.diaryId,
-      table.thingId
-    ),
+    // 複合主キー：同一日誌に同一ほ場が重複して関連付けられることを防ぐ
+    pk: {
+      name: "diary_things_pkey",
+      columns: [table.diaryId, table.thingId],
+    },
   })
 );
 

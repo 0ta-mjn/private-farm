@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "dotenv -e .env -e ../../.env tsx watch src/server.ts",
-    "start": "dotenv -e .env -e ../../.env tsx src/server.ts",
+    "build": "tsc --noEmit && tsup",
+    "dev": "dotenv -e .env -- tsup --watch --onSuccess \"node dist/server.cjs\"",
+    "start": "dotenv -e .env node dist/server.cjs",
+    "start:testing": "pnpm build && dotenv -e .env.testing tsx src/server.ts",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
@@ -19,6 +20,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@esbuild-plugins/tsconfig-paths": "^0.1.2",
     "@repo/api": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/eslint-config": "workspace:*",
@@ -27,6 +29,7 @@
     "@types/node": "^20",
     "dotenv-cli": "^8.0.0",
     "eslint": "catalog:",
+    "tsup": "^8.5.0",
     "tsx": "catalog:",
     "typescript": "catalog:"
   }

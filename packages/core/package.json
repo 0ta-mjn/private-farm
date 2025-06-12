@@ -11,19 +11,18 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
-    "test:unit": "vitest --run --config vitest.unit.config.ts",
-    "test:integration": "vitest --run --config vitest.integration.config.ts",
-    "test:watch": "vitest --watch",
+    "test": "dotenv -e .env.testing -- vitest",
+    "test:watch": "dotenv -e .env.testing -- vitest --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/db": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
+    "dotenv-cli": "catalog:",
     "drizzle-orm": "catalog:",
     "postgres": "catalog:",
     "typescript": "catalog:",
