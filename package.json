@@ -13,7 +13,9 @@
     "emulator:stopd": "pnpm --filter @repo/supabase run stopd",
     "setup:testing": "pnpm emulator:start && pnpm db:push:testing",
     "test": "pnpm setup:testing && turbo run test --concurrency=1",
-    "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1"
+    "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1",
+    "test:ci": "CI=true pnpm test",
+    "e2e:ci": "CI=true pnpm e2e"
   },
   "devDependencies": {
     "dotenv-cli": "catalog:",
