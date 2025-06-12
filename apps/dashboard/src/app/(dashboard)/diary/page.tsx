@@ -188,9 +188,11 @@ function DiaryPageContent() {
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <DiarySearch onDiarySelect={handleDiaryClick} currentUserId={userId} />
 
+        <span className="sr-only">農業日誌</span>
+
         <Button onClick={actions.openCreate}>
           <PlusIcon className="h-4 w-4 mr-2" />
-          新規作成
+          日誌を追加
         </Button>
       </div>
 

@@ -191,7 +191,7 @@ export function DiaryDateDetailContent({
           </div>
         </div>
       ) : diaries.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="date-detail">
           {diaries.map((diary) => {
             const isCurrentUser = currentUserId === diary.userId;
             const weatherDisplay = getWeatherDisplay(diary.weather);

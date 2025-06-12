@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "api": "workspace:*",
-    "dashboard": "workspace:*"
+    "dashboard": "workspace:*",
+    "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
