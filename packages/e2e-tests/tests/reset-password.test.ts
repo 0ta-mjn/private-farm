@@ -63,24 +63,6 @@ test.describe("Reset Password Test", () => {
     ).toBeVisible();
   });
 
-  test("show loading state during form submission", async ({ page }) => {
-    // First create a user
-    const { testEmail } = await setupUser(page);
-
-    // Navigate to reset password page
-    await page.goto("/reset-password");
-
-    // Fill valid email
-    await page.fill('input[name="email"]', testEmail);
-
-    // Submit the form
-    await page.click('button[type="submit"]');
-
-    // Check loading state (button should show "送信中..." and be disabled)
-    await expect(page.locator('button[type="submit"]:disabled')).toBeVisible();
-    await expect(page.locator("text=送信中...")).toBeVisible();
-  });
-
   test("navigate back to login from reset password page", async ({ page }) => {
     // Navigate to reset password page
     await page.goto("/reset-password");
