@@ -268,24 +268,35 @@ describe("OrganizationService", () => {
       });
 
       // 削除前の状態確認
-      const organizationsBeforeDelete = await db.select().from(organizationsTable);
-      const membershipsBeforeDelete = await db.select().from(organizationMembersTable);
+      const organizationsBeforeDelete = await db
+        .select()
+        .from(organizationsTable);
+      const membershipsBeforeDelete = await db
+        .select()
+        .from(organizationMembersTable);
       expect(organizationsBeforeDelete).toHaveLength(1);
       expect(membershipsBeforeDelete).toHaveLength(2); // 管理者 + メンバー
 
       // 組織を削除
-      const deleteResult = await deleteOrganization(db, createdOrg.organization.id);
+      const deleteResult = await deleteOrganization(
+        db,
+        createdOrg.organization.id
+      );
 
       // 結果の検証
       expect(deleteResult.id).toBe(createdOrg.organization.id);
       expect(deleteResult.name).toBe("Test Organization to Delete");
 
       // データベースでの確認：組織が削除されている
-      const organizationsAfterDelete = await db.select().from(organizationsTable);
+      const organizationsAfterDelete = await db
+        .select()
+        .from(organizationsTable);
       expect(organizationsAfterDelete).toHaveLength(0);
 
       // データベースでの確認：関連するメンバーシップも削除されている
-      const membershipsAfterDelete = await db.select().from(organizationMembersTable);
+      const membershipsAfterDelete = await db
+        .select()
+        .from(organizationMembersTable);
       expect(membershipsAfterDelete).toHaveLength(0);
     });
 
@@ -313,19 +324,29 @@ describe("OrganizationService", () => {
       });
 
       // メンバーシップを手動で削除（異常なケースをシミュレート）
-      await db.delete(organizationMembersTable).where(
-        eq(organizationMembersTable.organizationId, createdOrg.organization.id)
-      );
+      await db
+        .delete(organizationMembersTable)
+        .where(
+          eq(
+            organizationMembersTable.organizationId,
+            createdOrg.organization.id
+          )
+        );
 
       // 組織のみ残っている状態で削除
-      const deleteResult = await deleteOrganization(db, createdOrg.organization.id);
+      const deleteResult = await deleteOrganization(
+        db,
+        createdOrg.organization.id
+      );
 
       // 結果の検証
       expect(deleteResult.id).toBe(createdOrg.organization.id);
       expect(deleteResult.name).toBe("Organization with No Extra Members");
 
       // データベースでの確認
-      const organizationsAfterDelete = await db.select().from(organizationsTable);
+      const organizationsAfterDelete = await db
+        .select()
+        .from(organizationsTable);
       expect(organizationsAfterDelete).toHaveLength(0);
     });
   });
