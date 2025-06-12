@@ -3,9 +3,7 @@ import { Page, request } from "@playwright/test";
 export const getLatestInbucketLink = async (email: string) => {
   const inboxUrl = process.env.SUPABASE_INBUCKET_URL;
   if (!inboxUrl) {
-    throw new Error(
-      "SUPABASE_INBUCKET_URL and SUPABASE_ANON_KEY environment variables must be set"
-    );
+    throw new Error("SUPABASE_INBUCKET_URL environment variables must be set");
   }
 
   const api = await request.newContext();
@@ -73,6 +71,7 @@ export const setupUser = async (page: Page) => {
 
   // Wait for redirect to dashboard
   await page.waitForURL(/dashboard/, { timeout: 10000 });
+  await page.waitForSelector('[data-slot="sidebar"]', { timeout: 10000 });
 
   return { testEmail, testPassword };
 };
