@@ -48,8 +48,11 @@ server.register(fastifyTRPCPlugin, {
     const port = process.env.API_PORT
       ? parseInt(process.env.API_PORT, 10)
       : 3000;
-    await server.listen({ port });
-    console.log(`Server listening on port ${port}...`);
+    // Cloud Run では 0.0.0.0 でバインドする必要がある
+    const host =
+      process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+    await server.listen({ port, host });
+    console.log(`Server listening on ${host}:${port}...`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

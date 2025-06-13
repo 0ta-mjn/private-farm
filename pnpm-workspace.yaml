@@ -20,7 +20,7 @@ catalog:
   "drizzle-zod": "^0.8.2"
   "postgres": "^3.4.7"
   "drizzle-kit": "^0.31.1"
-  "@types/node": "^20.17.57"
+  "@types/node": "^22.15.31"
   "dotenv-cli": "^8.0.0"
   "wait-on": "^8.0.3"
 onlyBuiltDependencies:
