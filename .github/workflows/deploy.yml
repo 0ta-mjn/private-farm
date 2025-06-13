@@ -28,9 +28,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Push database schema
-        run: pnpm db:push
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: DATABASE_URL=${{ secrets.DATABASE_URL }} pnpm db:push
 
   deploy-api:
     name: Deploy API
