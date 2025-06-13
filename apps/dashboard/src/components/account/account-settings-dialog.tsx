@@ -27,6 +27,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { UserIcon, Trash2Icon, AlertTriangleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 interface AccountSettingsDialogProps {
   children: React.ReactNode;
@@ -78,8 +79,8 @@ export function AccountSettingsDialog({
         // ダイヤログを閉じる
         setDeleteDialogOpen(false);
         setOpen(false);
-        // ログインページにリダイレクト
-        router.push("/");
+        router.push("/login");
+        supabase.auth.signOut();
       },
       onError: (error) => {
         console.error("アカウント削除エラー:", error);
@@ -113,17 +114,16 @@ export function AccountSettingsDialog({
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
-            orientation="vertical"
-            className="flex w-full gap-6 flex-row"
+            className="flex w-full gap-6 sm:flex-row"
           >
-            <TabsList className="flex flex-col h-fit w-48">
+            <TabsList className="flex h-fit sm:flex-col">
               <TabsTrigger value="profile" className="w-full justify-start">
                 <UserIcon className="h-4 w-4 mr-2" />
-                プロフィール設定
+                プロフィール
               </TabsTrigger>
               <TabsTrigger value="account" className="w-full justify-start">
                 <Trash2Icon className="h-4 w-4 mr-2" />
-                アカウント設定
+                アカウント
               </TabsTrigger>
             </TabsList>
 
@@ -135,6 +135,7 @@ export function AccountSettingsDialog({
                     <Label htmlFor="name">ユーザー名</Label>
                     <Input
                       id="name"
+                      name="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="ユーザー名を入力"
@@ -167,8 +168,8 @@ export function AccountSettingsDialog({
               </TabsContent>
 
               <TabsContent value="account" className="space-y-4 mt-0">
-                <div className="flex items-center rounded-lg border border-red-200 bg-red-50 p-4">
-                  <p className="text-sm text-destructive flex-1">
+                <div className="flex items-center justify-end rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm text-destructive flex-1 sm:block hidden">
                     アカウントの削除
                   </p>
                   <Button
@@ -176,6 +177,7 @@ export function AccountSettingsDialog({
                     size="sm"
                     onClick={() => setDeleteDialogOpen(true)}
                     disabled={deleteAccountMutation.isPending}
+                    className="w-full sm:w-fit"
                   >
                     <Trash2Icon className="h-4 w-4 mr-2" />
                     アカウントを削除
@@ -195,20 +197,22 @@ export function AccountSettingsDialog({
               <AlertTriangleIcon className="h-5 w-5" />
               アカウントの削除
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <span>本当にアカウントを削除しますか？</span>
-              <span className="text-sm text-muted-foreground">
-                この操作により、以下のデータがすべて削除されます：
-              </span>
-              <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-                <li>ユーザープロフィール情報</li>
-                <li>作成した組織（他のメンバーがいない場合）</li>
-                <li>農業日誌データ</li>
-                <li>その他すべての関連データ</li>
-              </ul>
-              <span className="text-sm font-medium text-destructive">
-                この操作は取り消すことができません。
-              </span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>本当にアカウントを削除しますか？</p>
+                <p className="text-sm text-muted-foreground">
+                  この操作により、以下のデータがすべて削除されます：
+                </p>
+                <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                  <li>ユーザープロフィール情報</li>
+                  <li>作成した組織（他のメンバーがいない場合）</li>
+                  <li>農業日誌データ</li>
+                  <li>その他すべての関連データ</li>
+                </ul>
+                <p className="text-sm font-medium text-destructive">
+                  この操作は取り消すことができません。
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

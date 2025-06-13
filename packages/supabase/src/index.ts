@@ -22,7 +22,19 @@ export const validateToken = async (
   // Bearerトークンを使用してユーザー情報を取得
   const { data, error } = await supabase.auth.getUser(token);
   if (error) {
-    throw error;
+    switch (error.code) {
+      case "user_not_found":
+      case "token_expired":
+      case "invalid_token":
+      case "invalid_jwt":
+      case "invalid_grant":
+      case "invalid_request":
+      case "unauthorized":
+        console.warn("Invalid or expired token:", error.message);
+        return null;
+      default:
+        throw error;
+    }
   }
   if (!data.user) {
     console.warn("No user found for the provided token.");

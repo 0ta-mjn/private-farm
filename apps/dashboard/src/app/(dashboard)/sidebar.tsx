@@ -378,7 +378,11 @@ export function AppSidebar() {
           {/* ユーザー情報 */}
           <SidebarMenuItem>
             <AccountSettingsDialog>
-              <SidebarMenuButton asChild size="lg">
+              <SidebarMenuButton
+                asChild
+                size="lg"
+                data-testid="sidebar-account-settings-button"
+              >
                 <div className="flex items-center gap-3 px-2 py-2 cursor-pointer">
                   <UserIcon className="h-4 w-4" />
                   <div className="flex flex-col min-w-0">
@@ -386,7 +390,7 @@ export function AppSidebar() {
                       {sidebarData?.user?.name || "ユーザー名"}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      設定を編集
+                      アカウント設定を編集
                     </span>
                   </div>
                   <SettingsIcon className="h-4 w-4 ml-auto text-sidebar-accent-foreground" />
