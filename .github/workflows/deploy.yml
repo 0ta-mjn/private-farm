@@ -87,14 +87,11 @@ jobs:
           node-version: "22"
           cache: "pnpm"
 
-      - name: Install Vercel CLI
-        run: pnpm i -g vercel
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Pull from Vercel
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }} --cwd apps/dashboard
+      - name: Link from Vercel
+        run: pnpm dlx vercel link --yes --project=${{ secrets. }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
-        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }} --cwd apps/dashboard
+        run: pnpm dlx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
