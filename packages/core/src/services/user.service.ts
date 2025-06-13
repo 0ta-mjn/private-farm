@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc, and, sql } from "@repo/db";
+import { eq, desc, and, sql, exists, count, inArray } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
@@ -292,33 +292,31 @@ async function getOrganizationsWithSingleMember(
   db: Database,
   userId: string
 ): Promise<string[]> {
-  // ユーザーが所属している組織を取得
-  const userMemberships = await db
+  // Step 1: ユーザーが所属する組織IDを取得
+  const userOrganizations = await db
     .select({
       organizationId: organizationMembersTable.organizationId,
     })
     .from(organizationMembersTable)
     .where(eq(organizationMembersTable.userId, userId));
 
-  const singleMemberOrganizations: string[] = [];
-
-  // 各組織について、メンバー数をチェック
-  for (const membership of userMemberships) {
-    const memberCount = await db
-      .select({ count: sql<number>`cast(count(*) as int)` })
-      .from(organizationMembersTable)
-      .where(
-        eq(organizationMembersTable.organizationId, membership.organizationId)
-      );
-
-    // メンバーが1人（このユーザーのみ）の場合
-    const count = Number(memberCount[0]?.count);
-    if (count === 1) {
-      singleMemberOrganizations.push(membership.organizationId);
-    }
+  if (userOrganizations.length === 0) {
+    return [];
   }
 
-  return singleMemberOrganizations;
+  const userOrgIds = userOrganizations.map((org) => org.organizationId);
+
+  // Step 2: ユーザーが所属する組織の中で、メンバー数が1の組織のみを取得
+  const singleMemberOrganizations = await db
+    .select({
+      organizationId: organizationMembersTable.organizationId,
+    })
+    .from(organizationMembersTable)
+    .where(inArray(organizationMembersTable.organizationId, userOrgIds))
+    .groupBy(organizationMembersTable.organizationId)
+    .having(eq(count(), 1));
+
+  return singleMemberOrganizations.map((org) => org.organizationId);
 }
 
 /**
