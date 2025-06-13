@@ -87,9 +87,6 @@ jobs:
           node-version: "22"
           cache: "pnpm"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Link from Vercel
         run: pnpm dlx vercel link --yes --project=${{ secrets. }} --token=${{ secrets.VERCEL_TOKEN }}
 
