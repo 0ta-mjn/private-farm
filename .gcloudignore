@@ -1,0 +1,13 @@
+# Ignore files in the root directory
+#!include:.gitignore
+#!include:.dockerignore
+
+!Dockerfile*
+
+.vscode/
+.github/
+.env
+
+# Ignore all files not deployed to GCP
+packages/e2e-tests
+apps/dashboard
