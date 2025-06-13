@@ -3,8 +3,10 @@ name: Unit Tests
 on:
   pull_request:
     branches: [develop]
-  push:
-    branches: [develop]
+    paths-ignore:
+      - ".github/workflows/**"
+      - "*.md"
+      - "docs/**"
 
 # 同じPRまたはブランチで複数のunit testが実行されないようにする
 concurrency:

@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - ".github/workflows/**"
+      - "*.md"
+      - "docs/**"
 
 # develop->mainのPRで複数のE2Eテストが同時実行されないようにする
 # E2Eテストは時間が長く、リソースを大量に消費するため
@@ -34,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm setup:playwright
+        run: pnpm dlx playwright install --with-deps
 
       - name: Run unit tests
         run: pnpm test:ci
