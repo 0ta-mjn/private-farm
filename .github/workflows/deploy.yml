@@ -89,7 +89,9 @@ jobs:
         run: npm install -g vercel
 
       - name: Pull from Vercel
+        working-directory: apps/dashboard
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
+        working-directory: apps/dashboard
         run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
