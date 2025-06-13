@@ -3,10 +3,6 @@ name: Build and Push API Image
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - ".github/workflows/**"
-      - "*.md"
-      - "docs/**"
 
 jobs:
   build-and-push-api:
