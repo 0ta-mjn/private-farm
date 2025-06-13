@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, expect, beforeAll } from "vitest";
 import { dbClient } from "@repo/db/client";
-import { eq, and } from "@repo/db";
+import { eq, and, or } from "@repo/db";
 import {
   organizationMembersTable,
   organizationsTable,
@@ -13,6 +13,7 @@ import {
   getUserSidebarData,
   updateOrganizationLatestViewedAt,
   updateUserProfile,
+  deleteUserAccount,
 } from "..";
 
 const db = dbClient();
@@ -389,6 +390,200 @@ describe("UserService (関数型)", () => {
           originalUpdatedAt.getTime()
         );
       }
+    });
+  });
+
+  describe("deleteUserAccount", () => {
+    it("存在しないユーザーの削除はfalseを返す", async () => {
+      const result = await deleteUserAccount(db, "non-existent-user-id");
+      expect(result).toBe(false);
+    });
+
+    it("単独でユーザーを削除できる", async () => {
+      const testUserId = "test-user-delete";
+
+      // テスト用のユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      const result = await deleteUserAccount(db, testUserId);
+      expect(result).toBe(true);
+
+      // ユーザーが削除されていることを確認
+      const deletedUser = await getUserById(db, testUserId);
+      expect(deletedUser).toBeNull();
+    });
+
+    it("ユーザーが唯一のメンバーである組織を削除する", async () => {
+      const testUserId = "test-user-with-org";
+
+      // ユーザーと組織を作成
+      const setupResult = await setupUserAndOrganization(db, testUserId, {
+        userName: "Test User",
+        organizationName: "Test Organization",
+      });
+
+      // 削除前に組織が存在することを確認
+      const orgBefore = await db
+        .select()
+        .from(organizationsTable)
+        .where(eq(organizationsTable.id, setupResult.organization.id))
+        .limit(1);
+      expect(orgBefore).toHaveLength(1);
+
+      // メンバーシップが存在することを確認
+      const membershipBefore = await db
+        .select()
+        .from(organizationMembersTable)
+        .where(eq(organizationMembersTable.userId, testUserId))
+        .limit(1);
+      expect(membershipBefore).toHaveLength(1);
+
+      // ユーザーを削除
+      const result = await deleteUserAccount(db, testUserId);
+      expect(result).toBe(true);
+
+      // ユーザーが削除されていることを確認
+      const deletedUser = await getUserById(db, testUserId);
+      expect(deletedUser).toBeNull();
+
+      // 組織も削除されていることを確認
+      const orgAfter = await db
+        .select()
+        .from(organizationsTable)
+        .where(eq(organizationsTable.id, setupResult.organization.id))
+        .limit(1);
+
+      expect(orgAfter).toHaveLength(0);
+
+      // メンバーシップも削除されていることを確認
+      const membershipAfter = await db
+        .select()
+        .from(organizationMembersTable)
+        .where(eq(organizationMembersTable.userId, testUserId))
+        .limit(1);
+      expect(membershipAfter).toHaveLength(0);
+    });
+
+    it("複数メンバーがいる組織は削除しない", async () => {
+      const testUserId1 = "test-user-1";
+      const testUserId2 = "test-user-2";
+
+      // 1人目のユーザーで組織を作成
+      const setupResult = await setupUserAndOrganization(db, testUserId1, {
+        userName: "Test User 1",
+        organizationName: "Shared Organization",
+      });
+
+      // 2人目のユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId2,
+        name: "Test User 2",
+      });
+
+      // 2人目のユーザーを同じ組織に追加
+      await db.insert(organizationMembersTable).values({
+        id: "member-2",
+        userId: testUserId2,
+        organizationId: setupResult.organization.id,
+        role: "member",
+      });
+
+      // 1人目のユーザーを削除
+      const result = await deleteUserAccount(db, testUserId1);
+      expect(result).toBe(true);
+
+      // 1人目のユーザーが削除されていることを確認
+      const deletedUser = await getUserById(db, testUserId1);
+      expect(deletedUser).toBeNull();
+
+      // 組織は削除されていないことを確認（2人目がまだいるため）
+      const orgAfter = await db
+        .select()
+        .from(organizationsTable)
+        .where(eq(organizationsTable.id, setupResult.organization.id))
+        .limit(1);
+      expect(orgAfter).toHaveLength(1);
+
+      // 2人目のユーザーのメンバーシップは残っていることを確認
+      const membershipAfter = await db
+        .select()
+        .from(organizationMembersTable)
+        .where(eq(organizationMembersTable.userId, testUserId2))
+        .limit(1);
+      expect(membershipAfter).toHaveLength(1);
+    });
+
+    it("複数の唯一メンバー組織を持つユーザーの削除", async () => {
+      const testUserId = "test-user-multi-org";
+
+      // ユーザーを作成
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 2つの組織を作成してユーザーを唯一のメンバーにする
+      const org1Result = await db
+        .insert(organizationsTable)
+        .values({
+          id: "org-1",
+          name: "Organization 1",
+        })
+        .returning();
+
+      const org2Result = await db
+        .insert(organizationsTable)
+        .values({
+          id: "org-2",
+          name: "Organization 2",
+        })
+        .returning();
+
+      // メンバーシップを作成
+      await db.insert(organizationMembersTable).values([
+        {
+          id: "member-org1",
+          userId: testUserId,
+          organizationId: "org-1",
+          role: "admin",
+        },
+        {
+          id: "member-org2",
+          userId: testUserId,
+          organizationId: "org-2",
+          role: "admin",
+        },
+      ]);
+
+      // ユーザーを削除
+      const result = await deleteUserAccount(db, testUserId);
+      expect(result).toBe(true);
+
+      // ユーザーが削除されていることを確認
+      const deletedUser = await getUserById(db, testUserId);
+      expect(deletedUser).toBeNull();
+
+      // 両方の組織が削除されていることを確認
+      const orgsAfter = await db
+        .select()
+        .from(organizationsTable)
+        .where(
+          or(
+            eq(organizationsTable.id, "org-1"),
+            eq(organizationsTable.id, "org-2")
+          )
+        );
+      expect(orgsAfter).toHaveLength(0);
+
+      // すべてのメンバーシップが削除されていることを確認
+      const membershipsAfter = await db
+        .select()
+        .from(organizationMembersTable)
+        .where(eq(organizationMembersTable.userId, testUserId));
+      expect(membershipsAfter).toHaveLength(0);
     });
   });
 });

@@ -23,8 +23,12 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "push": "pnpm drizzle-kit push",
+    "push": "dotenv -e .env -- pnpm drizzle-kit push",
+    "push:testing": "dotenv -e .env.testing -- pnpm drizzle-kit push",
     "studio": "pnpm drizzle-kit studio",
+    "generate": "pnpm drizzle-kit generate",
+    "migrate": "dotenv -e .env -- pnpm drizzle-kit migrate",
+    "migrate:testing": "dotenv -e .env.testing -- pnpm drizzle-kit migrate",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

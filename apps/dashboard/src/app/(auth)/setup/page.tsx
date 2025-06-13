@@ -81,11 +81,11 @@ export default function SetupPage() {
   // フォーム送信処理
   const setupMutation = useMutation(
     trpc.user.setup.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         console.log("Setup successful:", data);
 
         // 初期設定状態のキャッシュを無効化
-        queryClient.invalidateQueries({
+        await queryClient.invalidateQueries({
           queryKey: trpc.user.setupCheck.queryKey(),
         });
 

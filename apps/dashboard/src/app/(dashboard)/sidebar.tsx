@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -14,8 +13,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
 } from "@/shadcn/sidebar";
@@ -26,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shadcn/dropdown-menu";
+import { Skeleton } from "@/shadcn/skeleton";
 import {
   HomeIcon,
   BookIcon,
@@ -33,19 +33,21 @@ import {
   UserIcon,
   BuildingIcon,
   PlusIcon,
-  Cpu as SensorIcon,
   BarChart3 as ChartIcon,
   History as HistoryIcon,
   BellIcon,
   SettingsIcon,
+  Map as MapIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
-import { CreateOrganizationDialog } from "@/components/create-organization-dialog";
-import { AccountSettingsDialog } from "@/components/account-settings-dialog";
+import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
+import { CreateOrganizationDialog } from "@/components/organization/create-organization-dialog";
+import { AccountSettingsDialog } from "@/components/account/account-settings-dialog";
 import { Button } from "@/shadcn/button";
+import { SidebarMenuItemButton } from "./sidebar-menu-item-button";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -79,6 +81,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
   const { currentOrganizationId, setCurrentOrganization } = useOrganization();
+  const diaryDrawerActions = useDiaryDrawerActions();
   const trpc = useTRPC();
 
   // サイドバーデータを取得
@@ -133,7 +136,7 @@ export function AppSidebar() {
               id: "new-diary",
               label: "新しい日誌を作成",
               icon: PlusIcon,
-              href: "/diary/new",
+              onClick: diaryDrawerActions.openCreate,
             },
           ],
         },
@@ -144,12 +147,10 @@ export function AppSidebar() {
       title: "データ管理",
       items: [
         {
-          id: "sensors",
-          label: "センサー管理",
-          icon: SensorIcon,
-          disabled: true,
-          badge: "準備中",
-          onClick: handleComingSoon,
+          id: "things",
+          label: "区画・センサー管理",
+          icon: MapIcon,
+          href: "/things",
         },
         {
           id: "realtime",
@@ -206,12 +207,76 @@ export function AppSidebar() {
   // ローディング状態の表示
   if (isLoading) {
     return (
-      <Sidebar collapsible="icon">
+      <Sidebar collapsible="icon" data-testid="sidebar-skeleton">
         <SidebarHeader>
-          <div className="flex items-center justify-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarHeader>
+
+        <SidebarContent>
+          {/* メインセクション */}
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <SidebarMenuItem key={i}>
+                    <SidebarMenuSkeleton showIcon />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* データ管理セクション */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-20 bg-sidebar-foreground/40" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SidebarMenuItem key={i}>
+                    <SidebarMenuSkeleton showIcon />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* 設定セクション */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-12 bg-sidebar-foreground/40" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <SidebarMenuItem key={i}>
+                    <SidebarMenuSkeleton showIcon />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            {/* ユーザー情報スケルトン */}
+            <SidebarMenuItem>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+
+            {/* ログアウトスケルトン */}
+            <SidebarMenuItem>
+              <SidebarMenuSkeleton showIcon />
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+
         <SidebarRail />
       </Sidebar>
     );
@@ -280,54 +345,22 @@ export function AppSidebar() {
               <SidebarMenu>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.id}>
-                    {item.href ? (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.href)}
-                        disabled={item.disabled}
-                        tooltip={item.disabled ? item.badge : undefined}
-                      >
-                        <Link href={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-auto rounded-full bg-sidebar-accent px-2 py-0.5 text-xs font-medium text-sidebar-accent-foreground">
-                              {item.badge}
-                            </span>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    ) : (
-                      <SidebarMenuButton
-                        onClick={item.onClick}
-                        disabled={item.disabled}
-                        tooltip={item.disabled ? item.badge : undefined}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                        {item.badge && (
-                          <span className="ml-auto rounded-full bg-sidebar-accent px-2 py-0.5 text-xs font-medium text-sidebar-accent-foreground">
-                            {item.badge}
-                          </span>
-                        )}
-                      </SidebarMenuButton>
-                    )}
+                    <SidebarMenuItemButton
+                      item={item}
+                      isActive={item.href ? isActive(item.href) : false}
+                    />
 
                     {item.children && item.children.length > 0 && (
                       <SidebarMenuSub>
                         {item.children.map((child) => (
                           <SidebarMenuSubItem key={child.id}>
-                            <SidebarMenuSubButton
-                              asChild
+                            <SidebarMenuItemButton
+                              item={child}
                               isActive={
                                 child.href ? isActive(child.href) : false
                               }
-                            >
-                              <Link href={child.href || "#"}>
-                                <child.icon className="h-4 w-4" />
-                                <span>{child.label}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
+                              isSubItem={true}
+                            />
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>
@@ -345,7 +378,11 @@ export function AppSidebar() {
           {/* ユーザー情報 */}
           <SidebarMenuItem>
             <AccountSettingsDialog>
-              <SidebarMenuButton asChild size="lg">
+              <SidebarMenuButton
+                asChild
+                size="lg"
+                data-testid="sidebar-account-settings-button"
+              >
                 <div className="flex items-center gap-3 px-2 py-2 cursor-pointer">
                   <UserIcon className="h-4 w-4" />
                   <div className="flex flex-col min-w-0">
@@ -353,7 +390,7 @@ export function AppSidebar() {
                       {sidebarData?.user?.name || "ユーザー名"}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      設定を編集
+                      アカウント設定を編集
                     </span>
                   </div>
                   <SettingsIcon className="h-4 w-4 ml-auto text-sidebar-accent-foreground" />
