@@ -13,6 +13,16 @@ export class UserCreationError extends Error {
 }
 
 /**
+ * ユーザー削除関連のエラー
+ */
+export class UserDeletionError extends Error {
+  constructor(message: string = "ユーザーの削除に失敗しました") {
+    super(message);
+    this.name = "UserDeletionError";
+  }
+}
+
+/**
  * 組織作成関連のエラー
  */
 export class OrganizationCreationError extends Error {

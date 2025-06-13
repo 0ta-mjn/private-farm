@@ -34,4 +34,18 @@ export const validateToken = async (
   };
 };
 
+/**
+ * Supabaseからユーザーを削除する関数
+ * 管理者権限が必要なため、Service Role Keyを使用したクライアントで実行する必要があります
+ */
+export const deleteSupabaseUser = async (
+  supabase: Supabase,
+  userId: string
+): Promise<void> => {
+  const { error } = await supabase.auth.admin.deleteUser(userId);
+  if (error) {
+    throw error;
+  }
+};
+
 export type { User, AuthError } from "@supabase/supabase-js";

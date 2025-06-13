@@ -5,9 +5,12 @@ import {
   organizationsTable,
   organizationMembersTable,
 } from "@repo/db/schema";
-import { UserCreationError } from "@repo/config";
+import { UserCreationError, UserDeletionError } from "@repo/config";
 import type { Database } from "@repo/db/client";
-import { createOrganizationCore } from "./organization.service";
+import {
+  createOrganizationCore,
+  deleteOrganization,
+} from "./organization.service";
 
 // バリデーションスキーマ
 export const SetupSchema = z.object({
@@ -275,5 +278,114 @@ export async function updateUserProfile(
   } catch (error) {
     console.error("Failed to update user profile:", error);
     throw error;
+  }
+}
+
+/**
+ * ユーザーが唯一のメンバーである組織を取得するヘルパー関数
+ *
+ * @param db - データベースインスタンス
+ * @param userId - 対象ユーザーのID
+ * @returns ユーザーが唯一のメンバーである組織のIDリスト
+ */
+async function getOrganizationsWithSingleMember(
+  db: Database,
+  userId: string
+): Promise<string[]> {
+  // ユーザーが所属している組織を取得
+  const userMemberships = await db
+    .select({
+      organizationId: organizationMembersTable.organizationId,
+    })
+    .from(organizationMembersTable)
+    .where(eq(organizationMembersTable.userId, userId));
+
+  const singleMemberOrganizations: string[] = [];
+
+  // 各組織について、メンバー数をチェック
+  for (const membership of userMemberships) {
+    const memberCount = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(organizationMembersTable)
+      .where(
+        eq(organizationMembersTable.organizationId, membership.organizationId)
+      );
+
+    // メンバーが1人（このユーザーのみ）の場合
+    const count = Number(memberCount[0]?.count);
+    if (count === 1) {
+      singleMemberOrganizations.push(membership.organizationId);
+    }
+  }
+
+  return singleMemberOrganizations;
+}
+
+/**
+ * ユーザーアカウントを削除するサービスです。
+ *
+ * この関数は以下の処理を順次実行します：
+ * 1. ユーザーが存在するかチェック
+ * 2. ユーザーが唯一のメンバーである組織を削除
+ * 3. ユーザーに関連するすべてのデータを削除（カスケード削除）
+ * 4. 最後にユーザー自身を削除
+ *
+ * @param db - データベースインスタンス。
+ * @param userId - 削除するユーザーのID。
+ * @returns 削除が成功した場合はtrue、ユーザーが見つからない場合はfalseを返します。
+ * @throws UserDeletionError - 削除処理でエラーが発生した場合。
+ */
+export async function deleteUserAccount(
+  db: Database,
+  userId: string
+): Promise<boolean> {
+  try {
+    // 事前チェック：ユーザーが存在するかを確認
+    const preCheckResult = await db.transaction(async (tx) => {
+      // ユーザーが存在するかチェック
+      const existingUser = await tx
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, userId))
+        .limit(1);
+
+      return { exists: !!existingUser[0] };
+    });
+
+    if (!preCheckResult.exists) {
+      return false; // ユーザーが見つからない
+    }
+
+    // ユーザーが唯一のメンバーである組織を取得して削除
+    const singleMemberOrganizations = await getOrganizationsWithSingleMember(
+      db,
+      userId
+    );
+
+    for (const organizationId of singleMemberOrganizations) {
+      try {
+        await deleteOrganization(db, organizationId);
+        console.log(
+          `Deleted organization ${organizationId} as user ${userId} was the only member`
+        );
+      } catch (error) {
+        console.error(
+          `Failed to delete organization ${organizationId}:`,
+          error
+        );
+        // 組織削除の失敗はユーザー削除を停止させない（ログのみ記録）
+      }
+    }
+
+    // ユーザーを削除
+    await db.transaction(async (tx) => {
+      await tx.delete(usersTable).where(eq(usersTable.id, userId));
+    });
+
+    return true;
+  } catch (error) {
+    // エラーはUserDeletionErrorでラップ
+    console.error("Failed to delete user account:", error);
+    throw new UserDeletionError("アカウントの削除処理中にエラーが発生しました");
   }
 }

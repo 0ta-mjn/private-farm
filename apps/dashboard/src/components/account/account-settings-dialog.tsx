@@ -4,17 +4,29 @@ import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogTrigger,
+  DialogTitle,
+  DialogDescription,
 } from "@/shadcn/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shadcn/alert-dialog";
 import { Button } from "@/shadcn/button";
 import { Input } from "@/shadcn/input";
 import { Label } from "@/shadcn/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shadcn/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
-import { UserIcon } from "lucide-react";
+import { UserIcon, Trash2Icon, AlertTriangleIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface AccountSettingsDialogProps {
   children: React.ReactNode;
@@ -24,9 +36,12 @@ export function AccountSettingsDialog({
   children,
 }: AccountSettingsDialogProps) {
   const [open, setOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
+  const [activeTab, setActiveTab] = useState("profile");
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // ユーザー情報を取得
   const { data: userData, isLoading } = useQuery(
@@ -56,60 +71,159 @@ export function AccountSettingsDialog({
     })
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // アカウント削除のミューテーション
+  const deleteAccountMutation = useMutation(
+    trpc.user.deleteAccount.mutationOptions({
+      onSuccess: () => {
+        // ダイヤログを閉じる
+        setDeleteDialogOpen(false);
+        setOpen(false);
+        // ログインページにリダイレクト
+        router.push("/");
+      },
+      onError: (error) => {
+        console.error("アカウント削除エラー:", error);
+      },
+    })
+  );
+
+  const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     updateProfileMutation.mutate({ name: name.trim() });
   };
 
+  const handleDeleteAccount = () => {
+    deleteAccountMutation.mutate();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5" />
-            アカウント設定
-          </DialogTitle>
-          <DialogDescription>アカウント情報を編集できます。</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>{children}</DialogTrigger>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>アカウント設定</DialogTitle>
+            <DialogDescription>
+              アカウントのプロフィールや設定を管理します。
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">ユーザー名</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="ユーザー名を入力"
-              disabled={isLoading || updateProfileMutation.isPending}
-            />
-          </div>
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            orientation="vertical"
+            className="flex w-full gap-6 flex-row"
+          >
+            <TabsList className="flex flex-col h-fit w-48">
+              <TabsTrigger value="profile" className="w-full justify-start">
+                <UserIcon className="h-4 w-4 mr-2" />
+                プロフィール設定
+              </TabsTrigger>
+              <TabsTrigger value="account" className="w-full justify-start">
+                <Trash2Icon className="h-4 w-4 mr-2" />
+                アカウント設定
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={updateProfileMutation.isPending}
-            >
+            {/* 右側のコンテンツ */}
+            <div className="flex-1">
+              <TabsContent value="profile" className="space-y-4 mt-0">
+                <form onSubmit={handleProfileSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">ユーザー名</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="ユーザー名を入力"
+                      disabled={isLoading || updateProfileMutation.isPending}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      キャンセル
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={
+                        !name.trim() ||
+                        name === userData?.user?.name ||
+                        isLoading ||
+                        updateProfileMutation.isPending
+                      }
+                    >
+                      {updateProfileMutation.isPending ? "更新中..." : "更新"}
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+
+              <TabsContent value="account" className="space-y-4 mt-0">
+                <div className="flex items-center rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-sm text-destructive flex-1">
+                    アカウントの削除
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    disabled={deleteAccountMutation.isPending}
+                  >
+                    <Trash2Icon className="h-4 w-4 mr-2" />
+                    アカウントを削除
+                  </Button>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* アカウント削除確認ダイヤログ */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-">
+              <AlertTriangleIcon className="h-5 w-5" />
+              アカウントの削除
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span>本当にアカウントを削除しますか？</span>
+              <span className="text-sm text-muted-foreground">
+                この操作により、以下のデータがすべて削除されます：
+              </span>
+              <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                <li>ユーザープロフィール情報</li>
+                <li>作成した組織（他のメンバーがいない場合）</li>
+                <li>農業日誌データ</li>
+                <li>その他すべての関連データ</li>
+              </ul>
+              <span className="text-sm font-medium text-destructive">
+                この操作は取り消すことができません。
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteAccountMutation.isPending}>
               キャンセル
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                !name.trim() ||
-                name === userData?.user?.name ||
-                isLoading ||
-                updateProfileMutation.isPending
-              }
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteAccountMutation.isPending}
             >
-              {updateProfileMutation.isPending ? "更新中..." : "更新"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+              {deleteAccountMutation.isPending ? "削除中..." : "削除"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
