@@ -8,9 +8,15 @@ import {
   getUserSidebarData,
   updateOrganizationLatestViewedAt,
   updateUserProfile,
+  deleteUserAccount,
   SetupSchema,
 } from "@repo/core";
-import { UserCreationError, OrganizationCreationError } from "@repo/config";
+import {
+  UserCreationError,
+  OrganizationCreationError,
+  UserDeletionError,
+} from "@repo/config";
+import { deleteSupabaseUser } from "@repo/supabase";
 import { z } from "zod";
 
 export const userRouter = {
@@ -148,4 +154,45 @@ export const userRouter = {
         });
       }
     }),
+
+  // アカウント削除（認証が必要）
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      // データベースからユーザーデータを削除
+      const deleted = await deleteUserAccount(ctx.db, ctx.session.user.id);
+
+      if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "ユーザーが見つかりません",
+        });
+      }
+
+      // Supabaseからユーザーを削除
+      try {
+        await deleteSupabaseUser(ctx.supabase, ctx.session.user.id);
+      } catch (supabaseError) {
+        console.error("Supabase user deletion failed:", supabaseError);
+        // Supabaseの削除が失敗してもデータベースの削除は成功しているため、
+        // ログのみ記録してエラーは継続しない
+      }
+
+      return { success: true, message: "アカウントが正常に削除されました" };
+    } catch (error) {
+      console.error("Delete account error:", error);
+
+      // ビジネスエラーをtRPCエラーに変換
+      if (error instanceof UserDeletionError) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error.message,
+        });
+      }
+
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "アカウントの削除中にエラーが発生しました",
+      });
+    }
+  }),
 } satisfies TRPCRouterRecord;

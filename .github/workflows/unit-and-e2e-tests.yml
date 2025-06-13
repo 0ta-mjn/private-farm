@@ -4,6 +4,10 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - ".github/workflows/**"
+      - "*.md"
+      - "docs/**"
 
 # develop->mainのPRで複数のE2Eテストが同時実行されないようにする
 # E2Eテストは時間が長く、リソースを大量に消費するため

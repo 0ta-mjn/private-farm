@@ -7,7 +7,7 @@
     "e2e:headless": "dotenv -e .env.testing -- pnpm playwright test --reporter=dot",
     "e2e:ui": "dotenv -e .env.testing -- pnpm playwright test --ui",
     "lint": "eslint",
-    "install-browsers": "playwright install"
+    "install-browsers": "pnpm playwright install --with-deps"
   },
   "dependencies": {
     "api": "workspace:*",
