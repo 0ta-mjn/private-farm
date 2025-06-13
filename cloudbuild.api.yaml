@@ -1,0 +1,63 @@
+steps:
+  # Docker イメージをビルド
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "gcr.io/$PROJECT_ID/private-farm-api:$COMMIT_SHA"
+      - "-f"
+      - "apps/api/Dockerfile"
+      - "."
+    timeout: 600s
+
+  # Container Registry にプッシュ
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "gcr.io/$PROJECT_ID/private-farm-api:$COMMIT_SHA"
+
+  # Cloud Run にデプロイ
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "private-farm-api"
+      - "--image"
+      - "gcr.io/$PROJECT_ID/private-farm-api:$COMMIT_SHA"
+      - "--region"
+      - "asia-northeast1"
+      - "--platform"
+      - "managed"
+      - "--allow-unauthenticated"
+      - "--port"
+      - "8080"
+      - "--memory"
+      - "512Mi"
+      - "--cpu"
+      - "1"
+      - "--min-instances"
+      - "0"
+      - "--max-instances"
+      - "10"
+      - "--set-env-vars"
+      - "NODE_ENV=production,API_PORT=8080"
+      - "--set-secrets"
+      - "DATABASE_URL=satopod-farm-api-database-url:latest,SUPABASE_URL=satopod-farm-api-supabase-url:latest,SUPABASE_KEY=satopod-farm-api-supabase-key:latest,ACCEPT_ORIGINS=satopod-farm-api-accept-origins:latest"
+    timeout: 600s
+
+# ビルド設定
+options:
+  # 高性能マシンを使用してビルド時間を短縮
+  machineType: "E2_HIGHCPU_8"
+
+# ビルドログの保存場所（オプション）
+# logsBucket: 'gs://your-build-logs-bucket'
+
+# 成果物の設定
+images:
+  - "gcr.io/$PROJECT_ID/private-farm-api:$COMMIT_SHA"
+  - "gcr.io/$PROJECT_ID/private-farm-api:latest"
+
+# タイムアウト設定（全体）
+timeout: 1200s
