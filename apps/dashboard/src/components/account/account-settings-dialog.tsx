@@ -193,7 +193,7 @@ export function AccountSettingsDialog({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-">
+            <AlertDialogTitle className="flex items-center gap-4">
               <AlertTriangleIcon className="h-5 w-5" />
               アカウントの削除
             </AlertDialogTitle>
