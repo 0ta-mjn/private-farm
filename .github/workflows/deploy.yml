@@ -61,7 +61,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy private-farm-api \
-            --image=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/private-farm-api/api:${{ steps.get-image-tag.outputs.image_tag }} \
+            --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/private-farm-api/api:${{ steps.get-image-tag.outputs.image_tag }} \
             --region=asia-northeast1 \
             --platform=managed \
             --allow-unauthenticated \
