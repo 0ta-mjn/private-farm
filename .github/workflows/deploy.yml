@@ -88,7 +88,7 @@ jobs:
           cache: "pnpm"
 
       - name: Link from Vercel
-        run: pnpm dlx vercel link --yes --project=${{ secrets. }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel link --yes --project=${{ secrets.VERCEL_PROJECT }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy to Vercel
         run: pnpm dlx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
