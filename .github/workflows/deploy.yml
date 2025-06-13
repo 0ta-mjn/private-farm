@@ -6,29 +6,36 @@ on:
       - "release/**"
 
 jobs:
-  deploy-dashboard:
-    name: Deploy Dashboard
+  deploy-database:
+    name: Deploy Database Schema
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "pnpm"
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Pull from Vercel
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel
-        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Push database schema
+        run: pnpm db:push
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   deploy-api:
     name: Deploy API
     runs-on: ubuntu-latest
+    needs: deploy-database
     timeout-minutes: 15
 
     steps:
@@ -54,7 +61,7 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy private-farm-api \
-            --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/private-farm-api:${{ steps.get-image-tag.outputs.image_tag }} \
+            --image=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/private-farm-api/api:${{ steps.get-image-tag.outputs.image_tag }} \
             --region=asia-northeast1 \
             --platform=managed \
             --allow-unauthenticated \
@@ -65,3 +72,24 @@ jobs:
             --max-instances=10 \
             --set-env-vars="NODE_ENV=production,API_PORT=8080" \
             --set-secrets="DATABASE_URL=satopod-farm-api-database-url:latest,SUPABASE_URL=satopod-farm-api-supabase-url:latest,SUPABASE_KEY=satopod-farm-api-supabase-key:latest,ACCEPT_ORIGINS=satopod-farm-api-accept-origins:latest"
+
+  deploy-dashboard:
+    name: Deploy Dashboard
+    runs-on: ubuntu-latest
+    needs: deploy-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull from Vercel
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
