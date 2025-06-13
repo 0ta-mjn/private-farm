@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Poppins } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { TRPCProvider } from "@/trpc/trpc-provider";
+import { Toaster } from "@/shadcn/sonner";
 
 // Google Fonts を next/font からインポート
 const inter = Inter({
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
         <TRPCProvider>
           <AuthProvider>{children}</AuthProvider>
+          <Toaster />
         </TRPCProvider>
       </body>
     </html>

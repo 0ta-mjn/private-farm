@@ -1,0 +1,27 @@
+{
+  "name": "@repo/e2e-tests",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "e2e": "dotenv -e .env.testing -- pnpm playwright test --reporter=null",
+    "e2e:headless": "dotenv -e .env.testing -- pnpm playwright test --reporter=dot",
+    "e2e:ui": "dotenv -e .env.testing -- pnpm playwright test --ui",
+    "lint": "eslint",
+    "install-browsers": "pnpm playwright install --with-deps"
+  },
+  "dependencies": {
+    "api": "workspace:*",
+    "dashboard": "workspace:*",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "dotenv-cli": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  }
+}

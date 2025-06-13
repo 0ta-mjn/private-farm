@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "!.cache/**"],
       "env": [
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -14,13 +14,41 @@
         "SUPABASE_URL",
         "SUPABASE_KEY",
         "DATABASE_URL",
-        "API_PORT"
-      ]
+        "API_PORT",
+        "DASHBOARD_PORT",
+        "CI"
+      ],
+      "cache": true
     },
     "test": {
-      "dependsOn": ["lint", "push"],
+      "dependsOn": ["lint"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["DATABASE_URL"]
+      "env": [
+        "DATABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "CI"
+      ]
+    },
+    "e2e": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "ACCEPT_ORIGINS",
+        "SUPABASE_URL",
+        "SUPABASE_KEY",
+        "DATABASE_URL",
+        "API_PORT",
+        "DASHBOARD_PORT",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_INBUCKET_URL",
+        "CI"
+      ],
+      "cache": false
     },
     "lint": {
       "dependsOn": ["^lint"]
@@ -36,30 +64,31 @@
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_SITE_URL",
         "ACCEPT_ORIGINS",
         "SUPABASE_URL",
         "SUPABASE_KEY",
         "DATABASE_URL",
-        "API_PORT"
+        "API_PORT",
+        "DASHBOARD_PORT"
       ]
     },
     "push": {
+      "dependsOn": ["^push"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["DATABASE_URL"],
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "stop": {
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "stopd": {
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "studio": {
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalPassThroughEnv": ["NODE_ENV"]
 }

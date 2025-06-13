@@ -92,7 +92,7 @@ export default function SignupPage() {
         email: values.email,
         password: values.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
         },
       });
 

@@ -115,7 +115,7 @@ export function CreateOrganizationDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>新しい組織を作成</DialogTitle>
           <DialogDescription>
@@ -130,7 +130,9 @@ export function CreateOrganizationDialog({
               name="organizationName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>組織名 *</FormLabel>
+                  <FormLabel>
+                    組織名 <span className="text-destructive">*</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder="例: 山田農園"

@@ -61,8 +61,6 @@ export default function AuthResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -73,60 +71,23 @@ export default function AuthResetPasswordPage() {
   });
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // URLからハッシュパラメータを取得
-        const hashParams = new URLSearchParams(
-          window.location.hash.substring(1)
-        );
-        const access_token = hashParams.get("access_token");
-        const refresh_token = hashParams.get("refresh_token");
-        const type = hashParams.get("type");
-
-        if (type === "recovery" && access_token && refresh_token) {
-          // トークンを保存
-          setAccessToken(access_token);
-          setRefreshToken(refresh_token);
-
-          // セッションを設定して認証状態を確認
-          const { data, error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-          });
-
-          if (error) {
-            throw error;
-          }
-
-          if (data.user) {
-            setStatus("form");
-          } else {
-            throw new Error("ユーザー情報を取得できませんでした");
-          }
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY" || session) {
+          setStatus("form");
         } else {
-          // 必要なパラメータが不足している場合
-          setStatus("expired");
+          // 認証に失敗した場合
+          setStatus("error");
         }
-      } catch (error) {
-        console.error("Auth callback error:", error);
-        setStatus("error");
-        setGeneralError(
-          error instanceof Error
-            ? error.message
-            : "認証の処理中にエラーが発生しました"
-        );
       }
-    };
+    );
 
-    handleAuthCallback();
-  }, []);
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, [router]);
 
   const onSubmit = async (values: FormValues) => {
-    if (!accessToken || !refreshToken) {
-      setGeneralError("認証情報が見つかりません");
-      return;
-    }
-
     setIsLoading(true);
     setGeneralError(null);
 

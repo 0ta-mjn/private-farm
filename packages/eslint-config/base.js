@@ -27,6 +27,12 @@ export const config = [
     },
   },
   {
-    ignores: ["dist/**"],
+    ignores: [
+      "dist/**",
+      ".turbo/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "test-results/**",
+    ],
   },
 ];

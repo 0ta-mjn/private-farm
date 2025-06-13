@@ -11,4 +11,9 @@ if (!SUPABASE_ANON_KEY) {
   throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_ANON_KEY");
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    detectSessionInUrl: true,
+    flowType: "pkce",
+  },
+});

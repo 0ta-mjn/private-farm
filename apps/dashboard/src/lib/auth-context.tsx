@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useMemo,
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
@@ -124,6 +125,11 @@ export function useUser() {
     throw new Error("useUser must be used within an AuthProvider");
   }
   return context.user;
+}
+
+export function useUserId() {
+  const user = useUser();
+  return useMemo(() => user?.id || null, [user?.id]);
 }
 
 export function useSession() {
