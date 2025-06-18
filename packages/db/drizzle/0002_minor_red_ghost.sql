@@ -1,5 +1,4 @@
--- drizzle/0002_sync_discord.sql
--- ① Discord OAuth 連携時に identities 行を user_external_accounts へコピー
+-- Custom SQL migration file, put your code below! --
 create or replace function public.link_oauth_identity()
 returns trigger as $$
 begin
@@ -11,6 +10,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists trg_link_oauth_identity on auth.identities;
 create trigger trg_link_oauth_identity
 after insert on auth.identities
 for each row

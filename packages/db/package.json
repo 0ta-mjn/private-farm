@@ -25,9 +25,10 @@
     "lint": "eslint",
     "test": "drizzle-kit check",
     "push": "pnpm drizzle-kit push",
-    "push:testing": "dotenv -e .env.testing -- pnpm drizzle-kit push",
+    "push:testing": "dotenv -e .env.testing -- pnpm drizzle-kit migrate",
     "studio": "pnpm drizzle-kit studio",
     "generate": "pnpm drizzle-kit generate",
+    "generate:new": "pnpm drizzle-kit generate --custom",
     "migrate": "dotenv -e .env -- pnpm drizzle-kit migrate",
     "migrate:testing": "dotenv -e .env.testing -- pnpm drizzle-kit migrate",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"

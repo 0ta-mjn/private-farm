@@ -9,6 +9,8 @@
     "db:push": "turbo -F @repo/db push",
     "typecheck": "turbo run typecheck",
     "db:push:testing": "pnpm --filter @repo/db push:testing",
+    "db:migrate": "pnpm --filter @repo/db migrate",
+    "db:migration:new": "pnpm --filter @repo/db generate:new",
     "emulator:start": "pnpm --filter @repo/supabase run setup",
     "emulator:stop": "pnpm --filter @repo/supabase run stop",
     "emulator:stopd": "pnpm --filter @repo/supabase run stopd",

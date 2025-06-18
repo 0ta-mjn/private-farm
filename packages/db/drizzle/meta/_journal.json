@@ -15,6 +15,13 @@
       "when": 1750236795711,
       "tag": "0001_lucky_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1750239213913,
+      "tag": "0002_minor_red_ghost",
+      "breakpoints": true
     }
   ]
 }

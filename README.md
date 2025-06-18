@@ -94,6 +94,7 @@
 - `pnpm db:push`: データベーススキーマをプッシュ
 - `pnpm db:studio`: Drizzle Studioを起動
 - `pnpm db:push:testing`: テスト環境にスキーマをプッシュ
+- `pnpm db:migration:new`: 新しい空のマイグレーションを作成
 
 #### テスト
 
