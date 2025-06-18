@@ -90,5 +90,5 @@
       "persistent": true
     }
   },
-  "globalPassThroughEnv": ["NODE_ENV"]
+  "globalPassThroughEnv": ["NODE_ENV", "PORT", "CI"]
 }
