@@ -18,6 +18,8 @@ import {
   real,
   index,
   unique,
+  primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
@@ -52,6 +54,28 @@ export const usersTable = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/**
+ * ユーザー外部アカウント連携テーブル
+ *
+ * ユーザーの外部サービス（Discord、GitHub等）との連携情報を管理する。
+ * 一人のユーザーが複数の外部サービスと連携できる。
+ */
+export const userExternalAccountsTable = pgTable(
+  "user_external_accounts",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => usersTable.id),
+    provider: varchar("provider", { length: 32 }).notNull(), // 'discord', 'github', ...
+    providerUserId: varchar("provider_user_id", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.provider, t.providerUserId] }),
+    uniq: uniqueIndex("user_provider_unique").on(t.userId, t.provider),
+  })
+);
 
 // ============================================================================
 // RELATIONSHIP TABLES (Many-to-Many)
@@ -217,10 +241,12 @@ export const organizationsRelations = relations(
  * 一人のユーザーは以下を持つ：
  * - 複数の組織メンバーシップ（organizationMembers経由）
  * - 複数の日誌（diaries）
+ * - 複数の外部アカウント連携（userExternalAccounts）
  */
 export const usersRelations = relations(usersTable, ({ many }) => ({
   organizationMembers: many(organizationMembersTable), // ユーザー→組織メンバーシップ関係
   diaries: many(diariesTable), // ユーザー→日誌関係
+  userExternalAccounts: many(userExternalAccountsTable), // ユーザー→外部アカウント関係
 }));
 
 /**
@@ -297,6 +323,22 @@ export const diaryThingsRelations = relations(diaryThingsTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * ユーザー外部アカウント連携テーブルのリレーション定義
+ *
+ * 各外部アカウント連携レコードは以下を参照：
+ * - 一人のユーザー
+ */
+export const userExternalAccountsRelations = relations(
+  userExternalAccountsTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [userExternalAccountsTable.userId],
+      references: [usersTable.id],
+    }),
+  })
+);
+
 // ============================================================================
 // ENUM CONFIGURATION
 // ============================================================================
@@ -305,43 +347,3 @@ export const diaryThingsRelations = relations(diaryThingsTable, ({ one }) => ({
  * memberのroleを定義するためのZodスキーマ
  */
 export const MemberRoleSchema = z.enum(["admin"]);
-
-// ============================================================================
-// SCHEMA SUMMARY
-// ============================================================================
-
-/**
- * IoT農業システム Phase 1 スキーマサマリ
- *
- * テーブル数: 6
- * 1. organizations - 組織管理
- * 2. users - ユーザー管理
- * 3. organizationMembers - ユーザー↔組織 多対多関係
- * 4. things - ほ場管理
- * 5. diaries - 農作業日誌
- * 6. diaryThings - 日誌↔ほ場 多対多関係
- *
- * 主要な関係性:
- * - User ↔ Organization: Many-to-Many (organizationMembers経由)
- * - Diary ↔ Organization: Many-to-One
- * - Diary ↔ User: Many-to-One
- * - Diary ↔ Thing: Many-to-Many (diaryThings経由)
- * - Thing ↔ Organization: Many-to-One
- *
- * Phase 1 対応機能:
- * ✅ ユーザー登録・ログイン機能
- * ✅ Organization作成機能（招待なし）
- * ✅ 農業日誌の入力機能（日付、内容、タグ）
- * ✅ 農業日誌のリスト表示・詳細表示画面
- *
- * パフォーマンス最適化:
- * - 日付順表示用インデックス
- * - ユーザー別/組織別表示用複合インデックス
- * - 作業種別フィルタリング用インデックス
- * - unique制約による整合性保証
- *
- * 将来拡張への備え:
- * - センサーデータ連携（Phase 2）
- * - 写真添付機能拡張（Phase 5）
- * - 検索・フィルタリング機能拡張（Phase 5）
- */
