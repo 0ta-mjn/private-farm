@@ -1,0 +1,34 @@
+{
+  "name": "discord-bots",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc --noEmit && tsup",
+    "dev": "dotenv -e .env -- tsup --watch --onSuccess \"tsx src/index.ts\"",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@esbuild-plugins/tsconfig-paths": "catalog:",
+    "@google-cloud/functions-framework": "catalog:",
+    "@repo/core": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@types/body-parser": "^1.19.6",
+    "@types/express": "^5.0.3",
+    "@types/node": "catalog:",
+    "body-parser": "^2.2.0",
+    "dotenv-cli": "catalog:",
+    "eslint": "catalog:",
+    "express": "^5.1.0",
+    "tsup": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}
