@@ -30,7 +30,7 @@
     "@repo/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "supabase": "^2.24.3",
+    "supabase": "^2.26.9",
     "typescript": "catalog:"
   }
 }
