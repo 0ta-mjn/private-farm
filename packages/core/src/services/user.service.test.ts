@@ -94,6 +94,7 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(false);
       expect(result.hasUser).toBe(false);
       expect(result.hasOrganization).toBe(false);
+      expect(result.user).toBeNull();
     });
 
     it("ユーザーは存在するが組織に所属していない場合、未完了状態を返す", async () => {
@@ -112,6 +113,8 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(false);
       expect(result.hasUser).toBe(true);
       expect(result.hasOrganization).toBe(false);
+      expect(result.user?.id).toBe(testUserId);
+      expect(result.user?.name).toBe("Test User");
     });
 
     it("ユーザーが組織に所属している場合、完了状態を返す", async () => {
@@ -128,6 +131,8 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(true);
       expect(result.hasUser).toBe(true);
       expect(result.hasOrganization).toBe(true);
+      expect(result.user?.id).toBe(testUserId);
+      expect(result.user?.name).toBe("Test User");
     });
   });
 

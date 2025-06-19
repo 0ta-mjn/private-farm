@@ -131,6 +131,7 @@ export async function checkUserSetupStatus(db: Database, userId: string) {
       isCompleted: false,
       hasUser: false,
       hasOrganization: false,
+      user,
     };
   }
 
@@ -149,6 +150,7 @@ export async function checkUserSetupStatus(db: Database, userId: string) {
     isCompleted: hasOrganization,
     hasUser: true,
     hasOrganization,
+    user,
   };
 }
 
