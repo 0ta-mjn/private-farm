@@ -9,7 +9,7 @@ test.describe("Setup Test", () => {
 
   test("complete initial setup form", async ({ page }) => {
     // Complete signup and email verification
-    const { testEmail, testPassword } = await signupWithEmail(page, true);
+    await signupWithEmail(page, true);
 
     // Should be redirected to setup page
     await expect(page).toHaveURL(/\/setup/);
@@ -162,7 +162,7 @@ test.describe("Setup Test", () => {
     page,
   }) => {
     // Complete signup, email verification, and setup
-    const { testEmail, testPassword } = await signupWithEmail(page, true);
+    await signupWithEmail(page, true);
 
     // Complete setup form
     await expect(page).toHaveURL(/\/setup/);
