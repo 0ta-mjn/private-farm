@@ -156,26 +156,18 @@
         "diaries_user_id_users_id_fk": {
           "name": "diaries_user_id_users_id_fk",
           "tableFrom": "diaries",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         },
         "diaries_organization_id_organizations_id_fk": {
           "name": "diaries_organization_id_organizations_id_fk",
           "tableFrom": "diaries",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -215,26 +207,18 @@
         "diary_things_diary_id_diaries_id_fk": {
           "name": "diary_things_diary_id_diaries_id_fk",
           "tableFrom": "diary_things",
-          "columnsFrom": [
-            "diary_id"
-          ],
+          "columnsFrom": ["diary_id"],
           "tableTo": "diaries",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "diary_things_thing_id_things_thing_id_fk": {
           "name": "diary_things_thing_id_things_thing_id_fk",
           "tableFrom": "diary_things",
-          "columnsFrom": [
-            "thing_id"
-          ],
+          "columnsFrom": ["thing_id"],
           "tableTo": "things",
-          "columnsTo": [
-            "thing_id"
-          ],
+          "columnsTo": ["thing_id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -300,26 +284,18 @@
         "organization_members_user_id_users_id_fk": {
           "name": "organization_members_user_id_users_id_fk",
           "tableFrom": "organization_members",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "organization_members_organization_id_organizations_id_fk": {
           "name": "organization_members_organization_id_organizations_id_fk",
           "tableFrom": "organization_members",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -328,10 +304,7 @@
       "uniqueConstraints": {
         "unique_user_org": {
           "name": "unique_user_org",
-          "columns": [
-            "user_id",
-            "organization_id"
-          ],
+          "columns": ["user_id", "organization_id"],
           "nullsNotDistinct": false
         }
       },
@@ -452,13 +425,9 @@
         "things_organization_id_organizations_id_fk": {
           "name": "things_organization_id_organizations_id_fk",
           "tableFrom": "things",
-          "columnsFrom": [
-            "organization_id"
-          ],
+          "columnsFrom": ["organization_id"],
           "tableTo": "organizations",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -525,24 +494,17 @@
         "user_external_accounts_user_id_users_id_fk": {
           "name": "user_external_accounts_user_id_users_id_fk",
           "tableFrom": "user_external_accounts",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "user_external_accounts_provider_provider_user_id_pk": {
           "name": "user_external_accounts_provider_provider_user_id_pk",
-          "columns": [
-            "provider",
-            "provider_user_id"
-          ]
+          "columns": ["provider", "provider_user_id"]
         }
       },
       "uniqueConstraints": {},

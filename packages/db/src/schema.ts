@@ -66,7 +66,7 @@ export const userExternalAccountsTable = pgTable(
   {
     userId: varchar("user_id", { length: 255 })
       .notNull()
-      .references(() => usersTable.id),
+      .references(() => usersTable.id, { onDelete: "cascade" }),
     provider: varchar("provider", { length: 32 }).notNull(), // 'discord', 'github', ...
     providerUserId: varchar("provider_user_id", { length: 255 }).notNull(),
     displayName: varchar("display_name", { length: 255 }),
