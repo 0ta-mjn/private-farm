@@ -17,8 +17,8 @@ Object.entries(endpoints).forEach(([path, handler]) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   const url = `http://localhost:${PORT}`;
-  console.log(`Server is running at ${url}`);
-  console.log(
+  console.info(`Server is running at ${url}`);
+  console.info(
     `Available endpoints:\n${Object.keys(endpoints)
       .map((key) => `- POST ${url}/${key}`)
       .join("\n")}`

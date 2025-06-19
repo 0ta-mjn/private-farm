@@ -52,7 +52,7 @@ server.register(fastifyTRPCPlugin, {
     const host =
       process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
     await server.listen({ port, host });
-    console.log(`Server listening on ${host}:${port}...`);
+    console.info(`Server listening on ${host}:${port}...`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

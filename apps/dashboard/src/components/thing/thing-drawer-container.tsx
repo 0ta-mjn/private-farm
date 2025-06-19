@@ -131,8 +131,6 @@ export function ThingDrawerContainer() {
 
       if (isEdit && thingId) {
         // 更新処理
-        console.log("Updating thing with ID:", thingId);
-        console.log("Form data:", formData);
         updateThingMutation.mutate({
           thingId,
           ...formData,

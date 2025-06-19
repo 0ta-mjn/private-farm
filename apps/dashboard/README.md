@@ -104,7 +104,9 @@ const setupMutation = useMutation(
 import { Button } from "@/shadcn/button";
 const MyComponent = () => {
   return (
-    <Button onClick={() => console.log("Clicked!")}>
+    <Button onClick={() => {
+      // ボタンがクリックされたときの処理
+    }}>
       クリック
     </Button>
   );
@@ -121,9 +123,9 @@ import { supabase } from "@/lib/supabase";
 const signUp = async (email: string, password: string) => {
   const { user, error } = await supabase.auth.signUp({ email, password });
   if (error) {
-    console.error("Sign up error:", error);
+    // エラーハンドリング
   } else {
-    console.log("User signed up:", user);
+    // ユーザー登録成功時の処理
   }
 };
 ```
@@ -177,7 +179,6 @@ const MyForm = () => {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("Form submitted:", data);
     // ここでAPI呼び出しなどの処理を行う
   };
 
