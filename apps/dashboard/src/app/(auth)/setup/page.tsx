@@ -78,6 +78,20 @@ export default function SetupPage() {
     },
   });
 
+  useEffect(() => {
+    // ユーザー情報が取得できた場合、フォームに初期値を設定
+    if (setupStatus && user) {
+      form.reset((v) => ({
+        ...v,
+        userName:
+          v.userName ||
+          setupStatus?.user?.name ||
+          user?.user_metadata["display_name"] ||
+          "",
+      }));
+    }
+  }, [user, form, setupStatus]);
+
   // フォーム送信処理
   const setupMutation = useMutation(
     trpc.user.setup.mutationOptions({
