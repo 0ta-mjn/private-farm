@@ -28,6 +28,8 @@ import { DiaryDateDetail } from "@/components/diary/diary-date-detail";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
 import { useTRPC } from "@/trpc/client";
 import { useMediaQuery } from "@/hooks/use-mobile";
+import { ThingFilter, ThingFilterValue } from "@/components/thing/thing-filter";
+import { WorkTypeFilter } from "@/components/diary/work-type-filter";
 
 function DiaryPageContent() {
   const actions = useDiaryDrawerActions();
@@ -40,6 +42,8 @@ function DiaryPageContent() {
   // 状態管理
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [workTypeFilter, setWorkTypeFilter] = useState<string | null>(null);
+  const [thingFilter, setThingFilter] = useState<ThingFilterValue | null>(null);
 
   // 月のサマリーデータを取得（カレンダー表示用）
   const monthSummaryQuery = useQuery(
@@ -56,8 +60,13 @@ function DiaryPageContent() {
     )
   );
 
-  // データはそのまま使用（変換不要）
-  const diaries = monthSummaryQuery.data || [];
+  const diaries =
+    monthSummaryQuery.data
+      ?.filter((v) => !workTypeFilter || v.workType === workTypeFilter)
+      .filter(
+        (v) =>
+          !thingFilter || v.fields.some((field) => field.id === thingFilter.id)
+      ) || [];
 
   // URLパラメータを更新するヘルパー関数
   const updateUrlParams = useCallback(
@@ -186,9 +195,29 @@ function DiaryPageContent() {
     <div className="container mx-auto pb-6">
       {/* ヘッダー */}
       <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <DiarySearch onDiarySelect={handleDiaryClick} currentUserId={userId} />
+        <div className="flex items-center flex-1 flex-wrap gap-2">
+          <DiarySearch
+            onDiarySelect={handleDiaryClick}
+            currentUserId={userId}
+            organizationId={currentOrganizationId}
+            className="flex-1"
+          />
 
-        <h1 className="sr-only">農業日誌</h1>
+          <h1 className="sr-only">農業日誌</h1>
+
+          <div className="flex w-full items-center gap-2 md:w-fit">
+            <ThingFilter
+              organizationId={currentOrganizationId}
+              value={thingFilter}
+              onChange={setThingFilter}
+            />
+
+            <WorkTypeFilter
+              value={workTypeFilter}
+              onChange={setWorkTypeFilter}
+            />
+          </div>
+        </div>
 
         <Button onClick={actions.openCreate}>
           <PlusIcon className="h-4 w-4 mr-2" />
