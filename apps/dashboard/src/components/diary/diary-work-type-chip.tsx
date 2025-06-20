@@ -11,17 +11,18 @@ export function DiaryWorkTypeChip({
   ...props
 }: DiaryWorkTypeChipProps) {
   const display = getWorkTypeDisplay(workType);
-
   if (!display) return null;
 
+  const color = display.color;
   return (
     <Badge
       {...props}
       className={cn("text-xs font-medium", className)}
-      style={{ backgroundColor: display.color }}
+      style={{ backgroundColor: color }}
       data-work-type={workType}
     >
-      {display.label}
+      <span>{display.icon}</span>
+      <span className="inline-block min-w-0 truncate">{display.label}</span>
     </Badge>
   );
 }

@@ -212,7 +212,11 @@ export function DiaryDateDetailContent({
                     <div className="flex items-center gap-2">
                       {/* 天気・気温情報 */}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {weatherDisplay && <span>{weatherDisplay.label}</span>}
+                        {weatherDisplay && (
+                          <span>
+                            {weatherDisplay.icon || weatherDisplay.label}
+                          </span>
+                        )}
                         {diary.temperature && (
                           <>
                             {weatherDisplay && <span>•</span>}

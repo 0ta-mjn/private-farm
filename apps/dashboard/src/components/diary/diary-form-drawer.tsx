@@ -186,12 +186,12 @@ export function DiaryFormDrawer({
                       value={workType.value}
                       data-testid={`work-type-option-${workType.value}`}
                     >
+                      <span>{workType.icon}</span>
+                      <span>{workType.label}</span>
                       <span
                         className="inline-block size-2 rounded-full"
                         style={{ background: workType.color }}
                       ></span>
-
-                      {workType.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -341,7 +341,8 @@ export function DiaryFormDrawer({
                         value={weather.value}
                         data-testid={`weather-option-${weather.value}`}
                       >
-                        {weather.label}
+                        <span>{weather.icon}</span>
+                        <span>{weather.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
