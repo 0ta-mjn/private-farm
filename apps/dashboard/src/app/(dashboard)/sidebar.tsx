@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from "@/shadcn/sidebar";
 import {
   DropdownMenu,
@@ -48,6 +49,7 @@ import { CreateOrganizationDialog } from "@/components/organization/create-organ
 import { AccountSettingsDialog } from "@/components/account/account-settings-dialog";
 import { Button } from "@/shadcn/button";
 import { SidebarMenuItemButton } from "./sidebar-menu-item-button";
+import { cn } from "@/lib/utils";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -83,6 +85,7 @@ export function AppSidebar() {
   const { currentOrganizationId, setCurrentOrganization } = useOrganization();
   const diaryDrawerActions = useDiaryDrawerActions();
   const trpc = useTRPC();
+  const { open: isOpenSidebar } = useSidebar();
 
   // サイドバーデータを取得
   const { data: sidebarData, isLoading } = useQuery(
@@ -290,12 +293,21 @@ export function AppSidebar() {
             <div className="flex items-center gap-2 py-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton className="w-full">
-                    <div className="flex items-center min-w-0 flex-1 gap-2 px-2 text-sidebar-accent-foreground">
+                  <SidebarMenuButton
+                    className="w-full"
+                    tooltip={currentOrganization?.name || "組織を選択"}
+                  >
+                    <div
+                      className={cn(
+                        "flex w-full items-center justify-center min-w-0 flex-1 gap-2 text-sidebar-accent-foreground"
+                      )}
+                    >
                       <BuildingIcon className="h-4 w-4 shrink-0 text-current" />
-                      <span className="text-sm font-medium truncate">
-                        {currentOrganization?.name || "組織を選択"}
-                      </span>
+                      {isOpenSidebar && (
+                        <span className="text-sm flex-1 min-w-0 font-medium truncate inline-block">
+                          {currentOrganization?.name || "組織を選択"}
+                        </span>
+                      )}
                     </div>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -382,18 +394,23 @@ export function AppSidebar() {
                 asChild
                 size="lg"
                 data-testid="sidebar-account-settings-button"
+                tooltip="アカウント設定"
               >
-                <div className="flex items-center gap-3 px-2 py-2 cursor-pointer">
+                <div className="flex items-center justify-center gap-3 py-2 cursor-pointer">
                   <UserIcon className="h-4 w-4" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium truncate">
-                      {sidebarData?.user?.name || "ユーザー名"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      アカウント設定を編集
-                    </span>
-                  </div>
-                  <SettingsIcon className="h-4 w-4 ml-auto text-sidebar-accent-foreground" />
+                  {isOpenSidebar && (
+                    <>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate">
+                          {sidebarData?.user?.name || "ユーザー名"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          アカウント設定を編集
+                        </span>
+                      </div>
+                      <SettingsIcon className="h-4 w-4 ml-auto text-sidebar-accent-foreground" />
+                    </>
+                  )}
                 </div>
               </SidebarMenuButton>
             </AccountSettingsDialog>
@@ -401,7 +418,7 @@ export function AppSidebar() {
 
           {/* ログアウト */}
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout}>
+            <SidebarMenuButton onClick={handleLogout} tooltip="ログアウト">
               <LogOutIcon className="h-4 w-4" />
               <span>ログアウト</span>
             </SidebarMenuButton>
