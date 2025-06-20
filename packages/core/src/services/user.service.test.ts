@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect, beforeAll } from "vitest";
+import { describe, it, beforeEach, expect } from "vitest";
 import { dbClient } from "@repo/db/client";
 import { eq, and, or } from "@repo/db";
 import {
@@ -121,7 +121,7 @@ describe("UserService (関数型)", () => {
       const testUserId = "test-user-with-org";
 
       // setupUserAndOrganizationでユーザーと組織を作成
-      const setupResult = await setupUserAndOrganization(db, testUserId, {
+      await setupUserAndOrganization(db, testUserId, {
         userName: "Test User",
         organizationName: "Test Organization",
       });
@@ -212,7 +212,7 @@ describe("UserService (関数型)", () => {
       const userId2 = "user-2";
 
       // 2つのユーザーと組織を作成
-      const setupResult1 = await setupUserAndOrganization(db, userId1, {
+      await setupUserAndOrganization(db, userId1, {
         userName: "User 1",
         organizationName: "Organization 1",
       });
@@ -265,14 +265,14 @@ describe("UserService (関数型)", () => {
       const testUserId = "test-user-id";
 
       // 最初の組織を作成
-      const setupResult1 = await setupUserAndOrganization(db, testUserId, {
+      await setupUserAndOrganization(db, testUserId, {
         userName: "Test User",
         organizationName: "First Organization",
       });
 
       // 2番目の組織を作成
       const secondOrgId = "test-org-2";
-      const org2Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: secondOrgId,
@@ -531,7 +531,7 @@ describe("UserService (関数型)", () => {
       });
 
       // 2つの組織を作成してユーザーを唯一のメンバーにする
-      const org1Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: "org-1",
@@ -539,7 +539,7 @@ describe("UserService (関数型)", () => {
         })
         .returning();
 
-      const org2Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: "org-2",

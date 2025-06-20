@@ -101,11 +101,11 @@ describe("OrganizationService", () => {
       });
 
       // 複数の組織を作成
-      const org1 = await createOrganization(db, testUserId, {
+      await createOrganization(db, testUserId, {
         organizationName: "Organization 1",
       });
 
-      const org2 = await createOrganization(db, testUserId, {
+      await createOrganization(db, testUserId, {
         organizationName: "Organization 2",
       });
 

@@ -6,11 +6,7 @@ import {
   usersTable,
   thingsTable,
 } from "@repo/db/schema";
-import {
-  NotFoundError,
-  ThingCreationError,
-  ThingUpdateError,
-} from "@repo/config";
+import { NotFoundError } from "@repo/config";
 import {
   createThing,
   getThingsByOrganization,

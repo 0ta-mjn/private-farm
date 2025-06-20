@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, desc, and, sql, exists, count, inArray } from "@repo/db";
+import { eq, desc, and, sql, count, inArray } from "@repo/db";
 import {
   usersTable,
   organizationsTable,
