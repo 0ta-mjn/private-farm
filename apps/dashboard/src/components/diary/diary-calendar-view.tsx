@@ -118,7 +118,7 @@ export function DiaryCalendarView({
 
           <h2
             className="text-lg text-center font-semibold flex-1 md:hidden"
-            data-testid="diary-calendar-title"
+            data-testid="diary-calendar-title-mobile"
           >
             {title}
           </h2>

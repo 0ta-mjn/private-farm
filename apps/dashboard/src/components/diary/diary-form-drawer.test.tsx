@@ -20,8 +20,8 @@ const mockInitialData: DiaryFormData = {
   date: new Date("2022-06-07"),
   title: "テスト日誌",
   content: "テスト作業内容",
-  workType: "PLANTING",
-  weather: "SUNNY",
+  workType: "WEEDING",
+  weather: "CLEAR",
   temperature: 25,
   thingIds: ["field-1"],
 };
@@ -129,7 +129,7 @@ describe("DiaryFormDrawer", () => {
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
       expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       // 日付の変更
@@ -142,7 +142,7 @@ describe("DiaryFormDrawer", () => {
       const weatherSelect = screen.getByTestId("weather-select");
       await user.click(weatherSelect);
       expect(screen.getByTestId("weather-options")).toBeInTheDocument();
-      const sunnyOption = screen.getByTestId("weather-option-SUNNY");
+      const sunnyOption = screen.getByTestId("weather-option-CLEAR");
       await user.click(sunnyOption);
 
       // 気温の入力
@@ -264,7 +264,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       // 他の区画は空のまま送信
@@ -311,7 +311,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       // デスクトップまたはモバイルの送信ボタンを取得
@@ -344,7 +344,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       const temperatureInput = screen.getByTestId("temperature-input");
@@ -358,7 +358,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("weather-options")).toBeInTheDocument();
       });
-      const sunnyOption = screen.getByTestId("weather-option-SUNNY");
+      const sunnyOption = screen.getByTestId("weather-option-CLEAR");
       await user.click(sunnyOption);
 
       const field1Option = screen.getByTestId("field-option-field-1");
@@ -383,8 +383,8 @@ describe("DiaryFormDrawer", () => {
       const submittedData = defaultProps.onSubmit.mock.calls[0]?.[0];
       expect(submittedData).toBeDefined();
       expect(submittedData).toHaveProperty("date");
-      expect(submittedData).toHaveProperty("workType", "PLANTING");
-      expect(submittedData).toHaveProperty("weather", "SUNNY");
+      expect(submittedData).toHaveProperty("workType", "WEEDING");
+      expect(submittedData).toHaveProperty("weather", "CLEAR");
       expect(submittedData).toHaveProperty("temperature", 25);
       expect(submittedData).toHaveProperty("content", "テスト作業内容");
       expect(submittedData).toHaveProperty("thingIds", ["field-1"]);
@@ -451,7 +451,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("weather-options")).toBeInTheDocument();
       });
-      const rainyOption = screen.getByTestId("weather-option-RAINY");
+      const rainyOption = screen.getByTestId("weather-option-RAIN");
       await user.click(rainyOption);
 
       const temperatureInput = screen.getByTestId(
@@ -490,7 +490,7 @@ describe("DiaryFormDrawer", () => {
 
       submittedData = defaultProps.onSubmit.mock.calls[0]?.[0];
       expect(submittedData?.workType).toBe("HARVESTING");
-      expect(submittedData?.weather).toBe("RAINY");
+      expect(submittedData?.weather).toBe("RAIN");
       expect(submittedData?.temperature).toBe(18);
       expect(submittedData?.content).toBe("更新された作業内容");
       expect(submittedData?.thingIds).toEqual(["field-2"]);
@@ -506,7 +506,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       // 複数区画を選択
@@ -561,7 +561,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      const plantingOption = screen.getByTestId("work-type-option-PLANTING");
+      const plantingOption = screen.getByTestId("work-type-option-WEEDING");
       await user.click(plantingOption);
 
       // フォーム直接送信（Enterキーでの送信をシミュレート）
@@ -753,8 +753,8 @@ describe("DiaryFormDrawer", () => {
         date: new Date("2023-01-15"),
         title: "初期タイトル1",
         content: "初期内容1",
-        workType: "PLANTING",
-        weather: "SUNNY",
+        workType: "WEEDING",
+        weather: "CLEAR",
         temperature: 20,
         thingIds: ["field-1"],
       };
@@ -770,10 +770,8 @@ describe("DiaryFormDrawer", () => {
       // 初期データ1が反映されていることを確認
       expect(screen.getByTestId("content-textarea")).toHaveValue("初期内容1");
       expect(screen.getByTestId("temperature-input")).toHaveValue(20);
-      expect(screen.getByTestId("work-type-select")).toHaveTextContent(
-        "植付け"
-      );
-      expect(screen.getByTestId("weather-select")).toHaveTextContent("晴れ");
+      expect(screen.getByTestId("work-type-select")).toHaveTextContent("除草");
+      expect(screen.getByTestId("weather-select")).toHaveTextContent("快晴");
       expect(screen.getByTestId("field-checkbox-field-1")).toBeChecked();
 
       // 異なる初期データに変更
@@ -782,7 +780,7 @@ describe("DiaryFormDrawer", () => {
         title: "初期タイトル2",
         content: "初期内容2",
         workType: "HARVESTING",
-        weather: "RAINY",
+        weather: "RAIN",
         temperature: 15,
         thingIds: ["field-2", "house-1"],
       };
@@ -802,7 +800,9 @@ describe("DiaryFormDrawer", () => {
         expect(screen.getByTestId("work-type-select")).toHaveTextContent(
           "収穫"
         );
-        expect(screen.getByTestId("weather-select")).toHaveTextContent("雨");
+        expect(screen.getByTestId("weather-select")).toHaveTextContent(
+          "通常の雨"
+        );
       });
 
       expect(screen.getByTestId("field-checkbox-field-1")).not.toBeChecked();
@@ -940,7 +940,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      await user.click(screen.getByTestId("work-type-option-PLANTING"));
+      await user.click(screen.getByTestId("work-type-option-WEEDING"));
 
       // 新しいonSubmit関数で送信
       const submitButtonForTest =
@@ -1002,7 +1002,7 @@ describe("DiaryFormDrawer", () => {
       await waitFor(() => {
         expect(screen.getByTestId("work-type-options")).toBeInTheDocument();
       });
-      await user.click(screen.getByTestId("work-type-option-PLANTING"));
+      await user.click(screen.getByTestId("work-type-option-WEEDING"));
 
       const submitButtonForEdgeCase =
         screen.queryByTestId("submit-button-desktop") ||
