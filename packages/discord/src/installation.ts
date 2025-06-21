@@ -5,7 +5,7 @@ import {
 } from "@repo/db/schema";
 import { and, eq } from "@repo/db";
 import { decrypt, encrypt } from "./utils";
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 
 const DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token";
 
@@ -47,7 +47,11 @@ export async function registerDiscordChannel(
     }),
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
-  if (!tokRes.ok) throw new Error("Token exchange failed");
+  if (!tokRes.ok) {
+    const e = await tokRes.text();
+    console.error("Discord token exchange error:", e);
+    throw new Error("Token exchange failed");
+  }
   const t: TokenResp = await tokRes.json();
 
   // 2) Installation upsert
@@ -130,6 +134,28 @@ export async function registerDiscordChannel(
 }
 
 const MAX_RETRY_COUNT = 5;
+
+export function getDiscordOauthRedirectUrl(
+  organizationId: string,
+  redirectUri: string
+) {
+  const clientId = process.env.DISCORD_CLIENT_ID!;
+  // CSRF対策のためのstateパラメータを生成
+  // organizationIdとランダムな値を組み合わせて一意のstateを作成
+  const nonce = randomBytes(16).toString("hex");
+  const state = `${organizationId}:${nonce}`;
+
+  const oauthUrl = new URL("https://discord.com/oauth2/authorize");
+  oauthUrl.searchParams.set("response_type", "code");
+  oauthUrl.searchParams.set("client_id", clientId);
+  oauthUrl.searchParams.set("scope", "bot webhook.incoming");
+  oauthUrl.searchParams.set("state", state);
+  oauthUrl.searchParams.set("redirect_uri", redirectUri);
+  oauthUrl.searchParams.set("prompt", "consent");
+  oauthUrl.searchParams.set("integration_type", "0"); // 0 = guild install
+
+  return { url: oauthUrl.toString(), state };
+}
 
 export async function ensureAccessToken(
   db: Database,

@@ -22,6 +22,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@repo/discord": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "eslint": "catalog:",
