@@ -63,7 +63,12 @@ export const createTRPCContext = async ({
   const session = await isomorphicGetSession(supabase, authToken);
 
   const source = req.headers["x-trpc-source"] ?? "unknown";
-  console.log(">>> tRPC Request from", source, "by", session?.user);
+  console.log(
+    ">>> tRPC Request from",
+    source,
+    "by",
+    session?.user.id || "anonymous"
+  );
 
   return {
     session,
