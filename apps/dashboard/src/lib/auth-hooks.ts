@@ -46,9 +46,23 @@ export function useRequireAuthAndSetup(
   const trpc = useTRPC();
 
   // 初期設定状態の確認
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
+  const {
+    data: setupStatus,
+    isLoading: isCheckingSetup,
+    error,
+  } = useQuery(
     trpc.user.setupCheck.queryOptions(undefined, {
       enabled: !!user && !loading, // ユーザーが認証済みの場合のみ実行
+      retry: (_, e) => {
+        switch (e?.data?.code) {
+          case "UNAUTHORIZED":
+            // 認証エラーの場合はリトライしない
+            return false;
+          default:
+            // その他のエラーはリトライする
+            return true;
+        }
+      },
     })
   );
 
@@ -57,7 +71,7 @@ export function useRequireAuthAndSetup(
     if (loading || isCheckingSetup) return;
 
     // ユーザーが認証されていない場合はログインページにリダイレクト
-    if (!user) {
+    if (!user || error?.data?.code === "UNAUTHORIZED") {
       router.replace(loginRedirectTo);
       return;
     }
@@ -75,6 +89,7 @@ export function useRequireAuthAndSetup(
     router,
     loginRedirectTo,
     setupRedirectTo,
+    error?.data?.code,
   ]);
 
   return {

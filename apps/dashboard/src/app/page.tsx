@@ -14,6 +14,16 @@ export default function HomePage() {
   const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
     trpc.user.setupCheck.queryOptions(undefined, {
       enabled: !!user, // ログイン済みの場合のみクエリを実行
+      retry: (_, e) => {
+        switch (e?.data?.code) {
+          case "UNAUTHORIZED":
+            // 認証エラーの場合はリトライしない
+            return false;
+          default:
+            // その他のエラーはリトライする
+            return true;
+        }
+      },
     })
   );
 
