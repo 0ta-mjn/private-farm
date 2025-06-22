@@ -1,5 +1,5 @@
 {
-  "id": "6e29a968-001b-413b-81dc-3b4ffa45f93b",
+  "id": "d5cc72e5-5493-4f6a-a7a4-d50d4360b3f9",
   "prevId": "a6656c7d-9785-425c-b385-ca3822fa4f22",
   "version": "7",
   "dialect": "postgresql",
@@ -285,18 +285,18 @@
           "primaryKey": false,
           "notNull": false
         },
-        "is_default": {
-          "name": "is_default",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "mention_role_id": {
           "name": "mention_role_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "notification_settings": {
+          "name": "notification_settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "created_at": {
           "name": "created_at",

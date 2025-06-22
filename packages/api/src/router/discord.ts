@@ -9,6 +9,10 @@ import {
   InstallDiscordGuildInputSchema,
   unlinkDiscordGuild,
   getDiscordInstallations,
+  updateDiscordChannelNotificationSettings,
+  UpdateNotificationSettingsInputSchema,
+  unlinkDiscordChannel,
+  UnlinkDiscordChannelInputSchema,
 } from "@repo/core";
 import { z } from "zod";
 
@@ -152,6 +156,102 @@ export const discordRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Discordのアンリンク中にエラーが発生しました",
+        });
+      }
+    }),
+
+  // 通知設定の更新
+  updateNotificationSettings: protectedProcedure
+    .input(
+      UpdateNotificationSettingsInputSchema.extend({
+        organizationId: z.string().min(1, "組織IDは必須です"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId,
+        "admin"
+      );
+
+      try {
+        const result = await updateDiscordChannelNotificationSettings(
+          ctx.db,
+          input.organizationId,
+          {
+            channelId: input.channelId,
+            notificationSettings: input.notificationSettings,
+          }
+        );
+
+        return result;
+      } catch (error) {
+        console.error("Discord notification settings update error:", error);
+
+        if (error instanceof Error) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Discord通知設定の更新中にエラーが発生しました",
+        });
+      }
+    }),
+
+  // チャネルのリンク解除
+  unlinkChannel: protectedProcedure
+    .input(
+      UnlinkDiscordChannelInputSchema.extend({
+        organizationId: z.string().min(1, "組織IDは必須です"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 組織メンバーシップをチェック
+      await guardOrganizationMembership(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId,
+        "admin"
+      );
+
+      try {
+        const result = await unlinkDiscordChannel(
+          ctx.db,
+          input.organizationId,
+          input.channelId
+        );
+
+        if (!result) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "指定されたDiscordチャネルが見つかりません",
+          });
+        }
+
+        return { success: true };
+      } catch (error) {
+        console.error("Discord channel unlink error:", error);
+
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        if (error instanceof Error) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Discordチャネルのリンク解除中にエラーが発生しました",
         });
       }
     }),

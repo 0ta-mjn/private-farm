@@ -168,7 +168,6 @@ describe("registerDiscordChannel", () => {
         channelId: "test-channel-id",
         channelName: "Test Channel",
         webhookId: "test-webhook-id",
-        isDefault: true,
       });
 
       // Webhook トークンが暗号化されて保存されているか確認
@@ -296,6 +295,116 @@ describe("registerDiscordChannel", () => {
       // 新しいトークンが保存されている
       expect(decrypt(installation.accessTokenEnc)).toBe("new-access-token");
       expect(decrypt(installation.refreshTokenEnc)).toBe("new-refresh-token");
+    });
+
+    it("should add second channel to existing guild installation", async () => {
+      // Arrange - 既存のインストールを作成
+      const existingInstallationId = "existing-installation-id";
+      await db.insert(discordInstallationsTable).values({
+        id: existingInstallationId,
+        organizationId: testOrgId,
+        guildId: testGuildId,
+        guildName: "Test Guild Name",
+        botUserId: "test-bot-user-id",
+        accessTokenEnc: encrypt("existing-access-token"),
+        refreshTokenEnc: encrypt("existing-refresh-token"),
+        expiresAt: new Date(Date.now() + 3600000), // 1時間後
+      });
+
+      // 既存のチャンネルを作成
+      await db.insert(discordChannelsTable).values({
+        id: "existing-channel-id",
+        installationId: existingInstallationId,
+        channelId: "existing-channel-id",
+        channelName: "Existing Channel",
+        webhookId: "existing-webhook-id",
+        webhookTokenEnc: encrypt("existing-webhook-token"),
+      });
+
+      // 2つ目のチャンネル用のWebhookレスポンス
+      const mockTokenResponse = {
+        access_token: "updated-access-token",
+        refresh_token: "updated-refresh-token",
+        expires_in: 7200,
+        scope: "bot webhook.incoming",
+        guild: {
+          id: testGuildId,
+          name: "Test Guild Name",
+        },
+        bot: {
+          id: "test-bot-user-id",
+        },
+        webhook: {
+          id: "second-webhook-id",
+          token: "second-webhook-token",
+          guild_id: testGuildId,
+          channel_id: "second-channel-id",
+          name: "Second Channel",
+          avatar: null,
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockTokenResponse,
+      });
+
+      const params = {
+        organizationId: testOrgId,
+        code: testCode,
+        guildId: testGuildId,
+        redirectUri: testRedirectUri,
+      };
+
+      // Act
+      const result = await registerDiscordChannel(db, params);
+
+      // Assert
+      expect(result).toEqual({
+        installationId: existingInstallationId,
+        guildId: testGuildId,
+        botUserId: "test-bot-user-id",
+        channelId: "second-channel-id",
+        webhookId: "second-webhook-id",
+        webhookToken: mockTokenResponse.webhook,
+      });
+
+      // インストールは1つのまま、トークンが更新されている
+      const installations = await db.select().from(discordInstallationsTable);
+      expect(installations).toHaveLength(1);
+      const installation = installations[0]!;
+      expect(installation.id).toBe(existingInstallationId);
+      expect(decrypt(installation.accessTokenEnc)).toBe("updated-access-token");
+      expect(decrypt(installation.refreshTokenEnc)).toBe(
+        "updated-refresh-token"
+      );
+
+      // チャンネルが2つになっている
+      const channels = await db.select().from(discordChannelsTable);
+      expect(channels).toHaveLength(2);
+
+      // 既存チャンネルが残っている
+      const existingChannel = channels.find(
+        (c) => c.channelId === "existing-channel-id"
+      );
+      expect(existingChannel).toBeDefined();
+      expect(existingChannel!.channelName).toBe("Existing Channel");
+
+      // 新しいチャンネルが追加されている
+      const newChannel = channels.find(
+        (c) => c.channelId === "second-channel-id"
+      );
+      expect(newChannel).toBeDefined();
+      expect(newChannel!).toMatchObject({
+        installationId: existingInstallationId,
+        channelId: "second-channel-id",
+        channelName: "Second Channel",
+        webhookId: "second-webhook-id",
+      });
+      expect(decrypt(newChannel!.webhookTokenEnc!)).toBe(
+        "second-webhook-token"
+      );
     });
 
     it("should handle missing guild info from token response", async () => {

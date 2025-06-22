@@ -21,9 +21,11 @@ import {
   primaryKey,
   uniqueIndex,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
+import { DiscordNotificationSettings } from "@repo/config";
 
 // ============================================================================
 // CORE TABLES
@@ -278,8 +280,11 @@ export const discordChannelsTable = pgTable(
     channelName: text("channel_name").notNull(), // Discord Channel 名
     webhookId: text("webhook_id"), // Webhook ID（オプション）
     webhookTokenEnc: text("webhook_token_enc"), // 暗号化されたWebhookトークン（オプション）
-    isDefault: boolean("is_default").default(false).notNull(), // デフォルト通知先かどうか
     mentionRoleId: text("mention_role_id"), // メンション対象のRole ID（オプション）
+    notificationSettings: jsonb("notification_settings")
+      .$type<DiscordNotificationSettings>()
+      .default({})
+      .notNull(), // 通知設定（JSONB）
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -5,8 +5,8 @@ CREATE TABLE "discord_channels" (
 	"channel_name" text NOT NULL,
 	"webhook_id" text,
 	"webhook_token_enc" text,
-	"is_default" boolean DEFAULT false NOT NULL,
 	"mention_role_id" text,
+	"notification_settings" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "unique_installation_channel" UNIQUE("installation_id","channel_id")

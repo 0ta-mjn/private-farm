@@ -92,7 +92,6 @@ describe("sendViaWebhook", () => {
       channelName: "Test Channel",
       webhookId: testWebhookId,
       webhookTokenEnc: testWebhookTokenEnc,
-      isDefault: true,
     });
   });
 
@@ -237,7 +236,6 @@ describe("sendViaWebhook", () => {
         channelName: "Test Channel 2",
         webhookId: null,
         webhookTokenEnc: null,
-        isDefault: false,
       });
 
       const payload: WebhookPayload = { content: "Test message" };

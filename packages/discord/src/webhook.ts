@@ -2,8 +2,7 @@ import { Database } from "@repo/db/client";
 import { discordChannelsTable } from "@repo/db/schema";
 import { eq } from "@repo/db";
 import { decrypt } from "./utils";
-
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks";
+import { DISCORD_WEBHOOK_URL } from "@repo/config";
 
 interface Options {
   threadId?: string;
