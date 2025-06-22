@@ -24,7 +24,6 @@ import {
   DiscordChannelNotFoundError,
 } from "@repo/discord/errors";
 import { z } from "zod";
-import { NotFoundError } from "@repo/config";
 
 export const discordRouter = {
   // Discordチャネル情報の取得
@@ -230,15 +229,19 @@ export const discordRouter = {
           }
         );
 
-        return result;
-      } catch (error) {
-        console.error("Discord notification settings update error:", error);
-
-        if (error instanceof NotFoundError) {
+        if (!result) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "指定されたDiscordチャネルが見つかりません",
           });
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Discord notification settings update error:", error);
+
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         if (error instanceof Error) {
@@ -288,13 +291,6 @@ export const discordRouter = {
         return { success: true };
       } catch (error) {
         console.error("Discord channel unlink error:", error);
-
-        if (error instanceof NotFoundError) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "指定されたDiscordチャネルが見つかりません",
-          });
-        }
 
         if (error instanceof TRPCError) {
           throw error;

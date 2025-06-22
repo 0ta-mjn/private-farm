@@ -57,6 +57,7 @@ describe("UserService (関数型)", () => {
         organizationName: "New Organization",
       });
       expect(res).toBeDefined();
+      if (!res) throw new Error("Setup failed, result is undefined");
       expect(res.user).toBeDefined();
       expect(res.user.id).toBe("new-user-id");
       expect(res.organization).toBeDefined();
@@ -80,6 +81,7 @@ describe("UserService (関数型)", () => {
         organizationName: "New Organization",
       });
       expect(res).toBeDefined();
+      if (!res) throw new Error("Setup failed, result is undefined");
       expect(res.user.id).toBe("existing-user-id");
       expect(res.user.name).toBe("Edited User");
       expect(res.organization).toBeDefined();
@@ -145,6 +147,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       const organizationId = setupResult.organization.id;
 
@@ -221,6 +224,7 @@ describe("UserService (関数型)", () => {
         userName: "User 2",
         organizationName: "Organization 2",
       });
+      if (!setupResult2) throw new Error("Setup failed, result is undefined");
 
       // user-1 が organization-2 の latestViewedAt を更新しようとする（権限なし）
       const result = await updateOrganizationLatestViewedAt(
@@ -241,6 +245,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       const sidebarData = await getUserSidebarData(db, testUserId);
 
@@ -429,6 +434,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       // 削除前に組織が存在することを確認
       const orgBefore = await db
@@ -481,6 +487,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User 1",
         organizationName: "Shared Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       // 2人目のユーザーを作成
       await db.insert(usersTable).values({

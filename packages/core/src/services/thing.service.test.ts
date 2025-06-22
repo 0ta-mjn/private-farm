@@ -6,7 +6,6 @@ import {
   usersTable,
   thingsTable,
 } from "@repo/db/schema";
-import { NotFoundError } from "@repo/config";
 import {
   createThing,
   getThingsByOrganization,
@@ -100,13 +99,13 @@ describe("Thing Service", () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.name).toBe("第1圃場");
-      expect(result.type).toBe("field");
-      expect(result.description).toBe("露地栽培用の圃場");
-      expect(result.location).toBe("北緯35.6762度, 東経139.6503度");
-      expect(result.area).toBe(1000);
-      expect(result.organizationId).toBe(testOrganizationId);
-      expect(result.id).toMatch(/^tng_/);
+      expect(result?.name).toBe("第1圃場");
+      expect(result?.type).toBe("field");
+      expect(result?.description).toBe("露地栽培用の圃場");
+      expect(result?.location).toBe("北緯35.6762度, 東経139.6503度");
+      expect(result?.area).toBe(1000);
+      expect(result?.organizationId).toBe(testOrganizationId);
+      expect(result?.id).toMatch(/^tng_/);
     });
 
     it("最小限の必須フィールドでほ場を作成できる", async () => {
@@ -122,12 +121,12 @@ describe("Thing Service", () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.name).toBe("ハウス1");
-      expect(result.type).toBe("greenhouse");
-      expect(result.description).toBe("");
-      expect(result.location).toBeNull();
-      expect(result.area).toBeNull();
-      expect(result.organizationId).toBe(testOrganizationId);
+      expect(result?.name).toBe("ハウス1");
+      expect(result?.type).toBe("greenhouse");
+      expect(result?.description).toBe("");
+      expect(result?.location).toBeNull();
+      expect(result?.area).toBeNull();
+      expect(result?.organizationId).toBe(testOrganizationId);
     });
 
     it("オプショナルフィールドに明示的にnullを設定してほ場を作成できる", async () => {
@@ -145,12 +144,12 @@ describe("Thing Service", () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.name).toBe("テスト圃場");
-      expect(result.type).toBe("field");
-      expect(result.description).toBe("");
-      expect(result.location).toBeNull();
-      expect(result.area).toBeNull();
-      expect(result.organizationId).toBe(testOrganizationId);
+      expect(result?.name).toBe("テスト圃場");
+      expect(result?.type).toBe("field");
+      expect(result?.description).toBe("");
+      expect(result?.location).toBeNull();
+      expect(result?.area).toBeNull();
+      expect(result?.organizationId).toBe(testOrganizationId);
     });
   });
 
@@ -228,22 +227,21 @@ describe("Thing Service", () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.id).toBe(testThingId);
-      expect(result.name).toBe("テスト圃場");
-      expect(result.type).toBe("field");
-      expect(result.description).toBe("詳細取得テスト用");
-      expect(result.location).toBe("テスト地点");
-      expect(result.area).toBe(500);
+      expect(result?.id).toBe(testThingId);
+      expect(result?.name).toBe("テスト圃場");
+      expect(result?.type).toBe("field");
+      expect(result?.description).toBe("詳細取得テスト用");
+      expect(result?.location).toBe("テスト地点");
+      expect(result?.area).toBe(500);
     });
 
-    it("存在しないほ場IDでエラーが発生する", async () => {
+    it("存在しないほ場IDでundefinedを返す", async () => {
       // Act & Assert
-      await expect(
-        getThingById(db, {
-          thingId: "thing_nonexistent",
-          organizationId: testOrganizationId,
-        })
-      ).rejects.toThrow(NotFoundError);
+      const res = await getThingById(db, {
+        thingId: "thing_nonexistent",
+        organizationId: testOrganizationId,
+      });
+      expect(res).toBeUndefined();
     });
   });
 
@@ -278,11 +276,11 @@ describe("Thing Service", () => {
       });
 
       // Assert
-      expect(result.name).toBe("更新後圃場");
-      expect(result.description).toBe("更新後の説明");
-      expect(result.location).toBe("新しい場所");
-      expect(result.area).toBe(1500);
-      expect(result.type).toBe("field"); // 変更されていない
+      expect(result?.name).toBe("更新後圃場");
+      expect(result?.description).toBe("更新後の説明");
+      expect(result?.location).toBe("新しい場所");
+      expect(result?.area).toBe(1500);
+      expect(result?.type).toBe("field"); // 変更されていない
     });
 
     it("部分的な更新ができる", async () => {
@@ -299,9 +297,9 @@ describe("Thing Service", () => {
       });
 
       // Assert
-      expect(result.name).toBe("部分更新圃場");
-      expect(result.description).toBe("更新前の説明"); // 変更されていない
-      expect(result.type).toBe("field"); // 変更されていない
+      expect(result?.name).toBe("部分更新圃場");
+      expect(result?.description).toBe("更新前の説明"); // 変更されていない
+      expect(result?.type).toBe("field"); // 変更されていない
     });
 
     it("フィールドをnullにリセットできる", async () => {
@@ -319,26 +317,25 @@ describe("Thing Service", () => {
       });
 
       // Assert
-      expect(result.name).toBe("更新前圃場"); // 変更されていない
-      expect(result.location).toBeNull(); // nullにリセット
-      expect(result.area).toBeNull(); // nullにリセット
-      expect(result.type).toBe("field"); // 変更されていない
+      expect(result?.name).toBe("更新前圃場"); // 変更されていない
+      expect(result?.location).toBeNull(); // nullにリセット
+      expect(result?.area).toBeNull(); // nullにリセット
+      expect(result?.type).toBe("field"); // 変更されていない
     });
 
-    it("存在しないほ場でエラーが発生する", async () => {
+    it("存在しないほ場IDでundefinedを返す", async () => {
       // Arrange
       const input: UpdateThingInput = {
         name: "存在しない圃場",
       };
 
       // Act & Assert
-      await expect(
-        updateThing(db, {
-          thingId: "thing_nonexistent",
-          organizationId: testOrganizationId,
-          ...input,
-        })
-      ).rejects.toThrow(NotFoundError);
+      const res = await updateThing(db, {
+        thingId: "thing_nonexistent",
+        organizationId: testOrganizationId,
+        ...input,
+      });
+      expect(res).toBeUndefined();
     });
   });
 
@@ -363,22 +360,20 @@ describe("Thing Service", () => {
       });
 
       // Assert - ほ場が削除されていることを確認
-      await expect(
-        getThingById(db, {
-          thingId: testThingId,
-          organizationId: testOrganizationId,
-        })
-      ).rejects.toThrow(NotFoundError);
+      const result = await getThingById(db, {
+        thingId: testThingId,
+        organizationId: testOrganizationId,
+      });
+      expect(result).toBeUndefined();
     });
 
     it("存在しないほ場でfalseを返す", async () => {
       // Act & Assert
-      await expect(
-        deleteThing(db, {
-          thingId: "thing_nonexistent",
-          organizationId: testOrganizationId,
-        })
-      ).rejects.toThrow(NotFoundError);
+      const result = await deleteThing(db, {
+        thingId: "thing_nonexistent",
+        organizationId: testOrganizationId,
+      });
+      expect(result).toBe(false);
     });
   });
 });

@@ -15,12 +15,9 @@ import {
   GetDiariesByMonthInputSchema,
   SearchDiariesInputSchema,
   DiaryParamsSchema,
-} from "@repo/core";
-import {
-  NotFoundError,
   UnauthorizedError,
   ValidationError,
-} from "@repo/config";
+} from "@repo/core";
 import { guardOrganizationMembership } from "../guard/organization";
 
 export const diaryRouter = {
@@ -75,7 +72,14 @@ export const diaryRouter = {
       );
 
       try {
-        return await createDiary(ctx.db, ctx.session.user.id, input);
+        const diary = await createDiary(ctx.db, ctx.session.user.id, input);
+        if (!diary) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "日誌の作成に失敗しました",
+          });
+        }
+        return diary;
       } catch (error) {
         console.error("Diary creation error:", error);
 
@@ -87,22 +91,8 @@ export const diaryRouter = {
           });
         }
 
-        if (error instanceof ValidationError) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: error.message,
-          });
-        }
-
-        // PostgreSQLの一意制約違反
-        if (error && typeof error === "object" && "code" in error) {
-          if (error.code === "23505") {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message:
-                "データの重複が発生しました。しばらく待ってから再試行してください。",
-            });
-          }
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         throw new TRPCError({
@@ -125,21 +115,24 @@ export const diaryRouter = {
 
       try {
         const { diaryId, organizationId, ...updateData } = input;
-        return await updateDiary(
+        const diary = await updateDiary(
           ctx.db,
           ctx.session.user.id,
           { diaryId, organizationId },
           updateData
         );
+        if (!diary) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "日誌が見つからないか、更新権限がありません",
+          });
+        }
+        return diary;
       } catch (error) {
         console.error("Diary update error:", error);
 
-        // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof NotFoundError) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         if (error instanceof UnauthorizedError) {

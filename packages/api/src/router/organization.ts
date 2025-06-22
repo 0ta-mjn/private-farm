@@ -9,13 +9,9 @@ import {
   deleteOrganization,
   CreateOrganizationSchema,
   UpdateOrganizationSchema,
+  MembershipCreationError,
 } from "@repo/core";
 import { z } from "zod";
-import {
-  MembershipCreationError,
-  OrganizationCreationError,
-  OrganizationUpdateError,
-} from "@repo/config";
 import { guardOrganizationMembership } from "../guard/organization";
 
 export const organizationRouter = {
@@ -24,30 +20,32 @@ export const organizationRouter = {
     .input(CreateOrganizationSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await createOrganization(ctx.db, ctx.session.user.id, input);
+        const organization = await createOrganization(
+          ctx.db,
+          ctx.session.user.id,
+          input
+        );
+        if (!organization) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "組織の作成に失敗しました",
+          });
+        }
+
+        return organization;
       } catch (error) {
         console.error("Organization creation error:", error);
 
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
         // ビジネスエラーをtRPCエラーに変換
-        if (
-          error instanceof OrganizationCreationError ||
-          error instanceof MembershipCreationError
-        ) {
+        if (error instanceof MembershipCreationError) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: error.message,
           });
-        }
-
-        // PostgreSQLの一意制約違反
-        if (error && typeof error === "object" && "code" in error) {
-          if (error.code === "23505") {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message:
-                "データの重複が発生しました。しばらく待ってから再試行してください。",
-            });
-          }
         }
 
         throw new TRPCError({
@@ -123,21 +121,24 @@ export const organizationRouter = {
 
       try {
         const { organizationId, ...updateData } = input;
-        return await updateOrganization(
+        const organization = await updateOrganization(
           ctx.db,
           organizationId,
           ctx.session.user.id,
           updateData
         );
+        if (!organization) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "組織が見つからないか、アクセス権限がありません",
+          });
+        }
+        return organization;
       } catch (error) {
         console.error("Organization update error:", error);
 
-        // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof OrganizationUpdateError) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         throw new TRPCError({
@@ -152,16 +153,19 @@ export const organizationRouter = {
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       try {
-        return await deleteOrganization(ctx.db, input.organizationId);
+        const deleted = await deleteOrganization(ctx.db, input.organizationId);
+        if (!deleted) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "組織が見つからないか、アクセス権限がありません",
+          });
+        }
+        return { success: true };
       } catch (error) {
         console.error("Organization deletion error:", error);
 
-        // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof OrganizationUpdateError) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         throw new TRPCError({

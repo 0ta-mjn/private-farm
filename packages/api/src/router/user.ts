@@ -11,11 +11,6 @@ import {
   deleteUserAccount,
   SetupSchema,
 } from "@repo/core";
-import {
-  UserCreationError,
-  OrganizationCreationError,
-  UserDeletionError,
-} from "@repo/config";
 import { deleteSupabaseUser } from "@repo/supabase";
 import { z } from "zod";
 
@@ -50,34 +45,23 @@ export const userRouter = {
     .input(SetupSchema)
     .mutation(async ({ ctx, input }) => {
       try {
-        return await setupUserAndOrganization(
+        const setUpResult = await setupUserAndOrganization(
           ctx.db,
           ctx.session.user.id,
           input
         );
+        if (!setUpResult) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "初期設定に失敗しました",
+          });
+        }
+        return setUpResult;
       } catch (error) {
         console.error("Setup error:", error);
 
-        // ビジネスエラーをtRPCエラーに変換
-        if (
-          error instanceof UserCreationError ||
-          error instanceof OrganizationCreationError
-        ) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message,
-          });
-        }
-
-        // PostgreSQLの一意制約違反
-        if (error && typeof error === "object" && "code" in error) {
-          if (error.code === "23505") {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message:
-                "データの重複が発生しました。しばらく待ってから再試行してください。",
-            });
-          }
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         throw new TRPCError({
@@ -148,6 +132,11 @@ export const userRouter = {
         return updatedUser;
       } catch (error) {
         console.error("Update profile error:", error);
+
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "プロフィールの更新に失敗しました",
@@ -181,12 +170,8 @@ export const userRouter = {
     } catch (error) {
       console.error("Delete account error:", error);
 
-      // ビジネスエラーをtRPCエラーに変換
-      if (error instanceof UserDeletionError) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error.message,
-        });
+      if (error instanceof TRPCError) {
+        throw error;
       }
 
       throw new TRPCError({

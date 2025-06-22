@@ -10,13 +10,8 @@ import {
   CreateThingInputSchema,
   UpdateThingInputSchema,
   ThingParamsSchema,
-} from "@repo/core";
-import {
-  NotFoundError,
-  ThingCreationError,
-  ThingUpdateError,
   ValidationError,
-} from "@repo/config";
+} from "@repo/core";
 import { guardOrganizationMembership } from "../guard/organization";
 import { z } from "zod";
 
@@ -56,16 +51,20 @@ export const thingRouter = {
       );
 
       try {
-        return await getThingById(ctx.db, input);
+        const thing = await getThingById(ctx.db, input);
+        if (!thing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "ほ場が見つからないか、アクセス権限がありません",
+          });
+        }
+        return thing;
       } catch (error) {
         console.error("Thing detail error:", error);
 
         // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof NotFoundError) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         throw new TRPCError({
@@ -87,16 +86,20 @@ export const thingRouter = {
       );
 
       try {
-        return await createThing(ctx.db, input);
+        const thing = await createThing(ctx.db, input);
+        if (!thing) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "ほ場の作成に失敗しました",
+          });
+        }
+        return thing;
       } catch (error) {
         console.error("Thing creation error:", error);
 
         // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof ThingCreationError) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         if (error instanceof ValidationError) {
@@ -137,23 +140,20 @@ export const thingRouter = {
       );
 
       try {
-        return await updateThing(ctx.db, input);
+        const thing = await updateThing(ctx.db, input);
+        if (!thing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "ほ場が見つからないか、更新権限がありません",
+          });
+        }
+        return thing;
       } catch (error) {
         console.error("Thing update error:", error);
 
         // ビジネスエラーをtRPCエラーに変換
-        if (error instanceof NotFoundError) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ThingUpdateError) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: error.message,
-          });
+        if (error instanceof TRPCError) {
+          throw error;
         }
 
         if (error instanceof ValidationError) {
@@ -197,13 +197,6 @@ export const thingRouter = {
 
         if (error instanceof TRPCError) {
           throw error;
-        }
-
-        if (error instanceof NotFoundError) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: error.message,
-          });
         }
 
         throw new TRPCError({

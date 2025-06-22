@@ -6,11 +6,8 @@ import {
   thingsTable,
   usersTable,
 } from "@repo/db/schema";
-import {
-  DEFAULT_UUID_CONFIG,
-  NotFoundError,
-  UnauthorizedError,
-} from "@repo/config";
+import { DEFAULT_UUID_CONFIG } from "@repo/config";
+import { UnauthorizedError } from "../errors";
 import type { Database } from "@repo/db/client";
 import { z } from "zod";
 
@@ -149,9 +146,9 @@ export async function createDiary(
       { idPrefix: DEFAULT_UUID_CONFIG.diary?.idPrefix || "diary" }
     );
 
-    const diary = diaryResult[0]!;
+    const diary = diaryResult[0];
     if (!diary) {
-      throw new Error("日誌の作成に失敗しました");
+      return undefined;
     }
 
     // ほ場関連付けの作成
@@ -282,7 +279,6 @@ export async function updateDiary(
   params: DiaryParams,
   input: UpdateDiaryInput
 ) {
-  console.info("Updating diary with params:", params, "and input:", input);
   return await db.transaction(async (tx) => {
     // thingIdsが指定されている場合、権限チェックを実行
     if (input.thingIds != undefined && input.thingIds.length > 0) {
@@ -326,7 +322,7 @@ export async function updateDiary(
 
     const updatedDiary = updateResult[0];
     if (!updatedDiary) {
-      throw new NotFoundError("日誌が見つからないか、更新権限がありません");
+      return undefined;
     }
 
     // ほ場関連付けの更新

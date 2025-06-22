@@ -283,7 +283,7 @@ describe("Discord Service", () => {
       expect(updatedChannel[0]?.notificationSettings).toEqual(newSettings);
     });
 
-    it("存在しないチャネルIDを指定した場合はエラーを投げる", async () => {
+    it("存在しないチャネルIDを指定した場合はundefinedを返す", async () => {
       // テストデータの準備
       const organizationId = "test-org-id";
       const nonExistentChannelId = "non-existent-channel-id";
@@ -302,15 +302,18 @@ describe("Discord Service", () => {
         monthly: false,
       };
 
-      await expect(
-        updateDiscordChannelNotificationSettings(db, organizationId, {
+      const res = await updateDiscordChannelNotificationSettings(
+        db,
+        organizationId,
+        {
           channelId: nonExistentChannelId,
           notificationSettings: newSettings,
-        })
-      ).rejects.toThrow("指定されたチャネルが見つからないか、権限がありません");
+        }
+      );
+      expect(res).toBeUndefined();
     });
 
-    it("他の組織のチャネルを更新しようとした場合はエラーを投げる", async () => {
+    it("他の組織のチャネルを更新しようとした場合はundefinedを返す", async () => {
       // テストデータの準備
       const organizationId1 = "test-org-id-1";
       const organizationId2 = "test-org-id-2";
@@ -354,16 +357,16 @@ describe("Discord Service", () => {
         monthly: false,
       };
 
-      await expect(
-        updateDiscordChannelNotificationSettings(
-          db,
-          organizationId2, // 異なる組織ID
-          {
-            channelId,
-            notificationSettings: newSettings,
-          }
-        )
-      ).rejects.toThrow("指定されたチャネルが見つからないか、権限がありません");
+      const res = await updateDiscordChannelNotificationSettings(
+        db,
+        organizationId2, // 異なる組織ID
+        {
+          channelId,
+          notificationSettings: newSettings,
+        }
+      );
+      // 結果の検証
+      expect(res).toBeUndefined();
     });
 
     it("部分的な通知設定の更新ができる", async () => {

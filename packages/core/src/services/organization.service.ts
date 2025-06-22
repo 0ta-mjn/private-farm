@@ -5,12 +5,8 @@ import {
   organizationMembersTable,
   MemberRoleSchema,
 } from "@repo/db/schema";
-import {
-  DEFAULT_UUID_CONFIG,
-  OrganizationCreationError,
-  MembershipCreationError,
-  OrganizationUpdateError,
-} from "@repo/config";
+import { DEFAULT_UUID_CONFIG } from "@repo/config";
+import { MembershipCreationError } from "../errors";
 import type { Database, Transaction } from "@repo/db/client";
 
 // バリデーションスキーマ
@@ -64,7 +60,7 @@ export async function createOrganizationCore(
 
   const organization = organizationResult[0]!;
   if (!organization) {
-    throw new OrganizationCreationError();
+    return undefined; // 組織の作成に失敗した場合はundefinedを返す
   }
 
   // メンバーシップ作成（管理者として）
@@ -238,10 +234,6 @@ export async function updateOrganization(
     .returning();
 
   const updatedOrganization = updateResult[0];
-  if (!updatedOrganization) {
-    throw new OrganizationUpdateError("組織の更新に失敗しました");
-  }
-
   return updatedOrganization;
 }
 
@@ -253,30 +245,13 @@ export async function updateOrganization(
  * @param userId - 削除を実行するユーザーのID（権限チェック用）
  * @returns 削除された組織の情報
  */
-export async function deleteOrganization(
-  db: Database,
-  organizationId: string
-): Promise<{ id: string; name: string }> {
-  return await db.transaction(async (tx) => {
-    // 関連するメンバーシップを削除
-    await tx
-      .delete(organizationMembersTable)
-      .where(eq(organizationMembersTable.organizationId, organizationId));
-
-    // 組織を削除
-    const deletedOrganizations = await tx
-      .delete(organizationsTable)
-      .where(eq(organizationsTable.id, organizationId))
-      .returning({
-        id: organizationsTable.id,
-        name: organizationsTable.name,
-      });
-
-    const deletedOrganization = deletedOrganizations[0];
-    if (!deletedOrganization) {
-      throw new OrganizationUpdateError("組織の削除に失敗しました");
-    }
-
-    return deletedOrganization;
-  });
+export async function deleteOrganization(db: Database, organizationId: string) {
+  const deletedOrganizations = await db
+    .delete(organizationsTable)
+    .where(eq(organizationsTable.id, organizationId))
+    .returning({
+      id: organizationsTable.id,
+      name: organizationsTable.name,
+    });
+  return deletedOrganizations.length > 0;
 }

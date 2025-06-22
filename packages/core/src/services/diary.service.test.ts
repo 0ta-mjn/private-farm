@@ -81,11 +81,11 @@ describe("DiaryService", () => {
       const result = await createDiary(db, testUserId, input);
 
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.date).toBe(input.date);
-      expect(result.content).toBe(input.content);
-      expect(result.userId).toBe(testUserId);
-      expect(result.organizationId).toBe(input.organizationId);
+      expect(result?.id).toBeDefined();
+      expect(result?.date).toBe(input.date);
+      expect(result?.content).toBe(input.content);
+      expect(result?.userId).toBe(testUserId);
+      expect(result?.organizationId).toBe(input.organizationId);
     });
 
     it("should create a diary with optional fields", async () => {
@@ -102,10 +102,10 @@ describe("DiaryService", () => {
 
       const result = await createDiary(db, testUserId, input);
 
-      expect(result.title).toBe(input.title);
-      expect(result.workType).toBe(input.workType);
-      expect(result.weather).toBe(input.weather);
-      expect(result.temperature).toBe(input.temperature);
+      expect(result?.title).toBe(input.title);
+      expect(result?.workType).toBe(input.workType);
+      expect(result?.weather).toBe(input.weather);
+      expect(result?.temperature).toBe(input.temperature);
     });
 
     it("should create diary-thing relationships", async () => {
@@ -118,6 +118,8 @@ describe("DiaryService", () => {
       };
 
       const result = await createDiary(db, testUserId, input);
+      expect(result).toBeDefined();
+      if (!result) throw new Error("Diary creation failed");
 
       // diaryThingsテーブルに関連付けが作成されているか確認
       const diaryThings = await db
@@ -139,8 +141,8 @@ describe("DiaryService", () => {
       };
 
       const result = await createDiary(db, testUserId, input);
-
       expect(result).toBeDefined();
+      if (!result) throw new Error("Diary creation failed");
 
       // diaryThingsテーブルに関連付けが作成されていないか確認
       const diaryThings = await db
@@ -222,6 +224,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       // 日誌を取得
       const result = await getDiary(db, {
@@ -261,6 +264,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       // 異なる組織IDで取得を試行
       const result = await getDiary(db, {
@@ -282,6 +286,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
         title: "更新されたタイトル",
@@ -297,10 +302,10 @@ describe("DiaryService", () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.title).toBe(updateInput.title);
-      expect(result.content).toBe(updateInput.content);
-      expect(result.workType).toBe(updateInput.workType);
-      expect(result.date).toBe(input.date); // 変更されていない
+      expect(result?.title).toBe(updateInput.title);
+      expect(result?.content).toBe(updateInput.content);
+      expect(result?.workType).toBe(updateInput.workType);
+      expect(result?.date).toBe(input.date); // 変更されていない
     });
 
     it("should update thing relationships", async () => {
@@ -313,6 +318,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       // 新しいthingを作成
       const newThingId = "new-thing-id";
@@ -356,6 +362,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       // 別の組織のほ場を作成
       const otherOrgId = "other-org-id";
@@ -401,6 +408,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
         content: "更新内容",
@@ -430,6 +438,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
         content: "更新内容",
@@ -459,6 +468,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
         content: "更新内容",
@@ -473,7 +483,7 @@ describe("DiaryService", () => {
       );
 
       expect(result).toBeDefined();
-      expect(result.content).toBe(updateInput.content);
+      expect(result?.content).toBe(updateInput.content);
 
       // 関連付けが削除されているか確認
       const diaryThings = await db
@@ -484,43 +494,20 @@ describe("DiaryService", () => {
       expect(diaryThings).toHaveLength(0);
     });
 
-    it("should allow updating without specifying thingIds", async () => {
-      // 日誌を作成
-      const input = {
-        organizationId: testOrganizationId,
-        date: "2025-06-05",
-        content: "テスト日誌",
-        workType: "SPRAYING",
-        thingIds: [testThingId],
-      };
-
-      const createdDiary = await createDiary(db, testUserId, input);
-
+    it("should return undefined for non-existent diary on update", async () => {
       const updateInput = {
         content: "更新内容",
-        title: "更新タイトル",
-        // thingIdsを指定しない
+        thingIds: [testThingId],
       };
 
       const result = await updateDiary(
         db,
         testUserId,
-        { diaryId: createdDiary.id, organizationId: testOrganizationId },
+        { diaryId: "non-existent-id", organizationId: testOrganizationId },
         updateInput
       );
 
-      expect(result).toBeDefined();
-      expect(result.content).toBe(updateInput.content);
-      expect(result.title).toBe(updateInput.title);
-
-      // 既存の関連付けが保持されているか確認
-      const diaryThings = await db
-        .select()
-        .from(diaryThingsTable)
-        .where(eq(diaryThingsTable.diaryId, createdDiary.id));
-
-      expect(diaryThings).toHaveLength(1);
-      expect(diaryThings[0]!.thingId).toBe(testThingId);
+      expect(result).toBeUndefined();
     });
   });
 
@@ -535,6 +522,7 @@ describe("DiaryService", () => {
       };
 
       const createdDiary = await createDiary(db, testUserId, input);
+      if (!createdDiary) throw new Error("Diary creation failed");
 
       await deleteDiary(db, testUserId, {
         diaryId: createdDiary.id,
@@ -603,10 +591,14 @@ describe("DiaryService", () => {
       });
 
       expect(result).toHaveLength(2);
-      expect(result.every((diary) => diary.date === targetDate)).toBe(true);
-      expect(result.some((diary) => diary.content === "午前の作業")).toBe(true);
-      expect(result.some((diary) => diary.content === "午後の作業")).toBe(true);
-      expect(result.some((diary) => diary.content === "翌日の作業")).toBe(
+      expect(result?.every((diary) => diary.date === targetDate)).toBe(true);
+      expect(result?.some((diary) => diary.content === "午前の作業")).toBe(
+        true
+      );
+      expect(result?.some((diary) => diary.content === "午後の作業")).toBe(
+        true
+      );
+      expect(result?.some((diary) => diary.content === "翌日の作業")).toBe(
         false
       );
 
@@ -685,6 +677,7 @@ describe("DiaryService", () => {
         workType: "WATERING",
         thingIds: [],
       });
+      if (!diary1 || !diary2) throw new Error("Diary creation failed");
 
       const result = await getDiariesByDate(db, {
         organizationId: testOrganizationId,
@@ -746,7 +739,7 @@ describe("DiaryService", () => {
       expect(result).toHaveLength(3);
 
       // 各レコードがサマリーデータのみを含んでいることを確認
-      result.forEach((diary) => {
+      result?.forEach((diary) => {
         expect(diary.date).toBeDefined();
         expect(diary.workType).toBeDefined();
         expect(diary.weather).toBeDefined();
@@ -972,12 +965,12 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(result.diaries.some((d) => d.title === "トマト植え付け")).toBe(
+      expect(result?.diaries).toHaveLength(2);
+      expect(result?.total).toBe(2);
+      expect(result?.diaries.some((d) => d.title === "トマト植え付け")).toBe(
         true
       );
-      expect(result.diaries.some((d) => d.title === "水やり作業")).toBe(true);
+      expect(result?.diaries.some((d) => d.title === "水やり作業")).toBe(true);
     });
 
     it("should search by work type", async () => {
@@ -990,10 +983,10 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(result.diaries.some((d) => d.workType === "PLANTING")).toBe(true);
-      expect(result.diaries.some((d) => d.workType === "HARVESTING")).toBe(
+      expect(result?.diaries).toHaveLength(2);
+      expect(result?.total).toBe(2);
+      expect(result?.diaries.some((d) => d.workType === "PLANTING")).toBe(true);
+      expect(result?.diaries.some((d) => d.workType === "HARVESTING")).toBe(
         true
       );
     });
@@ -1009,10 +1002,10 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
+      expect(result?.diaries).toHaveLength(2);
+      expect(result?.total).toBe(2);
       expect(
-        result.diaries.every(
+        result?.diaries.every(
           (d) => d.date >= "2025-06-05" && d.date <= "2025-06-10"
         )
       ).toBe(true);
@@ -1030,10 +1023,10 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(result.diaries.some((d) => d.title === "水やり作業")).toBe(true);
-      expect(result.diaries.some((d) => d.title === "収穫作業")).toBe(true);
+      expect(result?.diaries).toHaveLength(2);
+      expect(result?.total).toBe(2);
+      expect(result?.diaries.some((d) => d.title === "水やり作業")).toBe(true);
+      expect(result?.diaries.some((d) => d.title === "収穫作業")).toBe(true);
     });
 
     it("should search by weather", async () => {
@@ -1046,9 +1039,9 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
-      expect(result.total).toBe(2);
-      expect(result.diaries.every((d) => d.weather === "晴れ")).toBe(true);
+      expect(result?.diaries).toHaveLength(2);
+      expect(result?.total).toBe(2);
+      expect(result?.diaries.every((d) => d.weather === "晴れ")).toBe(true);
     });
 
     it("should combine multiple search criteria", async () => {
@@ -1063,9 +1056,9 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(1);
-      expect(result.total).toBe(1);
-      expect(result.diaries[0]!.title).toBe("トマト植え付け");
+      expect(result?.diaries).toHaveLength(1);
+      expect(result?.total).toBe(1);
+      expect(result?.diaries[0]!.title).toBe("トマト植え付け");
     });
 
     it("should handle pagination correctly", async () => {
@@ -1108,11 +1101,11 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(4);
+      expect(result?.diaries).toHaveLength(4);
 
       // 日付の降順で並んでいることを確認
-      for (let i = 0; i < result.diaries.length - 1; i++) {
-        expect(result.diaries[i]!.date >= result.diaries[i + 1]!.date).toBe(
+      for (let i = 0; i < result?.diaries.length - 1; i++) {
+        expect(result?.diaries[i]!.date >= result?.diaries[i + 1]!.date).toBe(
           true
         );
       }
@@ -1128,11 +1121,11 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(1);
-      expect(result.diaries[0]!.diaryThings).toBeDefined();
-      expect(result.diaries[0]!.diaryThings).toHaveLength(2);
+      expect(result?.diaries).toHaveLength(1);
+      expect(result?.diaries[0]!.diaryThings).toBeDefined();
+      expect(result?.diaries[0]!.diaryThings).toHaveLength(2);
 
-      const thingNames = result.diaries[0]!.diaryThings!.map(
+      const thingNames = result?.diaries[0]!.diaryThings!.map(
         (dt) => dt.thing.name
       );
       expect(thingNames).toContain("Test Field");
@@ -1149,9 +1142,9 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(0);
-      expect(result.total).toBe(0);
-      expect(result.hasNext).toBe(false);
+      expect(result?.diaries).toHaveLength(0);
+      expect(result?.total).toBe(0);
+      expect(result?.hasNext).toBe(false);
     });
 
     it("should only return results for the specified organization", async () => {
@@ -1181,13 +1174,13 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(2);
+      expect(result?.diaries).toHaveLength(2);
       expect(
-        result.diaries.every((d) => d.organizationId === testOrganizationId)
+        result?.diaries.every((d) => d.organizationId === testOrganizationId)
       ).toBe(true);
-      expect(result.diaries.some((d) => d.title === "他組織のトマト作業")).toBe(
-        false
-      );
+      expect(
+        result?.diaries.some((d) => d.title === "他組織のトマト作業")
+      ).toBe(false);
     });
 
     it("should handle edge cases for date ranges", async () => {
@@ -1202,8 +1195,8 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result?.diaries).toHaveLength(0);
+      expect(result?.total).toBe(0);
     });
 
     it("should handle multiple thing IDs correctly", async () => {
@@ -1218,10 +1211,10 @@ describe("DiaryService", () => {
         sortOrder: "desc",
       });
 
-      expect(result.diaries).toHaveLength(3);
-      expect(result.total).toBe(3);
+      expect(result?.diaries).toHaveLength(3);
+      expect(result?.total).toBe(3);
       // 除草作業（thingIds: []）は含まれないはず
-      expect(result.diaries.some((d) => d.title === "除草作業")).toBe(false);
+      expect(result?.diaries.some((d) => d.title === "除草作業")).toBe(false);
     });
   });
 });

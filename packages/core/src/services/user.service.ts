@@ -5,7 +5,6 @@ import {
   organizationsTable,
   organizationMembersTable,
 } from "@repo/db/schema";
-import { UserCreationError, UserDeletionError } from "@repo/config";
 import type { Database } from "@repo/db/client";
 import {
   createOrganizationCore,
@@ -96,21 +95,20 @@ export async function setupUserAndOrganization(
       user = updatedUserResult[0]!;
     }
 
-    if (!user) {
-      throw new UserCreationError();
-    }
+    if (!user) return undefined;
 
     // 共通の組織作成関数を使用
-    const { organization, membership } = await createOrganizationCore(
-      tx,
-      user.id,
-      { organizationName: input.organizationName }
-    );
+    const organizationResponse = await createOrganizationCore(tx, user.id, {
+      organizationName: input.organizationName,
+    });
+    if (!organizationResponse) {
+      return undefined;
+    }
 
     return {
       user,
-      organization,
-      membership,
+      organization: organizationResponse.organization,
+      membership: organizationResponse.membership,
     };
   });
 }
@@ -339,53 +337,29 @@ export async function deleteUserAccount(
   db: Database,
   userId: string
 ): Promise<boolean> {
-  try {
-    // 事前チェック：ユーザーが存在するかを確認
-    const preCheckResult = await db.transaction(async (tx) => {
-      // ユーザーが存在するかチェック
-      const existingUser = await tx
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.id, userId))
-        .limit(1);
+  // ユーザーが唯一のメンバーである組織を取得して削除
+  const singleMemberOrganizations = await getOrganizationsWithSingleMember(
+    db,
+    userId
+  );
 
-      return { exists: !!existingUser[0] };
-    });
-
-    if (!preCheckResult.exists) {
-      return false; // ユーザーが見つからない
+  for (const organizationId of singleMemberOrganizations) {
+    try {
+      await deleteOrganization(db, organizationId);
+      console.log(
+        `Deleted organization ${organizationId} as user ${userId} was the only member`
+      );
+    } catch (error) {
+      console.error(`Failed to delete organization ${organizationId}:`, error);
+      // 組織削除の失敗はユーザー削除を停止させない（ログのみ記録）
     }
-
-    // ユーザーが唯一のメンバーである組織を取得して削除
-    const singleMemberOrganizations = await getOrganizationsWithSingleMember(
-      db,
-      userId
-    );
-
-    for (const organizationId of singleMemberOrganizations) {
-      try {
-        await deleteOrganization(db, organizationId);
-        console.log(
-          `Deleted organization ${organizationId} as user ${userId} was the only member`
-        );
-      } catch (error) {
-        console.error(
-          `Failed to delete organization ${organizationId}:`,
-          error
-        );
-        // 組織削除の失敗はユーザー削除を停止させない（ログのみ記録）
-      }
-    }
-
-    // ユーザーを削除
-    await db.transaction(async (tx) => {
-      await tx.delete(usersTable).where(eq(usersTable.id, userId));
-    });
-
-    return true;
-  } catch (error) {
-    // エラーはUserDeletionErrorでラップ
-    console.error("Failed to delete user account:", error);
-    throw new UserDeletionError("アカウントの削除処理中にエラーが発生しました");
   }
+
+  // ユーザーを削除
+  const deletedUsers = await db
+    .delete(usersTable)
+    .where(eq(usersTable.id, userId))
+    .returning({ id: usersTable.id });
+
+  return deletedUsers.length > 0;
 }
