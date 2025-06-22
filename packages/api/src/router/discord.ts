@@ -12,6 +12,7 @@ import {
   UpdateNotificationSettingsInputSchema,
   unlinkDiscordChannel,
   UnlinkDiscordChannelInputSchema,
+  sendMessageViaWebhook,
 } from "@repo/core";
 import {
   DiscordError,
@@ -24,6 +25,7 @@ import {
   DiscordChannelNotFoundError,
 } from "@repo/discord/errors";
 import { z } from "zod";
+import { DISCORD_BOT_WELCOME_MESSAGE } from "@repo/config";
 
 export const discordRouter = {
   // Discordチャネル情報の取得
@@ -107,6 +109,16 @@ export const discordRouter = {
           guildId: input.guildId,
           redirectUri: input.redirectUri,
         });
+
+        // 登録成功後に初期メッセージを送信
+        try {
+          await sendMessageViaWebhook(ctx.db, result.channelUuid, {
+            content: DISCORD_BOT_WELCOME_MESSAGE,
+          });
+        } catch (webhookError) {
+          // Webhookエラーは記録するがボット登録は成功として扱う
+          console.error("Initial webhook message failed:", webhookError);
+        }
 
         return result;
       } catch (error) {

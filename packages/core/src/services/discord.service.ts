@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   getDiscordOauthRedirectUrl,
   registerDiscordChannel,
+  sendViaWebhook,
+  WebhookPayload,
 } from "@repo/discord";
 import { discordChannelsTable } from "@repo/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -166,4 +168,23 @@ export const unlinkDiscordChannel = async (
     .returning({ id: discordChannelsTable.id });
 
   return result.length > 0;
+};
+
+/**
+ * Discord Webhookを介してメッセージを送信する関数
+ *
+ * @param db - データベースインスタンス
+ * @param channelId - チャネルID
+ * @param payload - 送信するWebhookペイロード
+ * @returns 送信結果
+ */
+export const sendMessageViaWebhook = async (
+  db: Database,
+  channelId: string,
+  payload: WebhookPayload
+) => {
+  // Webhookを介してメッセージを送信
+  const result = await sendViaWebhook(db, channelId, payload);
+
+  return result;
 };
