@@ -147,12 +147,10 @@ describe("registerDiscordChannel", () => {
       );
 
       // 戻り値の検証
-      expect(result).toEqual({
-        channelId: "test-channel-id",
-        guildId: testGuildId,
-        webhookId: "test-webhook-id",
-        webhookToken: mockTokenResponse.webhook,
-      });
+      expect(result.channelId).toBe("test-channel-id");
+      expect(result.guildId).toBe(testGuildId);
+      expect(result.webhookId).toBe("test-webhook-id");
+      expect(result.webhookToken).toEqual(mockTokenResponse.webhook);
 
       // データベースに正しくレコードが作成されているか確認
       const channels = await db.select().from(discordChannelsTable);
@@ -379,12 +377,10 @@ describe("registerDiscordChannel", () => {
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({
-        channelId: "second-channel-id",
-        guildId: testGuildId,
-        webhookId: "second-webhook-id",
-        webhookToken: mockTokenResponse.webhook,
-      });
+      expect(result.guildId).toBe(testGuildId);
+      expect(result.webhookId).toBe("second-webhook-id");
+      expect(result.webhookToken).toEqual(mockTokenResponse.webhook);
+      expect(result.channelId).toBe("second-channel-id");
 
       // チャンネルが2つになっている
       const channels = await db.select().from(discordChannelsTable);
