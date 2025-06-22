@@ -8,6 +8,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "turbo -F @repo/db push",
     "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @repo/db generate",
     "db:migrate": "pnpm --filter @repo/db migrate",
     "db:migrate:testing": "pnpm --filter @repo/db migrate:testing",
     "db:migration:new": "pnpm --filter @repo/db generate:new",

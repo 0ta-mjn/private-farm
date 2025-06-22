@@ -8,11 +8,7 @@ import {
   afterAll,
 } from "vitest";
 import { dbClient } from "@repo/db/client";
-import {
-  discordInstallationsTable,
-  discordChannelsTable,
-  organizationsTable,
-} from "@repo/db/schema";
+import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
 import { registerDiscordChannel } from "./installation";
 import { encrypt, decrypt } from "./utils";
 
@@ -50,7 +46,6 @@ describe("registerDiscordChannel", () => {
     // テスト用のデータベースをリセット
     await db.transaction(async (tx) => {
       await tx.delete(discordChannelsTable);
-      await tx.delete(discordInstallationsTable);
       await tx.delete(organizationsTable);
     });
 
@@ -71,7 +66,6 @@ describe("registerDiscordChannel", () => {
     // テスト後のクリーンアップ
     await db.transaction(async (tx) => {
       await tx.delete(discordChannelsTable);
-      await tx.delete(discordInstallationsTable);
       await tx.delete(organizationsTable);
     });
   });
@@ -107,6 +101,19 @@ describe("registerDiscordChannel", () => {
         json: async () => mockTokenResponse,
       });
 
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "test-channel-id",
+            name: "Test Channel",
+            type: 0,
+          },
+        ],
+      });
+
       const params = {
         organizationId: testOrgId,
         code: testCode,
@@ -118,7 +125,7 @@ describe("registerDiscordChannel", () => {
       const result = await registerDiscordChannel(db, params);
 
       // Assert
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch).toHaveBeenCalledWith(
         "https://discord.com/api/oauth2/token",
         {
@@ -136,38 +143,28 @@ describe("registerDiscordChannel", () => {
 
       // 戻り値の検証
       expect(result).toEqual({
-        installationId: expect.any(String),
-        guildId: testGuildId,
-        botUserId: "test-bot-user-id",
         channelId: "test-channel-id",
+        guildId: testGuildId,
         webhookId: "test-webhook-id",
         webhookToken: mockTokenResponse.webhook,
       });
 
       // データベースに正しくレコードが作成されているか確認
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations).toHaveLength(1);
-      const installation = installations[0]!;
-      expect(installation).toMatchObject({
-        organizationId: testOrgId,
-        guildId: testGuildId,
-        guildName: "Test Guild Name",
-        botUserId: "test-bot-user-id",
-        refreshInProgress: false,
-      });
-
-      // トークンが暗号化されて保存されているか確認
-      expect(decrypt(installation.accessTokenEnc)).toBe("test-access-token");
-      expect(decrypt(installation.refreshTokenEnc)).toBe("test-refresh-token");
-
       const channels = await db.select().from(discordChannelsTable);
       expect(channels).toHaveLength(1);
       const channel = channels[0]!;
       expect(channel).toMatchObject({
-        installationId: installation.id,
+        organizationId: testOrgId,
+        guildId: testGuildId,
+        guildName: "Test Guild Name",
         channelId: "test-channel-id",
-        channelName: "Test Channel",
+        name: "Test Channel",
         webhookId: "test-webhook-id",
+        notificationSettings: {
+          daily: true,
+          weekly: true,
+          monthly: true,
+        },
       });
 
       // Webhook トークンが暗号化されて保存されているか確認
@@ -204,39 +201,32 @@ describe("registerDiscordChannel", () => {
         redirectUri: testRedirectUri,
       };
 
-      // Act
-      const result = await registerDiscordChannel(db, params);
+      // Act & Assert
+      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
+        "No webhook information received from Discord"
+      );
 
-      // Assert
-      expect(result).toEqual({
-        installationId: expect.any(String),
-        guildId: testGuildId,
-        botUserId: "test-bot-user-id",
-        channelId: null,
-        webhookId: null,
-        webhookToken: null,
-      });
-
-      // インストールのみ作成され、チャンネルは作成されない
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations).toHaveLength(1);
-
+      // データベースにレコードが作成されていないことを確認
       const channels = await db.select().from(discordChannelsTable);
       expect(channels).toHaveLength(0);
     });
 
-    it("should update existing installation when re-installing", async () => {
-      // Arrange - 既存のインストールを作成
-      const existingInstallationId = "existing-installation-id";
-      await db.insert(discordInstallationsTable).values({
-        id: existingInstallationId,
+    it("should update existing channel when re-installing", async () => {
+      // Arrange - 既存のチャンネルを作成
+      await db.insert(discordChannelsTable).values({
+        id: "existing-channel-id",
         organizationId: testOrgId,
         guildId: testGuildId,
         guildName: "Old Guild Name",
-        botUserId: "old-bot-id",
-        accessTokenEnc: encrypt("old-access-token"),
-        refreshTokenEnc: encrypt("old-refresh-token"),
-        expiresAt: new Date(Date.now() + 1800000), // 30分後
+        channelId: "test-channel-id",
+        name: "Old Channel Name",
+        webhookId: "old-webhook-id",
+        webhookTokenEnc: encrypt("old-webhook-token"),
+        notificationSettings: {
+          daily: false,
+          weekly: false,
+          monthly: false,
+        },
       });
 
       const mockTokenResponse = {
@@ -255,7 +245,7 @@ describe("registerDiscordChannel", () => {
           id: "new-webhook-id",
           token: "new-webhook-token",
           guild_id: testGuildId,
-          channel_id: "new-channel-id",
+          channel_id: "test-channel-id",
           name: "New Channel",
           avatar: null,
         },
@@ -265,6 +255,19 @@ describe("registerDiscordChannel", () => {
         ok: true,
         status: 200,
         json: async () => mockTokenResponse,
+      });
+
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "test-channel-id",
+            name: "New Channel",
+            type: 0,
+          },
+        ],
       });
 
       const params = {
@@ -278,45 +281,41 @@ describe("registerDiscordChannel", () => {
       const result = await registerDiscordChannel(db, params);
 
       // Assert
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(result.guildId).toBe(testGuildId);
-      expect(result.botUserId).toBe("new-bot-user-id");
+      expect(result.webhookId).toBe("new-webhook-id");
 
-      // インストールが更新されている
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations).toHaveLength(1);
-      const installation = installations[0]!;
-      expect(installation).toMatchObject({
+      // チャンネルが更新されている
+      const channels = await db.select().from(discordChannelsTable);
+      expect(channels).toHaveLength(1);
+      const channel = channels[0]!;
+      expect(channel).toMatchObject({
         organizationId: testOrgId,
         guildId: testGuildId,
         guildName: "Updated Guild Name",
-        botUserId: "new-bot-user-id",
+        channelId: "test-channel-id",
+        name: "New Channel",
+        webhookId: "new-webhook-id",
+        notificationSettings: {
+          daily: false,
+          weekly: false,
+          monthly: false,
+        },
       });
 
       // 新しいトークンが保存されている
-      expect(decrypt(installation.accessTokenEnc)).toBe("new-access-token");
-      expect(decrypt(installation.refreshTokenEnc)).toBe("new-refresh-token");
+      expect(decrypt(channel.webhookTokenEnc!)).toBe("new-webhook-token");
     });
 
-    it("should add second channel to existing guild installation", async () => {
-      // Arrange - 既存のインストールを作成
-      const existingInstallationId = "existing-installation-id";
-      await db.insert(discordInstallationsTable).values({
-        id: existingInstallationId,
+    it("should add second channel for same organization", async () => {
+      // Arrange - 既存のチャンネルを作成
+      await db.insert(discordChannelsTable).values({
+        id: "existing-channel-id",
         organizationId: testOrgId,
         guildId: testGuildId,
         guildName: "Test Guild Name",
-        botUserId: "test-bot-user-id",
-        accessTokenEnc: encrypt("existing-access-token"),
-        refreshTokenEnc: encrypt("existing-refresh-token"),
-        expiresAt: new Date(Date.now() + 3600000), // 1時間後
-      });
-
-      // 既存のチャンネルを作成
-      await db.insert(discordChannelsTable).values({
-        id: "existing-channel-id",
-        installationId: existingInstallationId,
         channelId: "existing-channel-id",
-        channelName: "Existing Channel",
+        name: "Existing Channel",
         webhookId: "existing-webhook-id",
         webhookTokenEnc: encrypt("existing-webhook-token"),
       });
@@ -350,6 +349,19 @@ describe("registerDiscordChannel", () => {
         json: async () => mockTokenResponse,
       });
 
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "second-channel-id",
+            name: "Second Channel",
+            type: 0,
+          },
+        ],
+      });
+
       const params = {
         organizationId: testOrgId,
         code: testCode,
@@ -361,24 +373,13 @@ describe("registerDiscordChannel", () => {
       const result = await registerDiscordChannel(db, params);
 
       // Assert
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(result).toEqual({
-        installationId: existingInstallationId,
-        guildId: testGuildId,
-        botUserId: "test-bot-user-id",
         channelId: "second-channel-id",
+        guildId: testGuildId,
         webhookId: "second-webhook-id",
         webhookToken: mockTokenResponse.webhook,
       });
-
-      // インストールは1つのまま、トークンが更新されている
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations).toHaveLength(1);
-      const installation = installations[0]!;
-      expect(installation.id).toBe(existingInstallationId);
-      expect(decrypt(installation.accessTokenEnc)).toBe("updated-access-token");
-      expect(decrypt(installation.refreshTokenEnc)).toBe(
-        "updated-refresh-token"
-      );
 
       // チャンネルが2つになっている
       const channels = await db.select().from(discordChannelsTable);
@@ -389,7 +390,7 @@ describe("registerDiscordChannel", () => {
         (c) => c.channelId === "existing-channel-id"
       );
       expect(existingChannel).toBeDefined();
-      expect(existingChannel!.channelName).toBe("Existing Channel");
+      expect(existingChannel!.name).toBe("Existing Channel");
 
       // 新しいチャンネルが追加されている
       const newChannel = channels.find(
@@ -397,9 +398,10 @@ describe("registerDiscordChannel", () => {
       );
       expect(newChannel).toBeDefined();
       expect(newChannel!).toMatchObject({
-        installationId: existingInstallationId,
+        organizationId: testOrgId,
+        guildId: testGuildId,
         channelId: "second-channel-id",
-        channelName: "Second Channel",
+        name: "Second Channel",
         webhookId: "second-webhook-id",
       });
       expect(decrypt(newChannel!.webhookTokenEnc!)).toBe(
@@ -413,10 +415,18 @@ describe("registerDiscordChannel", () => {
         access_token: "test-access-token",
         refresh_token: "test-refresh-token",
         expires_in: 3600,
-        scope: "bot",
+        scope: "bot webhook.incoming",
         // guild info なし
         bot: {
           id: "test-bot-user-id",
+        },
+        webhook: {
+          id: "test-webhook-id",
+          token: "test-webhook-token",
+          guild_id: testGuildId,
+          channel_id: "test-channel-id",
+          name: "Test Channel",
+          avatar: null,
         },
       };
 
@@ -424,6 +434,19 @@ describe("registerDiscordChannel", () => {
         ok: true,
         status: 200,
         json: async () => mockTokenResponse,
+      });
+
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "test-channel-id",
+            name: "Test Channel",
+            type: 0,
+          },
+        ],
       });
 
       const params = {
@@ -437,12 +460,14 @@ describe("registerDiscordChannel", () => {
       const result = await registerDiscordChannel(db, params);
 
       // Assert
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(result.guildId).toBe(testGuildId); // パラメータから取得
 
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations[0]).toMatchObject({
+      const channels = await db.select().from(discordChannelsTable);
+      expect(channels[0]).toMatchObject({
         guildId: testGuildId,
         guildName: "", // デフォルト値
+        name: "Test Channel",
       });
     });
   });
@@ -453,6 +478,10 @@ describe("registerDiscordChannel", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
+        json: async () => ({
+          error: "invalid_request",
+          message: "Invalid code",
+        }),
         text: async () => "Bad Request",
       });
 
@@ -465,12 +494,12 @@ describe("registerDiscordChannel", () => {
 
       // Act & Assert
       await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        "Token exchange failed"
+        "Invalid code"
       );
 
       // データベースにレコードが作成されていないことを確認
-      const installations = await db.select().from(discordInstallationsTable);
-      expect(installations).toHaveLength(0);
+      const channels = await db.select().from(discordChannelsTable);
+      expect(channels).toHaveLength(0);
     });
 
     it("should throw error when organization does not exist", async () => {
@@ -482,12 +511,33 @@ describe("registerDiscordChannel", () => {
         scope: "bot",
         guild: { id: testGuildId, name: "Test Guild" },
         bot: { id: "test-bot-id" },
+        webhook: {
+          id: "test-webhook-id",
+          token: "test-webhook-token",
+          guild_id: testGuildId,
+          channel_id: "test-channel-id",
+          name: "Test Channel",
+          avatar: null,
+        },
       };
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => mockTokenResponse,
+      });
+
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "test-channel-id",
+            name: "Test Channel",
+            type: 0,
+          },
+        ],
       });
 
       const params = {
@@ -545,6 +595,19 @@ describe("registerDiscordChannel", () => {
         json: async () => mockTokenResponse,
       });
 
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "channel-id",
+            name: "Test Channel",
+            type: 0,
+          },
+        ],
+      });
+
       const params = {
         organizationId: testOrgId,
         code: testCode,
@@ -556,35 +619,34 @@ describe("registerDiscordChannel", () => {
       await registerDiscordChannel(db, params);
 
       // Assert
-      const installations = await db.select().from(discordInstallationsTable);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       const channels = await db.select().from(discordChannelsTable);
 
       // 平文トークンがデータベースに保存されていないことを確認
-      const installation = installations[0]!;
       const channel = channels[0]!;
-      expect(installation.accessTokenEnc).not.toBe("sensitive-access-token");
-      expect(installation.refreshTokenEnc).not.toBe("sensitive-refresh-token");
       expect(channel.webhookTokenEnc).not.toBe("sensitive-webhook-token");
 
       // 復号化すると元のトークンが取得できることを確認
-      expect(decrypt(installation.accessTokenEnc)).toBe(
-        "sensitive-access-token"
-      );
-      expect(decrypt(installation.refreshTokenEnc)).toBe(
-        "sensitive-refresh-token"
-      );
       expect(decrypt(channel.webhookTokenEnc!)).toBe("sensitive-webhook-token");
     });
 
-    it("should set correct expiration time", async () => {
+    it("should work without expires_in validation (simplified bot mode)", async () => {
       // Arrange
       const mockTokenResponse = {
         access_token: "test-access-token",
         refresh_token: "test-refresh-token",
         expires_in: 3600, // 1時間
-        scope: "bot",
+        scope: "bot webhook.incoming",
         guild: { id: testGuildId, name: "Test Guild" },
         bot: { id: "test-bot-id" },
+        webhook: {
+          id: "webhook-id",
+          token: "webhook-token",
+          guild_id: testGuildId,
+          channel_id: "channel-id",
+          name: "Test Channel",
+          avatar: null,
+        },
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -593,7 +655,18 @@ describe("registerDiscordChannel", () => {
         json: async () => mockTokenResponse,
       });
 
-      const beforeTime = Date.now();
+      // チャンネル名取得のための2回目のfetch
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            id: "channel-id",
+            name: "Test Channel",
+            type: 0,
+          },
+        ],
+      });
 
       const params = {
         organizationId: testOrgId,
@@ -605,16 +678,19 @@ describe("registerDiscordChannel", () => {
       // Act
       await registerDiscordChannel(db, params);
 
-      const afterTime = Date.now();
-
       // Assert
-      const installations = await db.select().from(discordInstallationsTable);
-      const installation = installations[0]!;
-      const expiresAt = new Date(installation.expiresAt).getTime();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const channels = await db.select().from(discordChannelsTable);
+      const channel = channels[0]!;
 
-      // 有効期限が現在時刻 + 3600秒 (±10秒の誤差) であることを確認
-      expect(expiresAt).toBeGreaterThan(beforeTime + 3600000 - 10000);
-      expect(expiresAt).toBeLessThan(afterTime + 3600000 + 10000);
+      // チャンネルが正常に作成されていることを確認
+      expect(channel).toMatchObject({
+        organizationId: testOrgId,
+        guildId: testGuildId,
+        channelId: "channel-id",
+        webhookId: "webhook-id",
+        name: "Test Channel",
+      });
     });
   });
 });

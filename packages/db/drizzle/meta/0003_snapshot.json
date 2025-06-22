@@ -1,5 +1,5 @@
 {
-  "id": "d5cc72e5-5493-4f6a-a7a4-d50d4360b3f9",
+  "id": "77da04ea-4b55-4c29-839f-31c591dbe38c",
   "prevId": "a6656c7d-9785-425c-b385-ca3822fa4f22",
   "version": "7",
   "dialect": "postgresql",
@@ -255,9 +255,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "installation_id": {
-          "name": "installation_id",
-          "type": "varchar",
+        "organization_id": {
+          "name": "organization_id",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -272,6 +272,19 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "guild_name": {
+          "name": "guild_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         },
         "webhook_id": {
           "name": "webhook_id",
@@ -314,11 +327,26 @@
         }
       },
       "indexes": {
-        "discord_channels_installation_idx": {
-          "name": "discord_channels_installation_idx",
+        "discord_channels_organization_idx": {
+          "name": "discord_channels_organization_idx",
           "columns": [
             {
-              "expression": "installation_id",
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "discord_channels_guild_idx": {
+          "name": "discord_channels_guild_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -346,146 +374,9 @@
         }
       },
       "foreignKeys": {
-        "discord_channels_installation_id_discord_installations_id_fk": {
-          "name": "discord_channels_installation_id_discord_installations_id_fk",
+        "discord_channels_organization_id_organizations_id_fk": {
+          "name": "discord_channels_organization_id_organizations_id_fk",
           "tableFrom": "discord_channels",
-          "tableTo": "discord_installations",
-          "columnsFrom": [
-            "installation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "unique_installation_channel": {
-          "name": "unique_installation_channel",
-          "nullsNotDistinct": false,
-          "columns": [
-            "installation_id",
-            "channel_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.discord_installations": {
-      "name": "discord_installations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(255)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "guild_id": {
-          "name": "guild_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "guild_name": {
-          "name": "guild_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "bot_user_id": {
-          "name": "bot_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "access_token_enc": {
-          "name": "access_token_enc",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "refresh_token_enc": {
-          "name": "refresh_token_enc",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "installed_at": {
-          "name": "installed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "refresh_in_progress": {
-          "name": "refresh_in_progress",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "discord_installations_guild_idx": {
-          "name": "discord_installations_guild_idx",
-          "columns": [
-            {
-              "expression": "guild_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "discord_installations_organization_idx": {
-          "name": "discord_installations_organization_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "discord_installations_organization_id_organizations_id_fk": {
-          "name": "discord_installations_organization_id_organizations_id_fk",
-          "tableFrom": "discord_installations",
           "tableTo": "organizations",
           "columnsFrom": [
             "organization_id"
@@ -499,12 +390,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "unique_org_guild": {
-          "name": "unique_org_guild",
+        "unique_org_channel": {
+          "name": "unique_org_channel",
           "nullsNotDistinct": false,
           "columns": [
             "organization_id",
-            "guild_id"
+            "channel_id"
           ]
         }
       },

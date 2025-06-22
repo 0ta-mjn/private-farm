@@ -20,7 +20,6 @@ import {
   unique,
   primaryKey,
   uniqueIndex,
-  boolean,
   jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -222,62 +221,23 @@ export const diaryThingsTable = pgTable(
 // ============================================================================
 
 /**
- * Discord インストールテーブル
- *
- * 組織とDiscordサーバー（Guild）の連携情報を管理する。
- * 一つの組織が複数のDiscordサーバーにインストールできる。
- */
-export const discordInstallationsTable = pgTable(
-  "discord_installations",
-  {
-    id: varchar("id", { length: 255 }).primaryKey(), // UUID形式のインストール識別子（例：UUIDv4）
-    organizationId: varchar("organization_id", { length: 255 })
-      .references(() => organizationsTable.id, { onDelete: "cascade" })
-      .notNull(),
-    guildId: text("guild_id").notNull(), // Discord Guild (Server) ID
-    guildName: text("guild_name").notNull().default(""), // Discord Guild 名
-    botUserId: text("bot_user_id"), // Bot User ID
-    accessTokenEnc: text("access_token_enc").notNull(), // 暗号化されたアクセストークン
-    refreshTokenEnc: text("refresh_token_enc").notNull(), // 暗号化されたリフレッシュトークン
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(), // トークン有効期限
-    installedAt: timestamp("installed_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    refreshInProgress: boolean("refresh_in_progress").default(false).notNull(), // トークン更新中フラグ（同時更新防止用）
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => ({
-    // 同一組織が同一Guildに重複してインストールされることを防ぐ
-    uniqueOrgGuild: unique("unique_org_guild").on(
-      table.organizationId,
-      table.guildId
-    ),
-    guildIdx: index("discord_installations_guild_idx").on(table.guildId),
-    organizationIdx: index("discord_installations_organization_idx").on(
-      table.organizationId
-    ),
-  })
-);
-
-/**
  * Discord チャンネルテーブル
  *
- * Discord インストールと通知先チャンネルの関係を管理する。
- * 一つのインストールが複数のチャンネルに通知を送信できる。
+ * 組織とDiscord通知先チャンネルの関係を管理する。
+ * Discord Botのインストールによる通知連携機能。
+ * 一つの組織が複数のDiscordチャンネルに通知を送信できる。
  */
 export const discordChannelsTable = pgTable(
   "discord_channels",
   {
     id: varchar("id", { length: 255 }).primaryKey(), // UUID形式のチャンネル識別子
-    installationId: varchar("installation_id")
-      .references(() => discordInstallationsTable.id, {
-        onDelete: "cascade",
-      })
-      .notNull(),
+    organizationId: varchar("organization_id", { length: 255 })
+      .references(() => organizationsTable.id, { onDelete: "cascade" })
+      .notNull(), // 直接組織と紐付け
     channelId: text("channel_id").notNull(), // Discord Channel ID
-    channelName: text("channel_name").notNull(), // Discord Channel 名
+    name: text("channel_name").notNull(), // Discord Channel 名
+    guildId: text("guild_id").notNull(), // Discord Guild (Server) ID
+    guildName: text("guild_name").notNull().default(""), // Discord Guild 名
     webhookId: text("webhook_id"), // Webhook ID（オプション）
     webhookTokenEnc: text("webhook_token_enc"), // 暗号化されたWebhookトークン（オプション）
     mentionRoleId: text("mention_role_id"), // メンション対象のRole ID（オプション）
@@ -293,14 +253,15 @@ export const discordChannelsTable = pgTable(
       .notNull(),
   },
   (table) => ({
-    // 同一インストールが同一チャンネルに重複して登録されることを防ぐ
-    uniqueInstallationChannel: unique("unique_installation_channel").on(
-      table.installationId,
+    // 同一組織が同一チャンネルに重複して登録されることを防ぐ
+    uniqueOrgChannel: unique("unique_org_channel").on(
+      table.organizationId,
       table.channelId
     ),
-    installationIdx: index("discord_channels_installation_idx").on(
-      table.installationId
+    organizationIdx: index("discord_channels_organization_idx").on(
+      table.organizationId
     ),
+    guildIdx: index("discord_channels_guild_idx").on(table.guildId),
     channelIdx: index("discord_channels_channel_idx").on(table.channelId),
   })
 );
@@ -316,6 +277,7 @@ export const discordChannelsTable = pgTable(
  * - 複数のメンバー（organizationMembers経由）
  * - 複数のほ場（things）
  * - 複数の日誌（diaries）
+ * - 複数のDiscordチャンネル（discordChannels）
  */
 export const organizationsRelations = relations(
   organizationsTable,
@@ -323,7 +285,7 @@ export const organizationsRelations = relations(
     organizationMembers: many(organizationMembersTable), // 組織→メンバー関係
     things: many(thingsTable), // 組織→ほ場関係
     diaries: many(diariesTable), // 組織→日誌関係
-    discordInstallations: many(discordInstallationsTable), // 組織→Discord連携関係
+    discordChannels: many(discordChannelsTable), // 組織→Discordチャンネル関係
   })
 );
 
@@ -432,35 +394,17 @@ export const userExternalAccountsRelations = relations(
 );
 
 /**
- * Discord インストールテーブルのリレーション定義
- *
- * 各インストールレコードは以下を持つ：
- * - 一つの組織（organization）
- * - 複数の通知チャンネル（discordChannels）
- */
-export const discordInstallationsRelations = relations(
-  discordInstallationsTable,
-  ({ one, many }) => ({
-    organization: one(organizationsTable, {
-      fields: [discordInstallationsTable.organizationId],
-      references: [organizationsTable.id],
-    }),
-    discordChannels: many(discordChannelsTable), // インストール→チャンネル関係
-  })
-);
-
-/**
  * Discord チャンネルテーブルのリレーション定義
  *
  * 各チャンネルレコードは以下を参照：
- * - 一つのDiscordインストール（discordInstallation）
+ * - 一つの組織（organization）
  */
 export const discordChannelsRelations = relations(
   discordChannelsTable,
   ({ one }) => ({
-    discordInstallation: one(discordInstallationsTable, {
-      fields: [discordChannelsTable.installationId],
-      references: [discordInstallationsTable.id],
+    organization: one(organizationsTable, {
+      fields: [discordChannelsTable.organizationId],
+      references: [organizationsTable.id],
     }),
   })
 );

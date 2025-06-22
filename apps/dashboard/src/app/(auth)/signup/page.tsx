@@ -228,7 +228,7 @@ export default function SignupPage() {
           <Button
             type="button"
             variant="ghost"
-            className="w-full flex items-center justify-center gap-3 bg-discord-bg text-white hover:bg-discord-bg"
+            className="w-full flex items-center justify-center gap-3 bg-discord-bg text-white hover:bg-discord-bg/90 hover:text-white"
             onClick={handleDiscordSignup}
             disabled={isLoading}
           >

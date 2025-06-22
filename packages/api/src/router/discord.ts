@@ -5,10 +5,9 @@ import { guardOrganizationMembership } from "../guard/organization";
 import {
   getDiscordOauthUrl,
   GetDiscordOauthUrlInputSchema,
-  installDiscordGuild,
-  InstallDiscordGuildInputSchema,
-  unlinkDiscordGuild,
-  getDiscordInstallations,
+  registerDiscordBot,
+  RegisterDiscordBotInputSchema,
+  getDiscordChannels,
   updateDiscordChannelNotificationSettings,
   UpdateNotificationSettingsInputSchema,
   unlinkDiscordChannel,
@@ -17,8 +16,8 @@ import {
 import { z } from "zod";
 
 export const discordRouter = {
-  // Discord連携情報の取得
-  getInstallations: protectedProcedure
+  // Discordチャネル情報の取得
+  getChannels: protectedProcedure
     .input(
       z.object({
         organizationId: z.string().min(1, "組織IDは必須です"),
@@ -33,11 +32,8 @@ export const discordRouter = {
       );
 
       try {
-        const installations = await getDiscordInstallations(
-          ctx.db,
-          input.organizationId
-        );
-        return installations;
+        const channels = await getDiscordChannels(ctx.db, input.organizationId);
+        return channels;
       } catch (error) {
         console.error("Discord installations fetch error:", error);
 
@@ -68,9 +64,9 @@ export const discordRouter = {
     }),
 
   // リンク
-  link: protectedProcedure
+  linkChannel: protectedProcedure
     .input(
-      InstallDiscordGuildInputSchema.extend({
+      RegisterDiscordBotInputSchema.extend({
         organizationId: z.string().min(1, "組織IDは必須です"),
         state: z.string().min(1, "stateパラメータは必須です"),
       })
@@ -95,8 +91,8 @@ export const discordRouter = {
       );
 
       try {
-        // Discordのギルドを登録
-        const result = await installDiscordGuild(ctx.db, input.organizationId, {
+        // Discordボットを登録
+        const result = await registerDiscordBot(ctx.db, input.organizationId, {
           code: input.code,
           guildId: input.guildId,
           redirectUri: input.redirectUri,
@@ -109,53 +105,6 @@ export const discordRouter = {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Discordのリンク中にエラーが発生しました",
-        });
-      }
-    }),
-
-  // アンリンク
-  unlink: protectedProcedure
-    .input(
-      z.object({
-        organizationId: z.string().min(1, "組織IDは必須です"),
-        installationId: z.string().min(1, "インストールIDは必須です"),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // 組織メンバーシップをチェック
-      await guardOrganizationMembership(
-        ctx.db,
-        ctx.session.user.id,
-        input.organizationId,
-        "admin"
-      );
-
-      try {
-        // Discordのギルドをアンリンク
-        const deleted = await unlinkDiscordGuild(
-          ctx.db,
-          input.organizationId,
-          input.installationId
-        );
-
-        if (!deleted) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "指定されたDiscordのインストールが見つかりません",
-          });
-        }
-
-        return { success: true };
-      } catch (error) {
-        console.error("Thing detail error:", error);
-
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Discordのアンリンク中にエラーが発生しました",
         });
       }
     }),

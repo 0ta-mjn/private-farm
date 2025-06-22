@@ -31,16 +31,12 @@ import {
   LinkIcon,
   CheckCircleIcon,
   ServerIcon,
-  CalendarIcon,
   HashIcon,
 } from "lucide-react";
-import { RouterOutputs } from "@repo/api";
 
 interface OrganizationDiscordSettingsProps {
   organizationId: string;
 }
-
-type DiscordInstallation = RouterOutputs["discord"]["getInstallations"][number];
 
 // 通知設定の型定義
 interface NotificationSettings {
@@ -52,10 +48,6 @@ interface NotificationSettings {
 export function OrganizationDiscordSettings({
   organizationId,
 }: OrganizationDiscordSettingsProps) {
-  const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
-  const [selectedInstallationId, setSelectedInstallationId] = useState<
-    string | null
-  >(null);
   const [unlinkChannelDialogOpen, setUnlinkChannelDialogOpen] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
     null
@@ -65,10 +57,10 @@ export function OrganizationDiscordSettings({
 
   // Discord連携情報を取得
   const {
-    data: installations,
-    refetch: refetchInstallations,
-    isLoading: isLoadingInstallations,
-  } = useQuery(trpc.discord.getInstallations.queryOptions({ organizationId }));
+    data: channels,
+    refetch: refetchChannels,
+    isLoading: isLoadingChannels,
+  } = useQuery(trpc.discord.getChannels.queryOptions({ organizationId }));
 
   // 通知設定の更新ミューテーション
   const updateNotificationSettingsMutation = useMutation(
@@ -76,7 +68,7 @@ export function OrganizationDiscordSettings({
       onSuccess: () => {
         toast.success("通知設定を更新しました");
         // 連携情報を再取得
-        refetchInstallations();
+        refetchChannels();
       },
       onError: (error) => {
         toast.error("通知設定の更新に失敗しました: " + error.message);
@@ -92,7 +84,7 @@ export function OrganizationDiscordSettings({
         setUnlinkChannelDialogOpen(false);
         setSelectedChannelId(null);
         // 連携情報を再取得
-        refetchInstallations();
+        refetchChannels();
       },
       onError: (error) => {
         toast.error("Discordチャネル連携解除に失敗しました: " + error.message);
@@ -102,15 +94,12 @@ export function OrganizationDiscordSettings({
 
   // 通知設定の更新関数
   const updateNotificationSetting = (
-    installationId: string,
     channelId: string,
     notificationType: keyof NotificationSettings,
     enabled: boolean
   ) => {
     // 現在の設定を取得
-    const currentChannel = installations
-      ?.find((inst) => inst.id === installationId)
-      ?.channels.find((ch) => ch.id === channelId);
+    const currentChannel = channels?.find((ch) => ch.id === channelId);
 
     if (!currentChannel) {
       toast.error("チャネルが見つかりません");
@@ -129,19 +118,6 @@ export function OrganizationDiscordSettings({
       channelId,
       notificationSettings: newNotificationSettings,
     });
-  };
-
-  // 現在の通知設定を取得する関数
-  const getCurrentNotificationSetting = (
-    installationId: string,
-    channelId: string,
-    notificationType: keyof NotificationSettings
-  ): boolean => {
-    const channel = installations
-      ?.find((inst) => inst.id === installationId)
-      ?.channels.find((ch) => ch.id === channelId);
-
-    return channel?.notificationSettings?.[notificationType] ?? false;
   };
 
   // Discord OAuth URL取得
@@ -164,34 +140,9 @@ export function OrganizationDiscordSettings({
     })
   );
 
-  // Discord連携解除
-  const unlinkMutation = useMutation(
-    trpc.discord.unlink.mutationOptions({
-      onSuccess: () => {
-        toast.success("Discordの連携を解除しました");
-        setUnlinkDialogOpen(false);
-        setSelectedInstallationId(null);
-        // 連携情報を再取得
-        refetchInstallations();
-      },
-      onError: (error) => {
-        toast.error("Discord連携解除に失敗しました: " + error.message);
-      },
-    })
-  );
-
   const handleConnectDiscord = () => {
     const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL!}/discord/callback`;
     getOAuthUrlMutation.mutate({ organizationId, redirectUri });
-  };
-
-  const confirmUnlink = () => {
-    if (!selectedInstallationId) return;
-
-    unlinkMutation.mutate({
-      organizationId,
-      installationId: selectedInstallationId,
-    });
   };
 
   const confirmUnlinkChannel = () => {
@@ -203,17 +154,12 @@ export function OrganizationDiscordSettings({
     });
   };
 
-  // 選択された連携情報を取得
-  const selectedInstallation = installations?.find(
-    (installation) => installation.id === selectedInstallationId
+  // 選択されたチャネル情報を取得
+  const selectedChannel = channels?.find(
+    (channel) => channel.id === selectedChannelId
   );
 
-  // 選択されたチャネル情報を取得
-  const selectedChannel = installations
-    ?.flatMap((inst) => inst.channels)
-    .find((channel) => channel.id === selectedChannelId);
-
-  if (isLoadingInstallations && !installations) {
+  if (isLoadingChannels && !channels) {
     // スケルトン表示
     return (
       <Card>
@@ -301,157 +247,101 @@ export function OrganizationDiscordSettings({
         <CardContent className="space-y-4">
           <div className="space-y-4">
             {/* 既存の連携表示エリア */}
-            {installations && installations.length > 0 && (
-              <ul className="space-y-6">
-                {installations.map((installation: DiscordInstallation) => (
-                  <li key={installation.id} className="space-y-4">
-                    {/* サーバー情報ヘッダー */}
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/25">
-                      <div className="flex items-center gap-3">
-                        <ServerIcon className="h-5 w-5 text-blue-500" />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {installation.guildName ||
-                              `サーバー (${installation.guildId})`}
-                          </p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarIcon className="h-3 w-3" />
-                            <span>
-                              {new Date(
-                                installation.installedAt
-                              ).toLocaleDateString("ja-JP")}{" "}
-                              に連携
-                            </span>
-                          </div>
-                        </div>
+            {channels && channels.length > 0 && (
+              <div className="space-y-4">
+                {channels.map((channel) => (
+                  <div
+                    key={channel.id}
+                    className="p-4 rounded-lg border bg-background"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <ServerIcon className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-muted-foreground">
+                          {channel.guildName || `サーバー (${channel.guildId})`}
+                        </span>
+                        <span className="text-muted-foreground">/</span>
+                        <HashIcon className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">
+                          {channel.name}
+                        </span>
                       </div>
                       <Button
-                        variant="destructive"
+                        variant="ghost-destructive"
                         size="sm"
                         onClick={() => {
-                          setSelectedInstallationId(installation.id);
-                          setUnlinkDialogOpen(true);
+                          setSelectedChannelId(channel.id);
+                          setUnlinkChannelDialogOpen(true);
                         }}
                       >
-                        <TrashIcon className="h-4 w-4 mr-1" />
-                        解除
+                        <TrashIcon className="h-3 w-3" />
                       </Button>
                     </div>
-
-                    {/* チャネル一覧と通知設定 */}
-                    {installation.channels &&
-                      installation.channels.length > 0 && (
-                        <div className="ml-8 space-y-3">
-                          <h5 className="font-medium text-xs text-muted-foreground uppercase tracking-wide">
-                            チャネル通知設定
-                          </h5>
-                          {installation.channels.map((channel) => (
-                            <div
-                              key={channel.id}
-                              className="p-4 rounded-lg border bg-background"
-                            >
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <HashIcon className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium text-sm">
-                                    {channel.channelName}
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="ghost-destructive"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedChannelId(channel.id);
-                                    setUnlinkChannelDialogOpen(true);
-                                  }}
-                                >
-                                  <TrashIcon className="h-3 w-3" />
-                                </Button>
-                              </div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* 日次通知設定 */}
-                                <div className="flex items-center justify-between">
-                                  <Label
-                                    htmlFor={`daily-${installation.id}-${channel.id}`}
-                                    className="text-sm"
-                                  >
-                                    日次サマリー
-                                  </Label>
-                                  <Switch
-                                    id={`daily-${installation.id}-${channel.id}`}
-                                    checked={getCurrentNotificationSetting(
-                                      installation.id,
-                                      channel.id,
-                                      "daily"
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      updateNotificationSetting(
-                                        installation.id,
-                                        channel.id,
-                                        "daily",
-                                        checked
-                                      )
-                                    }
-                                  />
-                                </div>
-                                {/* 週次通知設定 */}
-                                <div className="flex items-center justify-between">
-                                  <Label
-                                    htmlFor={`weekly-${installation.id}-${channel.id}`}
-                                    className="text-sm"
-                                  >
-                                    週次サマリー
-                                  </Label>
-                                  <Switch
-                                    id={`weekly-${installation.id}-${channel.id}`}
-                                    checked={getCurrentNotificationSetting(
-                                      installation.id,
-                                      channel.id,
-                                      "weekly"
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      updateNotificationSetting(
-                                        installation.id,
-                                        channel.id,
-                                        "weekly",
-                                        checked
-                                      )
-                                    }
-                                  />
-                                </div>
-                                {/* 月次通知設定 */}
-                                <div className="flex items-center justify-between">
-                                  <Label
-                                    htmlFor={`monthly-${installation.id}-${channel.id}`}
-                                    className="text-sm"
-                                  >
-                                    月次サマリー
-                                  </Label>
-                                  <Switch
-                                    id={`monthly-${installation.id}-${channel.id}`}
-                                    checked={getCurrentNotificationSetting(
-                                      installation.id,
-                                      channel.id,
-                                      "monthly"
-                                    )}
-                                    onCheckedChange={(checked) =>
-                                      updateNotificationSetting(
-                                        installation.id,
-                                        channel.id,
-                                        "monthly",
-                                        checked
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </li>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 日次通知設定 */}
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor={`daily-${channel.guildId}-${channel.id}`}
+                          className="text-sm"
+                        >
+                          日次サマリー
+                        </Label>
+                        <Switch
+                          id={`daily-${channel.guildId}-${channel.id}`}
+                          checked={channel.notificationSettings.daily}
+                          onCheckedChange={(checked) =>
+                            updateNotificationSetting(
+                              channel.id,
+                              "daily",
+                              checked
+                            )
+                          }
+                        />
+                      </div>
+                      {/* 週次通知設定 */}
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor={`weekly-${channel.guildId}-${channel.id}`}
+                          className="text-sm"
+                        >
+                          週次サマリー
+                        </Label>
+                        <Switch
+                          id={`weekly-${channel.guildId}-${channel.id}`}
+                          checked={channel.notificationSettings.weekly}
+                          onCheckedChange={(checked) =>
+                            updateNotificationSetting(
+                              channel.id,
+                              "weekly",
+                              checked
+                            )
+                          }
+                        />
+                      </div>
+                      {/* 月次通知設定 */}
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor={`monthly-${channel.guildId}-${channel.id}`}
+                          className="text-sm"
+                        >
+                          月次サマリー
+                        </Label>
+                        <Switch
+                          id={`monthly-${channel.guildId}-${channel.id}`}
+                          checked={channel.notificationSettings.monthly}
+                          onCheckedChange={(checked) =>
+                            updateNotificationSetting(
+                              channel.id,
+                              "monthly",
+                              checked
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
 
             <div className="rounded-lg bg-muted/50 p-4">
@@ -475,47 +365,6 @@ export function OrganizationDiscordSettings({
         </CardContent>
       </Card>
 
-      {/* 連携解除確認ダイアログ */}
-      <AlertDialog open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discord連携を解除しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedInstallation && (
-                <>
-                  「
-                  {selectedInstallation.guildName ||
-                    `サーバー (${selectedInstallation.guildId})`}
-                  」との連携を解除します。
-                  <br />
-                </>
-              )}
-              この操作により、このDiscordサーバーからの通知を受け取れなくなります。
-              必要に応じて、再度連携設定を行うことができます。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>キャンセル</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmUnlink}
-              disabled={unlinkMutation.isPending}
-            >
-              {unlinkMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                  解除中...
-                </>
-              ) : (
-                <>
-                  <TrashIcon className="h-4 w-4 mr-2" />
-                  連携解除
-                </>
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* チャネル連携解除確認ダイアログ */}
       <AlertDialog
         open={unlinkChannelDialogOpen}
@@ -529,7 +378,7 @@ export function OrganizationDiscordSettings({
             <AlertDialogDescription>
               {selectedChannel && (
                 <>
-                  「#{selectedChannel.channelName}
+                  「#{selectedChannel.name}
                   」チャネルとの連携を解除します。
                   <br />
                 </>

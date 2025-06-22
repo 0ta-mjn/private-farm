@@ -26,7 +26,7 @@ export default function DiscordCallbackPage() {
 
   // tRPC mutationOptionsを使用
   const discordLinkMutation = useMutation(
-    trpc.discord.link.mutationOptions({
+    trpc.discord.linkChannel.mutationOptions({
       onSuccess: () => {
         setStatus("success");
         toast.success("Discordの連携が完了しました");

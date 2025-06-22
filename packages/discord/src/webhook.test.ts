@@ -8,11 +8,7 @@ import {
   afterAll,
 } from "vitest";
 import { dbClient } from "@repo/db/client";
-import {
-  discordInstallationsTable,
-  discordChannelsTable,
-  organizationsTable,
-} from "@repo/db/schema";
+import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
 import { sendViaWebhook, type WebhookPayload } from "./webhook";
 import { encrypt } from "./utils";
 import { randomUUID } from "crypto";
@@ -24,7 +20,6 @@ const mockFetch = vi.fn();
 
 describe("sendViaWebhook", () => {
   let testOrgId: string;
-  let testInstallationId: string;
   let testChannelUuid: string;
   let testWebhookId: string;
   let testWebhookToken: string;
@@ -46,7 +41,6 @@ describe("sendViaWebhook", () => {
     // テスト後のクリーンアップ
     await db.transaction(async (tx) => {
       await tx.delete(discordChannelsTable);
-      await tx.delete(discordInstallationsTable);
       await tx.delete(organizationsTable);
     });
   });
@@ -58,13 +52,11 @@ describe("sendViaWebhook", () => {
     // テスト用のデータベースをリセット
     await db.transaction(async (tx) => {
       await tx.delete(discordChannelsTable);
-      await tx.delete(discordInstallationsTable);
       await tx.delete(organizationsTable);
     });
 
     // テストデータをセットアップ
     testOrgId = "test-org-id";
-    testInstallationId = randomUUID();
     testChannelUuid = randomUUID();
     testWebhookId = "123456789";
 
@@ -74,22 +66,13 @@ describe("sendViaWebhook", () => {
       description: "Test description",
     });
 
-    await db.insert(discordInstallationsTable).values({
-      id: testInstallationId,
+    await db.insert(discordChannelsTable).values({
+      id: testChannelUuid,
       organizationId: testOrgId,
       guildId: "test-guild-id",
       guildName: "Test Guild",
-      botUserId: "test-bot-id",
-      accessTokenEnc: await encrypt("test-access-token"),
-      refreshTokenEnc: await encrypt("test-refresh-token"),
-      expiresAt: new Date(Date.now() + 3600000), // 1時間後
-    });
-
-    await db.insert(discordChannelsTable).values({
-      id: testChannelUuid,
-      installationId: testInstallationId,
       channelId: "test-channel-id",
-      channelName: "Test Channel",
+      name: "Test Channel",
       webhookId: testWebhookId,
       webhookTokenEnc: testWebhookTokenEnc,
     });
@@ -231,9 +214,11 @@ describe("sendViaWebhook", () => {
       const channelWithoutWebhook = randomUUID();
       await db.insert(discordChannelsTable).values({
         id: channelWithoutWebhook,
-        installationId: testInstallationId,
+        organizationId: testOrgId,
+        guildId: "test-guild-id-2",
+        guildName: "Test Guild 2",
         channelId: "test-channel-id-2",
-        channelName: "Test Channel 2",
+        name: "Test Channel 2",
         webhookId: null,
         webhookTokenEnc: null,
       });
