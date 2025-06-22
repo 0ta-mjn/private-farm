@@ -83,7 +83,6 @@ export async function registerDiscordChannel(
 
       if (channelRes.ok) {
         const channelData = await channelRes.json();
-        console.log("Fetched channel data:", channelData);
         const channel = Array.isArray(channelData)
           ? channelData.find((c) => c.id === t.webhook?.channel_id)
           : undefined;
@@ -143,6 +142,7 @@ export async function registerDiscordChannel(
     }
 
     return {
+      channelUuid: channel.id,
       channelId: channel.channelId,
       guildId: channel.guildId,
       webhookId: channel.webhookId,
@@ -177,7 +177,6 @@ export function getDiscordOauthRedirectUrl(
   oauthUrl.searchParams.set("permissions", DiscordOAuthConfig.permissions);
 
   const response = oauthUrl.toString();
-  console.log("Discord OAuth redirect URL:", response);
 
   return { url: response, state };
 }

@@ -155,7 +155,6 @@ export function EmailChangeDialog({
       // 成功時の処理
       form.reset();
       onSuccess?.();
-      console.info(data.user);
       if (values.newEmail == data.user.new_email) {
         setSentEmail(values.newEmail);
       } else {
