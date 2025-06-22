@@ -6,9 +6,12 @@ import { OrganizationDiscordSettings } from "@/components/organization/organizat
 import { Separator } from "@/shadcn/separator";
 import { Skeleton } from "@/shadcn/skeleton";
 import { OrganizationProfileSettings } from "@/components/organization/organization-profile-settings";
+import { useSearchParams } from "next/navigation";
 
 export default function OrganizationSettingsPage() {
   const { currentOrganizationId } = useOrganization();
+  const searchParams = useSearchParams();
+  const settings = searchParams.get("settings");
 
   if (!currentOrganizationId) {
     return (
@@ -31,7 +34,9 @@ export default function OrganizationSettingsPage() {
       {/* ページヘッダー */}
       <div>
         <h1 className="text-3xl font-bold">組織設定</h1>
-        <p className="text-muted-foreground">組織の基本情報を管理します。</p>
+        <p className="text-muted-foreground">
+          組織の基本情報と通知設定を管理します。
+        </p>
       </div>
 
       <Separator />
@@ -40,7 +45,10 @@ export default function OrganizationSettingsPage() {
       <OrganizationProfileSettings organizationId={currentOrganizationId} />
 
       {/* Discord通知設定 */}
-      <OrganizationDiscordSettings organizationId={currentOrganizationId} />
+      <OrganizationDiscordSettings
+        organizationId={currentOrganizationId}
+        focused={settings === "notifications"}
+      />
 
       {/* 危険ゾーン */}
       <DeleteOrganization organizationId={currentOrganizationId} />

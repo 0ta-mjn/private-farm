@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -182,14 +182,14 @@ export function AppSidebar() {
           label: "組織設定",
           icon: BuildingIcon,
           href: "/organization/settings",
-        },
-        {
-          id: "notifications",
-          label: "通知設定",
-          icon: BellIcon,
-          disabled: true,
-          badge: "準備中",
-          onClick: handleComingSoon,
+          children: [
+            {
+              id: "notifications",
+              label: "通知設定",
+              icon: BellIcon,
+              href: "/organization/settings?settings=notifications",
+            },
+          ],
         },
       ],
     },
@@ -200,12 +200,33 @@ export function AppSidebar() {
   };
 
   // アクティブ状態の判定
-  const isActive = (href: string) => {
-    if (href === "/dashboard") {
-      return pathname === "/dashboard";
-    }
-    return pathname.startsWith(href);
-  };
+  const searchParams = useSearchParams();
+  const activeIds = sidebarSections.reduce<string[]>((acc, section) => {
+    section.items.forEach((item) => {
+      let isActive = false;
+      if (item.children) {
+        item.children.forEach((child) => {
+          // searchParamsのクエリパラメータを考慮して、hrefが一致するか確認
+          const [childPathname, childSearchParams] = child.href?.includes("?")
+            ? child.href.split("?")
+            : [child.href, ""];
+          if (childPathname && pathname.startsWith(childPathname)) {
+            const isMatch =
+              childSearchParams === "" ||
+              childSearchParams === searchParams.toString();
+            if (isMatch) {
+              acc.push(child.id);
+              isActive = true;
+            }
+          }
+        });
+      }
+      if (!isActive && item.href && pathname.startsWith(item.href)) {
+        acc.push(item.id);
+      }
+    });
+    return acc;
+  }, []);
 
   // ローディング状態の表示
   if (isLoading) {
@@ -359,7 +380,7 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuItemButton
                       item={item}
-                      isActive={item.href ? isActive(item.href) : false}
+                      isActive={activeIds.includes(item.id)}
                     />
 
                     {item.children && item.children.length > 0 && (
@@ -368,9 +389,7 @@ export function AppSidebar() {
                           <SidebarMenuSubItem key={child.id}>
                             <SidebarMenuItemButton
                               item={child}
-                              isActive={
-                                child.href ? isActive(child.href) : false
-                              }
+                              isActive={activeIds.includes(child.id)}
                               isSubItem={true}
                             />
                           </SidebarMenuSubItem>

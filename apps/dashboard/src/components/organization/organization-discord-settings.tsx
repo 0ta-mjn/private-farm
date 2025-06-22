@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ import {
 
 interface OrganizationDiscordSettingsProps {
   organizationId: string;
+  focused?: boolean;
 }
 
 // 通知設定の型定義
@@ -47,6 +48,7 @@ interface NotificationSettings {
 
 export function OrganizationDiscordSettings({
   organizationId,
+  focused,
 }: OrganizationDiscordSettingsProps) {
   const [unlinkChannelDialogOpen, setUnlinkChannelDialogOpen] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
@@ -159,6 +161,14 @@ export function OrganizationDiscordSettings({
     (channel) => channel.id === selectedChannelId
   );
 
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focused && ref.current) {
+      // スクロール位置を調整
+      ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [focused]);
+
   if (isLoadingChannels && !channels) {
     // スケルトン表示
     return (
@@ -213,7 +223,7 @@ export function OrganizationDiscordSettings({
 
   return (
     <>
-      <Card>
+      <Card ref={ref}>
         <CardHeader className="flex items-center gap-2">
           <div className="space-y-1.5 flex-1">
             <CardTitle className="flex items-center gap-2">
