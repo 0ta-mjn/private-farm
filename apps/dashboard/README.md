@@ -76,7 +76,7 @@ const setupMutation = useMutation(
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   // Create QueryOptions which can be passed to query hooks
-  const myQueryOptions = trpc.user.someRPC.query.queryOptions({ /** inputs */ }, {
+  const myQueryOptions = trpc.user.someRPC.queryOptions({ /** inputs */ }, {
     /** useQuery options */
   })
   const myQuery = useQuery(myQueryOptions)
@@ -84,11 +84,11 @@ const setupMutation = useMutation(
   // useSuspenseQuery(myQueryOptions)
   // useInfiniteQuery(myQueryOptions)
   // Create MutationOptions which can be passed to useMutation
-  const myMutationOptions = trpc.user.someRPC.mutation.mutationOptions()
+  const myMutationOptions = trpc.user.someRPC.mutationOptions()
   const myMutation = useMutation(myMutationOptions)
   // Create a QueryKey which can be used to manipulated many methods
   // on TanStack's QueryClient in a type-safe manner
-  const myQueryKey = trpc.user.someRPC.query.queryKey()
+  const myQueryKey = trpc.user.someRPC.queryKey()
   const invalidateMyQueryKey = () => {
     queryClient.invalidateQueries({ queryKey: myQueryKey })
   }
