@@ -45,12 +45,12 @@ test.describe("Diary CRUD Test", () => {
     // 作業種別を選択
     await page.click('[data-testid="work-type-select"]');
     await page.waitForSelector('[data-testid="work-type-options"]');
-    await page.click('[data-testid="work-type-option-WATERING"]');
+    await page.click('[data-testid="work-type-option-IRRIGATION"]');
 
     // 天候を選択
     await page.click('[data-testid="weather-select"]');
     await page.waitForSelector('[data-testid="weather-options"]');
-    await page.click('[data-testid="weather-option-SUNNY"]');
+    await page.click('[data-testid="weather-option-CLEAR"]');
 
     // 保存ボタンをクリック
     await page.click(
@@ -97,7 +97,7 @@ test.describe("Diary CRUD Test", () => {
 
     await page.click('[data-testid="work-type-select"]');
     await page.waitForSelector('[data-testid="work-type-options"]');
-    await page.click('[data-testid="work-type-option-FERTILIZING"]');
+    await page.click('[data-testid="work-type-option-SEEDING"]');
 
     await page.click(
       'button[data-testid="submit-button-mobile"], button[data-testid="submit-button-desktop"]'
@@ -117,7 +117,7 @@ test.describe("Diary CRUD Test", () => {
     await page.waitForSelector('[data-testid="date-detail"]');
     await expect(page.locator("text=詳細確認用の内容です。")).toBeVisible();
     await expect(
-      page.locator('[data-testid="date-detail"] >> text=施肥')
+      page.locator('[data-testid="date-detail"] >> text=播種')
     ).toBeVisible();
   });
 

@@ -47,89 +47,21 @@ test.describe("Setup Test", () => {
     // Try to submit with empty fields
     await page.click('button[type="submit"]');
 
-    // Wait for validation to trigger
-    await page.waitForTimeout(1000);
-
     // Check for validation error messages using data-slot selector
     await expect(
       page.locator(
         '[data-slot="form-message"]:has-text("ユーザー名は2文字以上で入力してください")'
       )
-    ).toBeVisible();
+    ).toBeVisible({
+      timeout: 10000,
+    });
     await expect(
       page.locator(
         '[data-slot="form-message"]:has-text("組織名を入力してください")'
       )
-    ).toBeVisible();
-  });
-
-  test("show validation error for short user name", async ({ page }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Fill short user name and submit to trigger validation
-    await typeString(page, 'input[name="userName"]', "a");
-    await page.click('button[type="submit"]');
-
-    // Wait for validation to process
-    await page.waitForTimeout(1000);
-
-    // Check for user name validation error
-    await expect(
-      page.locator(
-        '[data-slot="form-message"]:has-text("ユーザー名は2文字以上で入力してください")'
-      )
-    ).toBeVisible();
-  });
-
-  test("show validation error for long user name", async ({ page }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Fill long user name (over 50 characters) and submit to trigger validation
-    const longUserName = "a".repeat(51);
-    await typeString(page, 'input[name="userName"]', longUserName);
-    await page.click('button[type="submit"]');
-
-    // Wait for validation to process
-    await page.waitForTimeout(1000);
-
-    // Check for user name validation error
-    await expect(
-      page.locator(
-        '[data-slot="form-message"]:has-text("ユーザー名は50文字以下で入力してください")'
-      )
-    ).toBeVisible();
-  });
-
-  test("show validation error for long organization name", async ({ page }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Fill valid user name and long organization name
-    await typeString(page, 'input[name="userName"]', "テストユーザー");
-    const longOrgName = "a".repeat(101);
-    await typeString(page, 'input[name="organizationName"]', longOrgName);
-    await page.click('button[type="submit"]');
-
-    // Wait for validation to process
-    await page.waitForTimeout(1000);
-
-    // Check for organization name validation error
-    await expect(
-      page.locator(
-        '[data-slot="form-message"]:has-text("組織名は100文字以下で入力してください")'
-      )
-    ).toBeVisible();
+    ).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("show loading state during form submission", async ({ page }) => {

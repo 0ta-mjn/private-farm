@@ -116,13 +116,13 @@ test.describe("Organization CRUD Test", () => {
   }) => {
     await openSidebarIfNotVisible(page);
 
-    // Wait for the sidebar to load
-    await page.waitForSelector('[data-slot="dropdown-menu-trigger"]', {
-      timeout: 10000,
-    });
-
     // Click on organization dropdown in sidebar using more specific selector
-    await page.click('[data-slot="dropdown-menu-trigger"]');
+    await page.click(
+      '[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]',
+      {
+        timeout: 10000,
+      }
+    );
 
     // Wait for dropdown menu to appear and click on "Create new organization" option
     await page.waitForSelector(
@@ -280,11 +280,11 @@ test.describe("Organization CRUD Test", () => {
     // Create an additional organization first
     await page.click(
       '[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]',
-      { timeout: 5000 }
+      { timeout: 10000 }
     );
     await page.waitForSelector(
       '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")',
-      { timeout: 5000 }
+      { timeout: 10000 }
     );
     await page.click(
       '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")'
