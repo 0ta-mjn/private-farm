@@ -399,6 +399,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../db
+      '@repo/discord':
+        specifier: workspace:*
+        version: link:../discord
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config

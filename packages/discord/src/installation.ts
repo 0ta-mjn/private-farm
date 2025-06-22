@@ -8,6 +8,11 @@ import {
   DISCORD_TOKEN_URL,
   DiscordOAuthConfig,
 } from "@repo/config";
+import {
+  DiscordConfigError,
+  DiscordAPIError,
+  createDiscordErrorFromResponse,
+} from "./errors";
 
 type TokenResp = {
   access_token: string;
@@ -35,6 +40,14 @@ export async function registerDiscordChannel(
     redirectUri: string;
   }
 ) {
+  // 環境変数のチェック
+  if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
+    throw new DiscordConfigError("Discord client credentials not configured");
+  }
+  if (!process.env.DISCORD_BOT_TOKEN) {
+    throw new DiscordConfigError("Discord bot token not configured");
+  }
+
   // 1) code → access_token
   const tokRes = await fetch(DISCORD_TOKEN_URL, {
     method: "POST",
@@ -47,42 +60,42 @@ export async function registerDiscordChannel(
     }),
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
+
   if (!tokRes.ok) {
     const res = await tokRes.json();
-    switch (res.code) {
-      case 50001:
-        throw new Error("Bot is not in the guild");
-      case 40001:
-        throw new Error("Invalid or expired code");
-      case 401:
-        throw new Error("Unauthorized: Invalid client credentials");
-      default:
-        throw new Error(`Discord API error: ${res.message}`);
-    }
+    throw createDiscordErrorFromResponse(res, tokRes.status);
   }
+
   const t: TokenResp = await tokRes.json();
 
   // 2) チャンネル名を取得
   let channelName = "";
   if (t.webhook?.channel_id) {
-    const channelRes = await fetch(
-      `${DISCORD_API_URL}/guilds/${t.webhook.guild_id}/channels`,
-      {
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        },
+    try {
+      const channelRes = await fetch(
+        `${DISCORD_API_URL}/guilds/${t.webhook.guild_id}/channels`,
+        {
+          headers: {
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+          },
+        }
+      );
+
+      if (channelRes.ok) {
+        const channelData = await channelRes.json();
+        console.log("Fetched channel data:", channelData);
+        const channel = Array.isArray(channelData)
+          ? channelData.find((c) => c.id === t.webhook?.channel_id)
+          : undefined;
+        if (channel) channelName = channel.name || "";
+      } else {
+        const errorData = await channelRes.json();
+        console.error("Failed to fetch channel name:", errorData);
+        // チャンネル名取得失敗は処理を継続
       }
-    );
-    if (channelRes.ok) {
-      const channelData = await channelRes.json();
-      console.log("Fetched channel data:", channelData);
-      const channel = Array.isArray(channelData)
-        ? channelData.find((c) => c.id === t.webhook?.channel_id)
-        : undefined;
-      if (channel) channelName = channel.name || "";
-    } else {
-      const errorText = await channelRes.text();
-      console.error("Failed to fetch channel name:", errorText);
+    } catch (error) {
+      console.error("Error fetching channel name:", error);
+      // チャンネル名取得失敗は処理を継続
     }
   }
 
@@ -126,7 +139,7 @@ export async function registerDiscordChannel(
 
     const channel = channelResult[0];
     if (!channel) {
-      throw new Error("Failed to create or update Discord channel");
+      throw new DiscordAPIError("Failed to create or update Discord channel");
     }
 
     return {
@@ -137,14 +150,18 @@ export async function registerDiscordChannel(
     };
   }
 
-  throw new Error("No webhook information received from Discord");
+  throw new DiscordAPIError("No webhook information received from Discord");
 }
 
 export function getDiscordOauthRedirectUrl(
   organizationId: string,
   redirectUri: string
 ) {
-  const clientId = process.env.DISCORD_CLIENT_ID!;
+  if (!process.env.DISCORD_CLIENT_ID) {
+    throw new DiscordConfigError("Discord client ID not configured");
+  }
+
+  const clientId = process.env.DISCORD_CLIENT_ID;
   // CSRF対策のためのstateパラメータを生成
   // organizationIdとランダムな値を組み合わせて一意のstateを作成
   const nonce = randomBytes(16).toString("hex");

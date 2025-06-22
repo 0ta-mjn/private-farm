@@ -6,7 +6,7 @@ import {
 } from "@repo/discord";
 import { discordChannelsTable } from "@repo/db/schema";
 import { and, eq } from "drizzle-orm";
-import { DiscordNotificationSettingsSchema } from "@repo/config";
+import { DiscordNotificationSettingsSchema, NotFoundError } from "@repo/config";
 
 export const RegisterDiscordBotInputSchema = z.object({
   code: z.string().min(1, "認証コードは必須です"),
@@ -128,7 +128,9 @@ export const updateDiscordChannelNotificationSettings = async (
     .limit(1);
 
   if (channel.length === 0) {
-    throw new Error("指定されたチャネルが見つからないか、権限がありません");
+    throw new NotFoundError(
+      "指定されたチャネルが見つからないか、権限がありません"
+    );
   }
 
   // 通知設定を更新
@@ -167,28 +169,15 @@ export const unlinkDiscordChannel = async (
   organizationId: string,
   channelId: string
 ) => {
-  // まず、指定されたチャネルが組織に属していることを確認
-  const channel = await db
-    .select({
-      id: discordChannelsTable.id,
-    })
-    .from(discordChannelsTable)
+  // チャネルを削除
+  const result = await db
+    .delete(discordChannelsTable)
     .where(
       and(
         eq(discordChannelsTable.id, channelId),
         eq(discordChannelsTable.organizationId, organizationId)
       )
     )
-    .limit(1);
-
-  if (channel.length === 0) {
-    throw new Error("指定されたチャネルが見つからないか、権限がありません");
-  }
-
-  // チャネルを削除
-  const result = await db
-    .delete(discordChannelsTable)
-    .where(eq(discordChannelsTable.id, channelId))
     .returning({ id: discordChannelsTable.id });
 
   return result.length > 0;

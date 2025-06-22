@@ -12,6 +12,11 @@ import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
 import { sendViaWebhook, type WebhookPayload } from "./webhook";
 import { encrypt } from "./utils";
 import { randomUUID } from "crypto";
+import {
+  DiscordWebhookError,
+  DiscordRateLimitError,
+  DiscordChannelNotFoundError,
+} from "./errors";
 
 const db = dbClient();
 
@@ -204,7 +209,7 @@ describe("sendViaWebhook", () => {
       // Act & Assert
       await expect(
         sendViaWebhook(db, invalidChannelUuid, payload)
-      ).rejects.toThrow("Channel not found");
+      ).rejects.toThrow(DiscordChannelNotFoundError);
 
       expect(mockFetch).not.toHaveBeenCalled();
     });
@@ -228,7 +233,7 @@ describe("sendViaWebhook", () => {
       // Act & Assert
       await expect(
         sendViaWebhook(db, channelWithoutWebhook, payload)
-      ).rejects.toThrow("Channel not found");
+      ).rejects.toThrow(DiscordChannelNotFoundError);
     });
 
     it("should throw error on Discord API error", async () => {
@@ -244,7 +249,46 @@ describe("sendViaWebhook", () => {
       // Act & Assert
       await expect(
         sendViaWebhook(db, testChannelUuid, payload)
-      ).rejects.toThrow("Discord 400: Bad Request");
+      ).rejects.toThrow(DiscordWebhookError);
+    });
+
+    it("should handle different Discord error codes", async () => {
+      // Arrange
+      const payload: WebhookPayload = { content: "Test message" };
+
+      // 404エラーのテスト
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: async () =>
+          JSON.stringify({
+            code: 10015,
+            message: "Unknown Webhook",
+          }),
+      });
+
+      // Act & Assert
+      await expect(
+        sendViaWebhook(db, testChannelUuid, payload)
+      ).rejects.toThrow(DiscordWebhookError);
+    });
+
+    it("should handle network errors with retry", async () => {
+      // Arrange
+      const payload: WebhookPayload = { content: "Test message" };
+      const options = { maxRetries: 1 };
+
+      // ネットワークエラーを2回発生させる
+      mockFetch
+        .mockRejectedValueOnce(new Error("Network timeout"))
+        .mockRejectedValueOnce(new Error("Connection refused"));
+
+      // Act & Assert
+      await expect(
+        sendViaWebhook(db, testChannelUuid, payload, options)
+      ).rejects.toThrow(DiscordWebhookError);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -309,7 +353,7 @@ describe("sendViaWebhook", () => {
       // Act & Assert
       await expect(
         sendViaWebhook(db, testChannelUuid, payload, options)
-      ).rejects.toThrow("Discord rate-limit retry exceeded");
+      ).rejects.toThrow(DiscordRateLimitError);
 
       expect(mockFetch).toHaveBeenCalledTimes(3); // 初回 + 2回リトライ
 

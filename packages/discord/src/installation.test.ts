@@ -11,6 +11,11 @@ import { dbClient } from "@repo/db/client";
 import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
 import { registerDiscordChannel } from "./installation";
 import { encrypt, decrypt } from "./utils";
+import {
+  DiscordAPIError,
+  DiscordAuthError,
+  DiscordConfigError,
+} from "./errors";
 
 const db = dbClient();
 
@@ -203,7 +208,7 @@ describe("registerDiscordChannel", () => {
 
       // Act & Assert
       await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        "No webhook information received from Discord"
+        DiscordAPIError
       );
 
       // データベースにレコードが作成されていないことを確認
@@ -477,7 +482,7 @@ describe("registerDiscordChannel", () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 400,
+        status: 401,
         json: async () => ({
           error: "invalid_request",
           message: "Invalid code",
@@ -490,11 +495,9 @@ describe("registerDiscordChannel", () => {
         code: "invalid-code",
         guildId: testGuildId,
         redirectUri: testRedirectUri,
-      };
-
-      // Act & Assert
+      }; // Act & Assert
       await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        "Invalid code"
+        DiscordAuthError
       );
 
       // データベースにレコードが作成されていないことを確認
@@ -566,6 +569,25 @@ describe("registerDiscordChannel", () => {
       await expect(registerDiscordChannel(db, params)).rejects.toThrow(
         "Network error"
       );
+    });
+
+    it("should throw DiscordConfigError when environment variables are missing", async () => {
+      // Arrange
+      const originalClientId = process.env.DISCORD_CLIENT_ID;
+      delete process.env.DISCORD_CLIENT_ID;
+
+      const params = {
+        organizationId: testOrgId,
+        code: testCode,
+        guildId: testGuildId,
+        redirectUri: testRedirectUri,
+      }; // Act & Assert
+      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
+        DiscordConfigError
+      );
+
+      // クリーンアップ
+      process.env.DISCORD_CLIENT_ID = originalClientId;
     });
   });
 

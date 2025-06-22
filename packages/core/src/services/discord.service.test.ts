@@ -534,7 +534,7 @@ describe("Discord Service", () => {
       expect(remaining).toHaveLength(0);
     });
 
-    it("存在しないチャネルIDを指定した場合はエラーをスローする", async () => {
+    it("存在しないチャネルIDを指定した場合はfalseを返す", async () => {
       // テストデータの準備
       const organizationId = "test-org-id";
       const nonExistentChannelId = "non-existent-channel-id";
@@ -547,12 +547,16 @@ describe("Discord Service", () => {
       });
 
       // unlinkDiscordChannel を実行（存在しないチャネルID）
-      await expect(
-        unlinkDiscordChannel(db, organizationId, nonExistentChannelId)
-      ).rejects.toThrow("指定されたチャネルが見つからないか、権限がありません");
+      const res = await unlinkDiscordChannel(
+        db,
+        organizationId,
+        nonExistentChannelId
+      );
+      // 結果の検証
+      expect(res).toBe(false);
     });
 
-    it("別の組織に属するチャネルIDを指定した場合はエラーをスローする", async () => {
+    it("別の組織に属するチャネルIDを指定した場合はfalseを返す", async () => {
       // テストデータの準備
       const organizationId1 = "test-org-id-1";
       const organizationId2 = "test-org-id-2";
@@ -608,9 +612,9 @@ describe("Discord Service", () => {
       ]);
 
       // 組織1から組織2のチャネルを削除しようとする
-      await expect(
-        unlinkDiscordChannel(db, organizationId1, channelId2)
-      ).rejects.toThrow("指定されたチャネルが見つからないか、権限がありません");
+      const res = await unlinkDiscordChannel(db, organizationId1, channelId2);
+      // 結果の検証
+      expect(res).toBe(false);
 
       // 組織2のチャネルは削除されていないことを確認
       const remaining = await db
@@ -690,22 +694,6 @@ describe("Discord Service", () => {
 
       expect(remainingChannel).toHaveLength(1);
       expect(remainingChannel[0]?.name).toBe("test-channel-2");
-    });
-
-    it("無効なchannelIdフォーマットでエラーをスローする", async () => {
-      const organizationId = "test-org-id";
-
-      // 組織を作成
-      await db.insert(organizationsTable).values({
-        id: organizationId,
-        name: "Test Organization",
-        description: "Test Description",
-      });
-
-      // 空のchannelIdでテスト
-      await expect(
-        unlinkDiscordChannel(db, organizationId, "")
-      ).rejects.toThrow("指定されたチャネルが見つからないか、権限がありません");
     });
   });
 });
