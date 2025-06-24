@@ -22,7 +22,11 @@ export const CreateDiaryInputSchema = z.object({
   workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
-  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").nullable().optional(),
+  duration: z
+    .number()
+    .min(0.1, "作業時間は0.1時間以上で入力してください")
+    .nullable()
+    .optional(),
   thingIds: z.array(z.string()).optional().default([]),
 });
 
@@ -36,7 +40,11 @@ export const UpdateDiaryInputSchema = z.object({
   workType: z.string().optional(),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
-  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").nullable().optional(),
+  duration: z
+    .number()
+    .min(0.1, "作業時間は0.1時間以上で入力してください")
+    .nullable()
+    .optional(),
   thingIds: z.array(z.string()).optional(),
 });
 

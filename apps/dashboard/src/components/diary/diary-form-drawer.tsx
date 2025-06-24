@@ -63,7 +63,10 @@ const DiaryFormSchema = z.object({
   workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().optional(),
   temperature: z.number().optional(),
-  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").optional(),
+  duration: z
+    .number()
+    .min(0.1, "作業時間は0.1時間以上で入力してください")
+    .optional(),
   thingIds: z.array(z.string()),
 });
 

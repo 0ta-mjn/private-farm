@@ -323,7 +323,7 @@ describe("DiaryFormDrawer", () => {
 
       // 0未満の値を入力
       await user.type(durationInput, "0");
-      
+
       // 必須区画を入力
       const workTypeSelect = screen.getByTestId("work-type-select");
       await user.click(workTypeSelect);
