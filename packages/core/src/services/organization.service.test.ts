@@ -4,6 +4,7 @@ import {
   organizationMembersTable,
   organizationsTable,
   usersTable,
+  discordChannelsTable,
 } from "@repo/db/schema";
 import {
   createOrganization,
@@ -11,6 +12,7 @@ import {
   getOrganizationById,
   updateOrganization,
   deleteOrganization,
+  getOrganizationsWithNotification,
 } from "./organization.service";
 
 const db = dbClient();
@@ -19,6 +21,7 @@ describe("OrganizationService", () => {
   beforeEach(async () => {
     // テスト用のデータベースをリセット
     await db.transaction(async (tx) => {
+      await tx.delete(discordChannelsTable);
       await tx.delete(organizationMembersTable);
       await tx.delete(organizationsTable);
       await tx.delete(usersTable);
@@ -283,6 +286,258 @@ describe("OrganizationService", () => {
 
       const deleteResult = await deleteOrganization(db, nonExistentOrgId);
       expect(deleteResult).toBe(false);
+    });
+  });
+
+  describe("getOrganizationsWithNotification", () => {
+    it("should return organizations with daily notification enabled", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 2つの組織を作成
+      const org1 = await createOrganization(db, testUserId, {
+        organizationName: "Organization 1",
+      });
+      const org2 = await createOrganization(db, testUserId, {
+        organizationName: "Organization 2",
+      });
+
+      if (!org1 || !org2) throw new Error("Organization creation failed");
+
+      // 日次通知が有効なDiscordチャンネルを作成
+      await db.insert(discordChannelsTable).values([
+        {
+          id: "channel-1",
+          organizationId: org1.organization.id,
+          channelId: "discord-channel-1",
+          name: "general",
+          guildId: "guild-1",
+          guildName: "Test Guild 1",
+          notificationSettings: { daily: true, weekly: false, monthly: false },
+        },
+        {
+          id: "channel-2",
+          organizationId: org1.organization.id,
+          channelId: "discord-channel-2",
+          name: "notifications",
+          guildId: "guild-1",
+          guildName: "Test Guild 1",
+          notificationSettings: { daily: true, weekly: true, monthly: false },
+        },
+        {
+          id: "channel-3",
+          organizationId: org2.organization.id,
+          channelId: "discord-channel-3",
+          name: "admin",
+          guildId: "guild-2",
+          guildName: "Test Guild 2",
+          notificationSettings: { daily: false, weekly: true, monthly: false },
+        },
+        {
+          id: "channel-4",
+          organizationId: org2.organization.id,
+          channelId: "discord-channel-4",
+          name: "daily-reports",
+          guildId: "guild-2",
+          guildName: "Test Guild 2",
+          notificationSettings: { daily: true, weekly: false, monthly: true },
+        },
+      ]);
+
+      // 日次通知が有効な組織を取得
+      const result = await getOrganizationsWithNotification(db, "daily");
+
+      // 結果の検証
+      expect(result).toHaveLength(2);
+
+      // Organization 1の検証
+      const resultOrg1 = result.find(
+        (org) => org.organizationName === "Organization 1"
+      );
+      expect(resultOrg1).toBeDefined();
+      expect(resultOrg1?.channels).toHaveLength(2);
+      expect(resultOrg1?.channels.map((ch) => ch.channelName)).toEqual(
+        expect.arrayContaining(["general", "notifications"])
+      );
+
+      // Organization 2の検証
+      const resultOrg2 = result.find(
+        (org) => org.organizationName === "Organization 2"
+      );
+      expect(resultOrg2).toBeDefined();
+      expect(resultOrg2?.channels).toHaveLength(1);
+      expect(resultOrg2?.channels[0]?.channelName).toBe("daily-reports");
+    });
+
+    it("should return organizations with weekly notification enabled", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 組織を作成
+      const org1 = await createOrganization(db, testUserId, {
+        organizationName: "Weekly Org",
+      });
+
+      if (!org1) throw new Error("Organization creation failed");
+
+      // 週次通知が有効なDiscordチャンネルを作成
+      await db.insert(discordChannelsTable).values([
+        {
+          id: "weekly-channel-1",
+          organizationId: org1.organization.id,
+          channelId: "discord-weekly-1",
+          name: "weekly-reports",
+          guildId: "guild-weekly",
+          guildName: "Weekly Guild",
+          notificationSettings: { daily: false, weekly: true, monthly: false },
+        },
+        {
+          id: "weekly-channel-2",
+          organizationId: org1.organization.id,
+          channelId: "discord-weekly-2",
+          name: "no-weekly",
+          guildId: "guild-weekly",
+          guildName: "Weekly Guild",
+          notificationSettings: { daily: true, weekly: false, monthly: false },
+        },
+      ]);
+
+      // 週次通知が有効な組織を取得
+      const result = await getOrganizationsWithNotification(db, "weekly");
+
+      // 結果の検証
+      expect(result).toHaveLength(1);
+      expect(result[0]?.organizationName).toBe("Weekly Org");
+      expect(result[0]?.channels).toHaveLength(1);
+      expect(result[0]?.channels[0]?.channelName).toBe("weekly-reports");
+    });
+
+    it("should return empty array when no organizations have specified notification enabled", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 組織を作成
+      const org1 = await createOrganization(db, testUserId, {
+        organizationName: "No Monthly Org",
+      });
+
+      if (!org1) throw new Error("Organization creation failed");
+
+      // 月次通知が無効なDiscordチャンネルを作成
+      await db.insert(discordChannelsTable).values({
+        id: "no-monthly-channel",
+        organizationId: org1.organization.id,
+        channelId: "discord-no-monthly",
+        name: "general",
+        guildId: "guild-no-monthly",
+        guildName: "No Monthly Guild",
+        notificationSettings: { daily: true, weekly: true, monthly: false },
+      });
+
+      // 月次通知が有効な組織を取得
+      const result = await getOrganizationsWithNotification(db, "monthly");
+
+      // 結果の検証
+      expect(result).toHaveLength(0);
+    });
+
+    it("should return empty array when no discord channels exist", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 組織を作成（Discordチャンネルなし）
+      await createOrganization(db, testUserId, {
+        organizationName: "No Discord Org",
+      });
+
+      // 日次通知が有効な組織を取得
+      const result = await getOrganizationsWithNotification(db, "daily");
+
+      // 結果の検証
+      expect(result).toHaveLength(0);
+    });
+
+    it("should group multiple channels by organization correctly", async () => {
+      // テストユーザーを作成
+      const testUserId = "test-user-id";
+      await db.insert(usersTable).values({
+        id: testUserId,
+        name: "Test User",
+      });
+
+      // 組織を作成
+      const org = await createOrganization(db, testUserId, {
+        organizationName: "Multi Channel Org",
+      });
+
+      if (!org) throw new Error("Organization creation failed");
+
+      // 同じ組織に複数のチャンネルを作成
+      await db.insert(discordChannelsTable).values([
+        {
+          id: "multi-channel-1",
+          organizationId: org.organization.id,
+          channelId: "discord-multi-1",
+          name: "channel-a",
+          guildId: "guild-multi",
+          guildName: "Multi Guild",
+          notificationSettings: { daily: true, weekly: false, monthly: false },
+        },
+        {
+          id: "multi-channel-2",
+          organizationId: org.organization.id,
+          channelId: "discord-multi-2",
+          name: "channel-b",
+          guildId: "guild-multi",
+          guildName: "Multi Guild",
+          notificationSettings: { daily: true, weekly: true, monthly: false },
+        },
+        {
+          id: "multi-channel-3",
+          organizationId: org.organization.id,
+          channelId: "discord-multi-3",
+          name: "channel-c",
+          guildId: "guild-multi",
+          guildName: "Multi Guild",
+          notificationSettings: { daily: true, weekly: false, monthly: true },
+        },
+      ]);
+
+      // 日次通知が有効な組織を取得
+      const result = await getOrganizationsWithNotification(db, "daily");
+
+      // 結果の検証
+      expect(result).toHaveLength(1);
+      expect(result[0]?.organizationName).toBe("Multi Channel Org");
+      expect(result[0]?.channels).toHaveLength(3);
+
+      const channelNames = result[0]?.channels
+        .map((ch) => ch.channelName)
+        .sort();
+      expect(channelNames).toEqual(["channel-a", "channel-b", "channel-c"]);
+
+      // 各チャンネルの通知設定も正しく含まれていることを確認
+      const channelA = result[0]?.channels.find(
+        (ch) => ch.channelName === "channel-a"
+      );
+      expect(channelA?.notificationSettings.daily).toBe(true);
+      expect(channelA?.notificationSettings.weekly).toBe(false);
     });
   });
 });

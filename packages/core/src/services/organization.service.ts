@@ -3,9 +3,13 @@ import { eq, withUniqueIdRetry, and } from "@repo/db";
 import {
   organizationsTable,
   organizationMembersTable,
+  discordChannelsTable,
   MemberRoleSchema,
 } from "@repo/db/schema";
-import { DEFAULT_UUID_CONFIG } from "@repo/config";
+import {
+  DEFAULT_UUID_CONFIG,
+  type DiscordNotificationSettings,
+} from "@repo/config";
 import { MembershipCreationError } from "../errors";
 import type { Database, Transaction } from "@repo/db/client";
 
@@ -254,4 +258,70 @@ export async function deleteOrganization(db: Database, organizationId: string) {
       name: organizationsTable.name,
     });
   return deletedOrganizations.length > 0;
+}
+
+/**
+ * 通知が有効な組織とチャンネル情報の型定義
+ */
+export interface OrganizationWithNotification {
+  organizationId: string;
+  organizationName: string;
+  channels: {
+    channelId: string;
+    channelName: string;
+    notificationSettings: DiscordNotificationSettings;
+  }[];
+}
+
+/**
+ * 指定された通知タイプが有効な組織とチャンネル情報を取得
+ * 組織ごとにグルーピングして返す
+ */
+export async function getOrganizationsWithNotification(
+  db: Database,
+  notificationType: keyof Pick<
+    DiscordNotificationSettings,
+    "daily" | "weekly" | "monthly"
+  >
+): Promise<OrganizationWithNotification[]> {
+  const results = await db
+    .select({
+      organizationId: discordChannelsTable.organizationId,
+      organizationName: organizationsTable.name,
+      channelId: discordChannelsTable.channelId,
+      channelName: discordChannelsTable.name,
+      notificationSettings: discordChannelsTable.notificationSettings,
+    })
+    .from(discordChannelsTable)
+    .innerJoin(
+      organizationsTable,
+      eq(discordChannelsTable.organizationId, organizationsTable.id)
+    );
+
+  // 指定された通知タイプが有効なもののみフィルタリング
+  const filteredResults = results.filter(
+    (result) => result.notificationSettings?.[notificationType] === true
+  );
+
+  // 組織ごとにグルーピング
+  const organizationMap = filteredResults.reduce((map, result) => {
+    if (!map.has(result.organizationId)) {
+      map.set(result.organizationId, {
+        organizationId: result.organizationId,
+        organizationName: result.organizationName,
+        channels: [],
+      });
+    }
+
+    const org = map.get(result.organizationId)!;
+    org.channels.push({
+      channelId: result.channelId,
+      channelName: result.channelName,
+      notificationSettings: result.notificationSettings,
+    });
+
+    return map;
+  }, new Map<string, OrganizationWithNotification>());
+
+  return Array.from(organizationMap.values());
 }
