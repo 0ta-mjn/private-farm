@@ -1,5 +1,6 @@
 import express from "express";
 import { handler as helloWorld } from "./hello-world";
+import { handler as dailyReview } from "./daily-review";
 import bodyParser from "body-parser";
 
 const app = express();
@@ -7,7 +8,8 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 const endpoints = {
-  helloWorld,
+  "hello-world": helloWorld,
+  "daily-review": dailyReview,
 };
 
 Object.entries(endpoints).forEach(([path, handler]) => {

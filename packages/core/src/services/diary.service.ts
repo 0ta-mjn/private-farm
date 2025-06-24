@@ -22,6 +22,7 @@ export const CreateDiaryInputSchema = z.object({
   workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
+  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").nullable().optional(),
   thingIds: z.array(z.string()).optional().default([]),
 });
 
@@ -35,6 +36,7 @@ export const UpdateDiaryInputSchema = z.object({
   workType: z.string().optional(),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
+  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").nullable().optional(),
   thingIds: z.array(z.string()).optional(),
 });
 
@@ -139,6 +141,7 @@ export async function createDiary(
             workType: input.workType,
             weather: input.weather,
             temperature: input.temperature,
+            duration: input.duration,
             userId: userId,
             organizationId: input.organizationId,
           })
@@ -183,6 +186,7 @@ export async function getDiary(db: Database, params: DiaryParams) {
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,
@@ -246,6 +250,7 @@ type DiaryWithOptionalThings = {
   workType: string | null;
   weather: string | null;
   temperature: number | null;
+  duration: number | null;
   userId: string | null;
   organizationId: string;
   createdAt: Date;
@@ -394,6 +399,7 @@ export async function getDiariesByDate(
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,
@@ -662,6 +668,7 @@ export async function searchDiaries(
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,

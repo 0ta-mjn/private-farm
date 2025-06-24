@@ -63,6 +63,7 @@ const DiaryFormSchema = z.object({
   workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().optional(),
   temperature: z.number().optional(),
+  duration: z.number().min(0.1, "作業時間は0.1時間以上で入力してください").optional(),
   thingIds: z.array(z.string()),
 });
 
@@ -107,6 +108,7 @@ export function DiaryFormDrawer({
       workType: "",
       weather: "",
       temperature: undefined,
+      duration: undefined,
       thingIds: [],
     },
   });
@@ -121,6 +123,7 @@ export function DiaryFormDrawer({
         workType: initialData.workType,
         weather: initialData.weather || "",
         temperature: initialData.temperature || undefined,
+        duration: initialData.duration || undefined,
         thingIds: initialData.thingIds,
       });
     } else {
@@ -132,6 +135,7 @@ export function DiaryFormDrawer({
         workType: "",
         weather: "",
         temperature: undefined,
+        duration: undefined,
         thingIds: [],
       });
     }
@@ -201,59 +205,92 @@ export function DiaryFormDrawer({
           )}
         />
 
-        {/* 作業日 */}
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>
-                作業日 <span className="text-destructive">*</span>
-              </FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      data-testid="date-picker-trigger"
-                      variant="outline"
-                      className={cn(
-                        "w-[12.5rem] pl-3 text-left font-normal hover:bg-transparent hover:text-foreground",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP", {
-                          locale: ja,
-                        })
-                      ) : (
-                        <span>日付を選択</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    data-testid="date-picker-calendar"
-                    mode="single"
-                    selected={field.value}
-                    onSelect={(date) => {
-                      if (date) {
-                        field.onChange(date);
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* 作業日 */}
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>
+                  作業日 <span className="text-destructive">*</span>
+                </FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        data-testid="date-picker-trigger"
+                        variant="outline"
+                        className={cn(
+                          "w-full pl-3 text-left font-normal hover:bg-transparent hover:text-foreground",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP", {
+                            locale: ja,
+                          })
+                        ) : (
+                          <span>日付を選択</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      data-testid="date-picker-calendar"
+                      mode="single"
+                      selected={field.value}
+                      onSelect={(date) => {
+                        if (date) {
+                          field.onChange(date);
+                        }
+                      }}
+                      disabled={(date) =>
+                        date > new Date() || date < new Date("1900-01-01")
                       }
+                      autoFocus
+                      locale={ja}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage data-testid="date-error" />
+              </FormItem>
+            )}
+          />
+
+          {/* 作業時間 */}
+          <FormField
+            control={form.control}
+            name="duration"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>作業時間 (時間)</FormLabel>
+                <FormControl>
+                  <Input
+                    data-testid="duration-input"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    placeholder="例: 2.5"
+                    className="w-full"
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value === "" ? undefined : Number(value));
                     }}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    autoFocus
-                    locale={ja}
+                    value={field.value ?? ""}
                   />
-                </PopoverContent>
-              </Popover>
-              <FormMessage data-testid="date-error" />
-            </FormItem>
-          )}
-        />
+                </FormControl>
+                <FormDescription>
+                  作業にかかった時間を0.1時間単位で入力してください
+                </FormDescription>
+                <FormMessage data-testid="duration-error" />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* 対象区画選択 */}
         {fieldOptions.length > 0 && (

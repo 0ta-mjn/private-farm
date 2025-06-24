@@ -159,6 +159,7 @@ export const diariesTable = pgTable(
     workType: varchar("work_type", { length: 100 }), // 作業種別（播種、施肥、収穫、防除等）
     weather: varchar("weather", { length: 50 }), // 作業日の天気（晴れ、曇り、雨等）
     temperature: real("temperature"), // 作業日の気温（℃）
+    duration: real("duration"), // 作業時間（時間単位、例：1.5時間）
 
     // 関係性フィールド
     userId: varchar("user_id", { length: 255 }).references(

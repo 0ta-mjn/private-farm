@@ -97,6 +97,7 @@ describe("DiaryService", () => {
         workType: "PLANTING",
         weather: "晴れ",
         temperature: 25.5,
+        duration: 3.5,
         thingIds: [testThingId],
       };
 
@@ -106,6 +107,7 @@ describe("DiaryService", () => {
       expect(result?.workType).toBe(input.workType);
       expect(result?.weather).toBe(input.weather);
       expect(result?.temperature).toBe(input.temperature);
+      expect(result?.duration).toBe(input.duration);
     });
 
     it("should create diary-thing relationships", async () => {
@@ -292,6 +294,8 @@ describe("DiaryService", () => {
         title: "更新されたタイトル",
         content: "更新された内容",
         workType: "HARVESTING",
+        duration: 4.0,
+        temperature: 28.0,
       };
 
       const result = await updateDiary(
@@ -305,6 +309,8 @@ describe("DiaryService", () => {
       expect(result?.title).toBe(updateInput.title);
       expect(result?.content).toBe(updateInput.content);
       expect(result?.workType).toBe(updateInput.workType);
+      expect(result?.duration).toBe(updateInput.duration);
+      expect(result?.temperature).toBe(updateInput.temperature);
       expect(result?.date).toBe(input.date); // 変更されていない
     });
 
