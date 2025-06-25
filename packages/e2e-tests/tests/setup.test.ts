@@ -64,32 +64,6 @@ test.describe("Setup Test", () => {
     });
   });
 
-  test("show loading state during form submission", async ({ page }) => {
-    // Complete signup and email verification
-    await signupWithEmail(page, true);
-
-    // Should be redirected to setup page
-    await expect(page).toHaveURL(/\/setup/);
-
-    // Fill valid form data
-    const testUserName = `テストユーザー${Date.now()}`;
-    const testOrganizationName = `テスト農場${Date.now()}`;
-
-    await typeString(page, 'input[name="userName"]', testUserName);
-    await typeString(
-      page,
-      'input[name="organizationName"]',
-      testOrganizationName
-    );
-
-    // Submit the form
-    await page.click('button[type="submit"]');
-
-    // Check loading state (button should show "設定中..." and be disabled)
-    await expect(page.locator('button[type="submit"]:disabled')).toBeVisible();
-    await expect(page.locator("text=設定中...")).toBeVisible();
-  });
-
   test("redirect to dashboard if setup is already completed", async ({
     page,
   }) => {

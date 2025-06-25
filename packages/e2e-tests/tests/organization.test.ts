@@ -8,11 +8,16 @@ test.describe("Organization CRUD Test", () => {
     await setupUser(page);
 
     // ページに移動
-    await openSidebarIfNotVisible(page);
+    const isClicked = await openSidebarIfNotVisible(page);
 
     // リンクをクリック
     await page.click('a[href="/organization/settings"]');
     await page.waitForSelector('h1:has-text("組織設定")');
+    if (isClicked) {
+      await page.waitForSelector('[data-slot="sidebar-content"]', {
+        state: "hidden",
+      });
+    }
   });
 
   test("should update organization information successfully", async ({

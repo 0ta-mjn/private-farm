@@ -112,4 +112,6 @@ export const openSidebarIfNotVisible = async (page: Page) => {
   await page.waitForSelector('[data-slot="sidebar-content"]', {
     state: "visible",
   });
+
+  return !isLinkVisible;
 };
