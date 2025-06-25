@@ -31,6 +31,8 @@ const mockSendDailyDigest = sendDailyDigest as MockedFunction<
   typeof sendDailyDigest
 >;
 
+const testEncryptionKey = "test-encryption-key";
+
 describe("Daily Review Handler", () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
@@ -40,6 +42,8 @@ describe("Daily Review Handler", () => {
   beforeEach(() => {
     // Requestモック
     mockReq = {};
+
+    process.env.DISCORD_ENCRYPTION_KEY = testEncryptionKey;
 
     // Responseモック
     jsonSpy = vi.fn();
@@ -144,11 +148,13 @@ describe("Daily Review Handler", () => {
     expect(mockSendDailyDigest).toHaveBeenCalledTimes(2);
     expect(mockSendDailyDigest).toHaveBeenCalledWith(
       {},
+      testEncryptionKey,
       mockOrganizations[0],
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD形式の前日日付
     );
     expect(mockSendDailyDigest).toHaveBeenCalledWith(
       {},
+      testEncryptionKey,
       mockOrganizations[1],
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
     );

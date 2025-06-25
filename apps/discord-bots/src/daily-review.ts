@@ -31,11 +31,12 @@ export const handler = async (req: Request, res: Response) => {
 
     if (organizationsWithDailyNotification.length === 0) {
       console.log("No organizations with daily notification enabled");
-      return res.json({
+      res.json({
         success: true,
         message: "日次通知が有効な組織がありません",
         processedCount: 0,
       });
+      return;
     }
 
     console.log(
@@ -54,7 +55,12 @@ export const handler = async (req: Request, res: Response) => {
           `Processing daily digest for org: ${org.organizationName} (${org.organizationId}), channels: ${org.channels.length}`
         );
 
-        const result = await sendDailyDigest(db, org, targetDate);
+        const result = await sendDailyDigest(
+          db,
+          process.env.DISCORD_ENCRYPTION_KEY!,
+          org,
+          targetDate
+        );
         results.push({ status: "fulfilled" as const, value: result });
 
         totalSuccessCount += result.successCount || 0;

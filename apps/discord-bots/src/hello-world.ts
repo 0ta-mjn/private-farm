@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
 
-export const handler = (req: Request, res: Response) => {
+export const handler = async (req: Request, res: Response) => {
   res.send("Hello, World!");
 };
