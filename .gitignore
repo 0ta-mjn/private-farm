@@ -39,3 +39,5 @@ yarn-error.log*
 .emulator
 
 .cache
+.wrangler
+.dev.vars
