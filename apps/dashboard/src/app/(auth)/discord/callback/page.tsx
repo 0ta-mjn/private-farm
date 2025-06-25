@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
 import { Button } from "@/shadcn/button";
 import { XCircleIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { client } from "@/rpc/client";
 
 interface DiscordOAuthData {
   state: string;
@@ -22,31 +22,43 @@ export default function DiscordCallbackPage() {
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  const trpc = useTRPC();
-
-  // tRPC mutationOptionsを使用
-  const discordLinkMutation = useMutation(
-    trpc.discord.linkChannel.mutationOptions({
-      onSuccess: () => {
-        setStatus("success");
-        toast.success("Discordの連携が完了しました");
-        // 成功時も念のためOAuth情報をクリーンアップ
-        localStorage.removeItem("discord_oauth_data");
-        // 成功時は組織設定ページに即座にリダイレクト
-        router.replace("/organization/settings");
-      },
-      onError: (error) => {
-        console.error("Discord link mutation error:", error);
-        setStatus("error");
-        setErrorMessage(error.message || "不明なエラーが発生しました");
-        toast.error(
-          "Discord連携に失敗しました: " + (error.message || "不明なエラー")
-        );
-        // エラー時もOAuth情報をクリーンアップ
-        localStorage.removeItem("discord_oauth_data");
-      },
-    })
-  );
+  // Honoクライアントを使用したmutation
+  const discordLinkMutation = useMutation({
+    mutationFn: async (data: {
+      code: string;
+      guildId: string;
+      organizationId: string;
+      state: string;
+      redirectUri: string;
+    }) =>
+      client.discord.link[":organizationId"].$post({
+        param: { organizationId: data.organizationId },
+        json: {
+          code: data.code,
+          guildId: data.guildId,
+          state: data.state,
+          redirectUri: data.redirectUri,
+        },
+      }),
+    onSuccess: () => {
+      setStatus("success");
+      toast.success("Discordの連携が完了しました");
+      // 成功時も念のためOAuth情報をクリーンアップ
+      localStorage.removeItem("discord_oauth_data");
+      // 成功時は組織設定ページに即座にリダイレクト
+      router.replace("/organization/settings");
+    },
+    onError: (error: Error) => {
+      console.error("Discord link mutation error:", error);
+      setStatus("error");
+      setErrorMessage(error.message || "不明なエラーが発生しました");
+      toast.error(
+        "Discord連携に失敗しました: " + (error.message || "不明なエラー")
+      );
+      // エラー時もOAuth情報をクリーンアップ
+      localStorage.removeItem("discord_oauth_data");
+    },
+  });
 
   useEffect(() => {
     // デバウンス: 既に処理中の場合は実行しない

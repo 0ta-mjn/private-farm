@@ -41,7 +41,6 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
 import { useAuthActions } from "@/lib/auth-context";
 import { useOrganization } from "@/contexts/organization-context";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
@@ -50,6 +49,7 @@ import { AccountSettingsDialog } from "@/components/account/account-settings-dia
 import { Button } from "@/shadcn/button";
 import { SidebarMenuItemButton } from "./sidebar-menu-item-button";
 import { cn } from "@/lib/utils";
+import { users } from "@/rpc/factory";
 
 // サイドバーアイテムの型定義
 interface SidebarItem {
@@ -69,28 +69,15 @@ interface SidebarSection {
   items: SidebarItem[];
 }
 
-// 組織の型定義
-interface Organization {
-  id: string;
-  name: string;
-  description: string | null;
-  role: string;
-  joinedAt: Date;
-  updatedAt: Date;
-}
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { signOut } = useAuthActions();
   const { currentOrganizationId, setCurrentOrganization } = useOrganization();
   const diaryDrawerActions = useDiaryDrawerActions();
-  const trpc = useTRPC();
   const { open: isOpenSidebar } = useSidebar();
 
   // サイドバーデータを取得
-  const { data: sidebarData, isLoading } = useQuery(
-    trpc.user.sidebarData.queryOptions()
-  );
+  const { data: sidebarData, isLoading } = useQuery(users.sidebarData());
 
   // デフォルト組織を設定（現在の組織が未設定の場合のみ）
   useEffect(() => {
@@ -106,7 +93,7 @@ export function AppSidebar() {
   // 現在の組織情報を取得
   const currentOrganization = currentOrganizationId
     ? sidebarData?.organizations.find(
-        (org: Organization) => org.id === currentOrganizationId
+        (org) => org.id === currentOrganizationId
       ) || sidebarData?.defaultOrganization
     : sidebarData?.defaultOrganization;
 
@@ -334,7 +321,7 @@ export function AppSidebar() {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent className="w-56">
-                  {sidebarData?.organizations?.map((org: Organization) => (
+                  {sidebarData?.organizations?.map((org) => (
                     <DropdownMenuItem
                       key={org.id}
                       onClick={() => handleOrganizationChange(org.id)}

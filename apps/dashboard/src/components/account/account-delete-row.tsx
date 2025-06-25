@@ -5,7 +5,7 @@ import { Trash2Icon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,22 +20,20 @@ import { AlertTriangleIcon } from "lucide-react";
 import { useState } from "react";
 
 export function AccountDeleteRow() {
-  const trpc = useTRPC();
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
 
-  const mutation = useMutation(
-    trpc.user.deleteAccount.mutationOptions({
-      onSuccess: () => {
-        router.push("/login");
-        supabase.auth.signOut();
-      },
-      onError: (error) => {
-        console.error("アカウント削除エラー:", error);
-      },
-    })
-  );
+  const mutation = useMutation({
+    mutationFn: async () => client.user.account.$delete(),
+    onSuccess: () => {
+      router.push("/login");
+      supabase.auth.signOut();
+    },
+    onError: (error) => {
+      console.error("アカウント削除エラー:", error);
+    },
+  });
 
   return (
     <div className="flex items-center justify-end gap-3">

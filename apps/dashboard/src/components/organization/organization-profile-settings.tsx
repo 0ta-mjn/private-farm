@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users, organizations } from "@/rpc/factory";
 import { toast } from "sonner";
 import {
   Card,
@@ -50,13 +51,10 @@ interface OrganizationProfileSettingsProps {
 export function OrganizationProfileSettings({
   organizationId,
 }: OrganizationProfileSettingsProps) {
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data: organization, isLoading } = useQuery({
-    ...trpc.organization.getById.queryOptions({
-      organizationId: organizationId,
-    }),
-  });
+  const { data: organization, isLoading } = useQuery(
+    organizations.detail(organizationId)
+  );
 
   // フォームの設定
   const form = useForm<UpdateOrganizationFormValues>({
@@ -78,34 +76,39 @@ export function OrganizationProfileSettings({
   }, [organization, form]);
 
   // 組織更新のmutation
-  const updateOrganizationMutation = useMutation(
-    trpc.organization.update.mutationOptions({
-      onSuccess: (updatedOrganization) => {
-        toast.success("組織情報が正常に更新されました", {
-          description: `「${updatedOrganization.name}」の情報を更新しました。`,
-        });
+  const updateOrganizationMutation = useMutation({
+    mutationFn: async (
+      data: UpdateOrganizationFormValues & { organizationId: string }
+    ) => {
+      return client.organization.update[":organizationId"].$put({
+        param: { organizationId: data.organizationId },
+        json: {
+          name: data.name,
+          description: data.description,
+        },
+      });
+    },
+    onSuccess: (updatedOrganization) => {
+      toast.success("組織情報が正常に更新されました", {
+        description: `「${updatedOrganization.name}」の情報を更新しました。`,
+      });
 
-        // キャッシュを無効化して最新データを取得
-        queryClient.invalidateQueries({
-          queryKey: trpc.organization.getById.queryKey({
-            organizationId: updatedOrganization.id,
-          }),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.sidebarData.queryKey(),
-        });
-      },
-      onError: (error) => {
-        console.error("Organization update error:", error);
-        const errorMessage =
-          error?.message || "組織情報の更新中にエラーが発生しました";
+      // キャッシュを無効化して最新データを取得
+      queryClient.invalidateQueries(
+        organizations.detail(updatedOrganization.id)
+      );
+      queryClient.invalidateQueries(users.sidebarData());
+    },
+    onError: (error) => {
+      console.error("Organization update error:", error);
+      const errorMessage =
+        error?.message || "組織情報の更新中にエラーが発生しました";
 
-        toast.error("組織情報の更新に失敗しました", {
-          description: errorMessage,
-        });
-      },
-    })
-  );
+      toast.error("組織情報の更新に失敗しました", {
+        description: errorMessage,
+      });
+    },
+  });
 
   const onSubmit = (data: UpdateOrganizationFormValues) => {
     updateOrganizationMutation.mutate({

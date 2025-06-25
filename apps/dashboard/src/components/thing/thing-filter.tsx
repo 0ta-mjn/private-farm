@@ -5,14 +5,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shadcn/select";
-import { useTRPC } from "@/trpc/client";
-import { RouterOutputs } from "@repo/api";
 import { useQuery } from "@tanstack/react-query";
+import { things } from "@/rpc/factory";
 
-export type ThingFilterValue = Pick<
-  RouterOutputs["thing"]["list"][number],
-  "id" | "name"
-> | null;
+export type ThingFilterValue = {
+  id: string;
+  name: string;
+} | null;
 
 interface ThingFilterProps {
   organizationId: string;
@@ -31,18 +30,13 @@ export function ThingFilter({
   size,
   contentRef,
 }: ThingFilterProps) {
-  const trpc = useTRPC();
-  const { data: things, isLoading } = useQuery(
-    trpc.thing.list.queryOptions(
-      { organizationId },
-      { enabled: !!organizationId }
-    )
-  );
+  const { data: thingsData, isLoading } = useQuery(things.list(organizationId));
 
   return (
     <Select
       onValueChange={(v) => {
-        const selectedThing = things?.find((thing) => thing.id === v) || null;
+        const selectedThing =
+          thingsData?.find((thing) => thing.id === v) || null;
         onChange?.(selectedThing);
       }}
       value={value?.id || ALL_VALUE}
@@ -60,7 +54,7 @@ export function ThingFilter({
             読み込み中...
           </SelectItem>
         ) : (
-          things?.map((thing) => (
+          thingsData?.map((thing) => (
             <SelectItem key={thing.id} value={thing.id}>
               {thing.name}
             </SelectItem>

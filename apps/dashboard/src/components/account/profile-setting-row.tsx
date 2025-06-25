@@ -5,17 +5,15 @@ import { Button } from "@/shadcn/button";
 import { Input } from "@/shadcn/input";
 import { Label } from "@/shadcn/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users } from "@/rpc/factory";
 
 export function ProfileSettingRow() {
   const [name, setName] = useState("");
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   // ユーザー情報を取得
-  const { data: userData, isLoading } = useQuery(
-    trpc.user.sidebarData.queryOptions()
-  );
+  const { data: userData, isLoading } = useQuery(users.sidebarData());
 
   // 名前更新の初期化
   useEffect(() => {
@@ -25,19 +23,19 @@ export function ProfileSettingRow() {
   }, [userData?.user?.name]);
 
   // プロフィール更新のミューテーション
-  const updateProfileMutation = useMutation(
-    trpc.user.updateProfile.mutationOptions({
-      onSuccess: () => {
-        // キャッシュを更新
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.sidebarData.queryKey(),
-        });
-      },
-      onError: (error) => {
-        console.error("プロフィール更新エラー:", error);
-      },
-    })
-  );
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { name: string }) =>
+      client.user.profile.$put({
+        json: data,
+      }),
+    onSuccess: () => {
+      // キャッシュを更新
+      queryClient.invalidateQueries(users.sidebarData());
+    },
+    onError: (error) => {
+      console.error("プロフィール更新エラー:", error);
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

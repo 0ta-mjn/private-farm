@@ -15,12 +15,14 @@ import { ja } from "date-fns/locale";
 import { Button } from "@/shadcn/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RouterOutputs } from "@repo/api";
 import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
+import { client } from "@/rpc/client";
 
-// tRPCの型定義を利用 - 月の日誌サマリーの配列型
+// の型定義を利用 - 月の日誌サマリーの配列型
 type DiaryMonthSummaryData = Pick<
-  RouterOutputs["diary"]["byMonth"][number],
+  Awaited<
+    ReturnType<(typeof client)["diary"]["by-month"][":organizationId"]["$get"]>
+  >[number],
   "id" | "date" | "workType"
 >;
 

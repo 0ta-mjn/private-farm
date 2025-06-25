@@ -26,8 +26,8 @@ import { EyeIcon, EyeOffIcon, AlertCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { trpcClient } from "@/trpc/client";
 import DiscordSvg from "@/assets/discord-symbol.svg";
+import { client } from "@/rpc/client";
 
 // フォームバリデーションスキーマ
 const formSchema = z.object({
@@ -130,8 +130,8 @@ export default function LoginPage() {
 
       if (data.user) {
         try {
-          // tRPCで初期設定状態を確認
-          const setupStatus = await trpcClient.user.setupCheck.query();
+          // で初期設定状態を確認
+          const setupStatus = await client.user.setup.$get();
 
           if (setupStatus.isCompleted) {
             // 初期設定完了済みの場合はダッシュボードへ

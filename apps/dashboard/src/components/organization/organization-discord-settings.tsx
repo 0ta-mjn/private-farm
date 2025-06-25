@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { client } from "@/rpc/client";
 import { toast } from "sonner";
 import {
   Card,
@@ -33,6 +33,7 @@ import {
   ServerIcon,
   HashIcon,
 } from "lucide-react";
+import { discord } from "@/rpc/factory";
 
 interface OrganizationDiscordSettingsProps {
   organizationId: string;
@@ -41,9 +42,9 @@ interface OrganizationDiscordSettingsProps {
 
 // 通知設定の型定義
 interface NotificationSettings {
-  daily: boolean;
-  weekly: boolean;
-  monthly: boolean;
+  daily?: boolean;
+  weekly?: boolean;
+  monthly?: boolean;
 }
 
 export function OrganizationDiscordSettings({
@@ -55,44 +56,64 @@ export function OrganizationDiscordSettings({
     null
   );
 
-  const trpc = useTRPC();
-
   // Discord連携情報を取得
   const {
     data: channels,
     refetch: refetchChannels,
     isLoading: isLoadingChannels,
-  } = useQuery(trpc.discord.getChannels.queryOptions({ organizationId }));
+  } = useQuery({
+    ...discord.channels(organizationId),
+    enabled: !!organizationId,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // 5分間キャッシュ
+  });
 
   // 通知設定の更新ミューテーション
-  const updateNotificationSettingsMutation = useMutation(
-    trpc.discord.updateNotificationSettings.mutationOptions({
-      onSuccess: () => {
-        toast.success("通知設定を更新しました");
-        // 連携情報を再取得
-        refetchChannels();
-      },
-      onError: (error) => {
-        toast.error("通知設定の更新に失敗しました: " + error.message);
-      },
-    })
-  );
+  const updateNotificationSettingsMutation = useMutation({
+    mutationFn: async (params: {
+      organizationId: string;
+      channelId: string;
+      notificationSettings: NotificationSettings;
+    }) =>
+      client.discord["notification-settings"][":organizationId"].$put({
+        param: { organizationId: params.organizationId },
+        json: {
+          channelId: params.channelId,
+          notificationSettings: params.notificationSettings,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("通知設定を更新しました");
+      // 連携情報を再取得
+      refetchChannels();
+    },
+    onError: (error: Error) => {
+      toast.error("通知設定の更新に失敗しました: " + error.message);
+    },
+  });
 
   // チャネル削除のミューテーション
-  const unlinkChannelMutation = useMutation(
-    trpc.discord.unlinkChannel.mutationOptions({
-      onSuccess: () => {
-        toast.success("Discordチャネルの連携を解除しました");
-        setUnlinkChannelDialogOpen(false);
-        setSelectedChannelId(null);
-        // 連携情報を再取得
-        refetchChannels();
-      },
-      onError: (error) => {
-        toast.error("Discordチャネル連携解除に失敗しました: " + error.message);
-      },
-    })
-  );
+  const unlinkChannelMutation = useMutation({
+    mutationFn: async (params: { organizationId: string; channelId: string }) =>
+      client.discord.unlink[":organizationId"].$delete({
+        param: { organizationId: params.organizationId },
+        json: {
+          channelId: params.channelId,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Discordチャネルの連携を解除しました");
+      setUnlinkChannelDialogOpen(false);
+      setSelectedChannelId(null);
+      // 連携情報を再取得
+      refetchChannels();
+    },
+    onError: (error: Error) => {
+      toast.error("Discordチャネル連携解除に失敗しました: " + error.message);
+    },
+  });
 
   // 通知設定の更新関数
   const updateNotificationSetting = (
@@ -123,24 +144,32 @@ export function OrganizationDiscordSettings({
   };
 
   // Discord OAuth URL取得
-  const getOAuthUrlMutation = useMutation(
-    trpc.discord.getOAuthUrl.mutationOptions({
-      onSuccess: (data: { url: string; state: string }) => {
-        // stateとタイムスタンプをJSONとして1つのキーに保存
-        const oauthData = {
-          state: data.state,
-          timestamp: Date.now(),
-        };
-        localStorage.setItem("discord_oauth_data", JSON.stringify(oauthData));
+  const getOAuthUrlMutation = useMutation({
+    mutationFn: async (params: {
+      organizationId: string;
+      redirectUri: string;
+    }) =>
+      client.discord["oauth-url"][":organizationId"].$post({
+        param: { organizationId: params.organizationId },
+        json: {
+          redirectUri: params.redirectUri,
+        },
+      }),
+    onSuccess: (data: { url: { url: string; state: string } }) => {
+      // stateとタイムスタンプをJSONとして1つのキーに保存
+      const oauthData = {
+        state: data.url.state,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem("discord_oauth_data", JSON.stringify(oauthData));
 
-        // 現在のタブでリダイレクト（モバイル対応）
-        window.location.href = data.url;
-      },
-      onError: (error) => {
-        toast.error("Discord連携URLの取得に失敗しました: " + error.message);
-      },
-    })
-  );
+      // 現在のタブでリダイレクト（モバイル対応）
+      window.location.href = data.url.url;
+    },
+    onError: (error: Error) => {
+      toast.error("Discord連携URLの取得に失敗しました: " + error.message);
+    },
+  });
 
   const handleConnectDiscord = () => {
     const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL!}/discord/callback`;

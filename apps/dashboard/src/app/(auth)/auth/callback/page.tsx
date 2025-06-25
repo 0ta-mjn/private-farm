@@ -12,7 +12,7 @@ import {
 import { Button } from "@/shadcn/button";
 import { AlertCircleIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { trpcClient } from "@/trpc/client";
+import { client } from "@/rpc/client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -22,17 +22,23 @@ export default function AuthCallbackPage() {
   const [message, setMessage] = useState("");
 
   const onSuccess = useCallback(async () => {
-    setStatus("success");
-    setMessage("");
-    // tRPCで初期設定状態を確認
-    const setupStatus = await trpcClient.user.setupCheck.query();
+    try {
+      setStatus("success");
+      setMessage("");
+      // 初期設定状態を確認
+      const setupStatus = await client.user.setup.$get();
 
-    if (setupStatus.isCompleted) {
-      // 初期設定完了済みの場合はダッシュボードへ
-      router.push("/dashboard");
-    } else {
-      // 初期設定未完了の場合はセットアップページへ
-      router.push("/setup");
+      if (setupStatus.isCompleted) {
+        // 初期設定完了済みの場合はダッシュボードへ
+        router.push("/dashboard");
+      } else {
+        // 初期設定未完了の場合はセットアップページへ
+        router.push("/setup");
+      }
+    } catch (error) {
+      console.error("初期設定状態の確認に失敗:", error);
+      setStatus("error");
+      setMessage("初期設定状態の確認に失敗しました。もう一度お試しください。");
     }
   }, [router]);
 

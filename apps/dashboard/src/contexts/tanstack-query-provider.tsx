@@ -1,7 +1,6 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { trpcClient, TRPCProvider as Provider } from "@/trpc/client";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -28,13 +27,13 @@ function getQueryClient() {
     return browserQueryClient;
   }
 }
-export function TRPCProvider({ children }: { children: React.ReactNode }) {
+export function TanstackQueryProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const queryClient = getQueryClient();
   return (
-    <QueryClientProvider client={queryClient}>
-      <Provider trpcClient={trpcClient} queryClient={queryClient}>
-        {children}
-      </Provider>
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }

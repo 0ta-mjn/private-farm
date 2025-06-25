@@ -26,8 +26,8 @@ import {
 } from "date-fns";
 import { DiaryDateDetail } from "@/components/diary/diary-date-detail";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
-import { useTRPC } from "@/trpc/client";
 import { useMediaQuery } from "@/hooks/use-mobile";
+import { diaries as diaryFactory } from "@/rpc/factory";
 import { ThingFilter, ThingFilterValue } from "@/components/thing/thing-filter";
 import { WorkTypeFilter } from "@/components/diary/work-type-filter";
 
@@ -37,7 +37,6 @@ function DiaryPageContent() {
   const { currentOrganizationId } = useOrganization();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const trpc = useTRPC();
 
   // 状態管理
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
@@ -46,19 +45,13 @@ function DiaryPageContent() {
   const [thingFilter, setThingFilter] = useState<ThingFilterValue | null>(null);
 
   // 月のサマリーデータを取得（カレンダー表示用）
-  const monthSummaryQuery = useQuery(
-    trpc.diary.byMonth.queryOptions(
-      {
-        organizationId: currentOrganizationId || "",
-        year: currentMonth.getFullYear(),
-        month: currentMonth.getMonth() + 1,
-      },
-      {
-        enabled: !!currentOrganizationId,
-        staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-      }
-    )
-  );
+  const monthSummaryQuery = useQuery({
+    ...diaryFactory.byMonth(currentOrganizationId || "", {
+      year: currentMonth.getFullYear().toString(),
+      month: (currentMonth.getMonth() + 1).toString(),
+    }),
+    enabled: !!currentOrganizationId,
+  });
 
   const diaries =
     monthSummaryQuery.data

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users, organizations } from "@/rpc/factory";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -34,45 +35,40 @@ export function DeleteOrganization({
   organizationName,
 }: DeleteOrganizationProps) {
   const [open, setOpen] = useState(false);
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   // 削除mutation
-  const deleteMutation = useMutation(
-    trpc.organization.delete.mutationOptions({
-      onSuccess: () => {
-        toast.success("組織を削除しました", {
-          description: `「${organizationName}」を削除しました。`,
-        });
-        // 関連するキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.setupCheck.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.organization.list.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.sidebarData.queryKey(),
-        });
-        // ダイアログを閉じる
-        setOpen(false);
-      },
-      onError: (error) => {
-        console.error("Failed to delete organization:", error);
-        const errorMessage = error?.message || "組織の削除に失敗しました";
-        toast.error("組織の削除に失敗しました", {
-          description: errorMessage,
-        });
-        // エラー時もダイアログを閉じる
-        setOpen(false);
-      },
-    })
-  );
+  const deleteMutation = useMutation({
+    mutationFn: async (data: { organizationId: string }) =>
+      client.organization.delete[":organizationId"].$delete({
+        param: { organizationId: data.organizationId },
+      }),
+    onSuccess: () => {
+      toast.success("組織を削除しました", {
+        description: `「${organizationName}」を削除しました。`,
+      });
+      // 関連するキャッシュを無効化
+      queryClient.invalidateQueries(users.setupCheck());
+      queryClient.invalidateQueries(organizations.list());
+      queryClient.invalidateQueries(users.sidebarData());
+      // ダイアログを閉じる
+      setOpen(false);
+    },
+    onError: (error) => {
+      console.error("Failed to delete organization:", error);
+      const errorMessage = error?.message || "組織の削除に失敗しました";
+      toast.error("組織の削除に失敗しました", {
+        description: errorMessage,
+      });
+      // エラー時もダイアログを閉じる
+      setOpen(false);
+    },
+  });
 
   const handleConfirmDelete = () => {
     if (!organizationId) return;
 
-    // tRPC削除mutationを実行
+    // Hono削除mutationを実行
     deleteMutation.mutate({
       organizationId,
     });

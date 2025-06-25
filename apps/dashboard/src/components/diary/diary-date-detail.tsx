@@ -4,7 +4,7 @@ import React from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
+import { diaries } from "@/rpc/factory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
 import { Badge } from "@/shadcn/badge";
 import { Button } from "@/shadcn/button";
@@ -113,25 +113,17 @@ export function DiaryDateDetailContent({
   onDelete,
   currentUserId,
 }: DiaryDateDetailProps & { selectedDate: Date }) {
-  const trpc = useTRPC();
-
   // 選択した日付の日誌データをフェッチ
   const dateString = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
-  const diariesQueryOptions = trpc.diary.byDate.queryOptions(
-    {
-      organizationId,
-      date: dateString,
-    },
-    {
-      enabled: !!organizationId && !!dateString,
-      staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-    }
-  );
 
-  const { data: diariesData, isLoading } = useQuery(diariesQueryOptions);
+  const { data: diariesData, isLoading } = useQuery({
+    ...diaries.byDate(organizationId, { date: dateString }),
+    enabled: !!organizationId && !!dateString,
+    staleTime: 5 * 60 * 1000, // 5分間キャッシュ
+  });
 
   // APIから返されるデータは直接配列形式
-  const diaries = diariesData || [];
+  const diaryList = diariesData || [];
 
   const handleEdit = (diaryId: string) => {
     if (onEdit) {
@@ -190,9 +182,9 @@ export function DiaryDateDetailContent({
             </div>
           </div>
         </div>
-      ) : diaries.length > 0 ? (
+      ) : diaryList.length > 0 ? (
         <div className="space-y-3" data-testid="date-detail">
-          {diaries.map((diary) => {
+          {diaryList.map((diary) => {
             const isCurrentUser = currentUserId === diary.userId;
             const weatherDisplay = getWeatherDisplay(diary.weather);
             return (

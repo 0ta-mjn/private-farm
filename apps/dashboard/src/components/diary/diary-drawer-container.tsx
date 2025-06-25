@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { things, diaries } from "@/rpc/factory";
 import { useOrganization } from "@/contexts/organization-context";
 import {
   useDiaryDrawerState,
@@ -15,10 +16,9 @@ import {
 } from "./diary-form-drawer";
 
 export function DiaryDrawerContainer() {
-  // コンテキストとtRPCクライアント
+  // コンテキストとクライアント
   const state = useDiaryDrawerState();
   const actions = useDiaryDrawerActions();
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { currentOrganizationId } = useOrganization();
 
@@ -27,16 +27,10 @@ export function DiaryDrawerContainer() {
   const diaryId = state.editId;
 
   // thingsデータを取得してFieldOptionに変換
-  const { data: thingsData, isLoading: isLoadingThings } = useQuery(
-    trpc.thing.list.queryOptions(
-      {
-        organizationId: currentOrganizationId || "",
-      },
-      {
-        enabled: !!currentOrganizationId,
-      }
-    )
-  );
+  const { data: thingsData, isLoading: isLoadingThings } = useQuery({
+    ...things.list(currentOrganizationId || ""),
+    enabled: !!currentOrganizationId,
+  });
 
   // thingsデータをFieldOptionフォーマットに変換
   const fieldOptions: FieldOption[] =
@@ -48,79 +42,114 @@ export function DiaryDrawerContainer() {
     })) || [];
 
   // 日誌の詳細データを取得（編集モードの場合）
-  const { data: diaryData, isLoading: isLoadingDiary } = useQuery(
-    trpc.diary.detail.queryOptions(
-      {
-        diaryId: diaryId || "",
-        organizationId: currentOrganizationId || "",
-      },
-      {
-        enabled: isEdit && !!diaryId && !!currentOrganizationId,
-      }
-    )
-  );
+  const { data: diaryData, isLoading: isLoadingDiary } = useQuery({
+    ...diaries.detail(currentOrganizationId || "", diaryId || ""),
+    enabled: isEdit && !!diaryId && !!currentOrganizationId,
+  });
 
   // 作成 mutation
-  const createDiaryMutation = useMutation(
-    trpc.diary.create.mutationOptions({
-      onSuccess: ({ date }, { organizationId }) => {
-        // 日誌一覧のキャッシュを無効化
-        const dateObj = new Date(date);
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byDate.queryKey({
-            organizationId,
-            date: format(dateObj, "yyyy-MM-dd"),
-          }),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byMonth.queryKey({
-            organizationId,
-            year: dateObj.getFullYear(),
-            month: dateObj.getMonth() + 1,
-          }),
-        });
-        actions.closeAll();
-      },
-      onError: (error) => {
-        console.error("Failed to create diary:", error);
-        // TODO: エラートーストを表示
-      },
-    })
-  );
+  const createDiaryMutation = useMutation({
+    mutationFn: async (params: {
+      date: string;
+      organizationId: string;
+      title?: string;
+      content: string;
+      workType: string;
+      weather: string | null;
+      temperature: number | null;
+      thingIds: string[];
+      duration: number | null;
+    }) =>
+      client.diary.create[":organizationId"].$post({
+        param: { organizationId: params.organizationId },
+        json: {
+          date: params.date,
+          title: params.title || "",
+          content: params.content,
+          workType: params.workType,
+          weather: params.weather || "",
+          temperature: params.temperature,
+          thingIds: params.thingIds,
+          duration: params.duration || null,
+        },
+      }),
+    onSuccess: ({ date }, { organizationId }) => {
+      // 日誌一覧のキャッシュを無効化
+      const dateObj = new Date(date);
+      queryClient.invalidateQueries({
+        queryKey: diaries.byDate(organizationId, {
+          date: format(dateObj, "yyyy-MM-dd"),
+        }).queryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: diaries.byMonth(organizationId, {
+          year: dateObj.getFullYear().toString(),
+          month: (dateObj.getMonth() + 1).toString(),
+        }).queryKey,
+      });
+      actions.closeAll();
+    },
+    onError: (error: Error) => {
+      console.error("Failed to create diary:", error);
+      // TODO: エラートーストを表示
+    },
+  });
 
   // 更新 mutation
-  const updateDiaryMutation = useMutation(
-    trpc.diary.update.mutationOptions({
-      onSuccess: (_, { diaryId, organizationId }) => {
-        // 日誌一覧と詳細のキャッシュを無効化
-        if (diaryData) {
-          const date = new Date(diaryData.date);
-          queryClient.invalidateQueries({
-            queryKey: trpc.diary.byDate.queryKey({
-              organizationId,
-              date: format(diaryData.date, "yyyy-MM-dd"),
-            }),
-          });
-          queryClient.invalidateQueries({
-            queryKey: trpc.diary.byMonth.queryKey({
-              organizationId,
-              year: date.getFullYear(),
-              month: date.getMonth() + 1,
-            }),
-          });
-        }
+  const updateDiaryMutation = useMutation({
+    mutationFn: async (params: {
+      diaryId: string;
+      date: string;
+      organizationId: string;
+      title?: string;
+      content: string;
+      workType: string;
+      weather: string | null;
+      temperature: number | null;
+      duration: number | null;
+      thingIds: string[];
+    }) =>
+      client.diary.update[":organizationId"][":diaryId"].$put({
+        param: {
+          organizationId: params.organizationId,
+          diaryId: params.diaryId,
+        },
+        json: {
+          date: params.date,
+          title: params.title,
+          content: params.content,
+          workType: params.workType,
+          weather: params.weather,
+          temperature: params.temperature,
+          duration: params.duration,
+          thingIds: params.thingIds,
+        },
+      }),
+    onSuccess: (_, { diaryId, organizationId, date }) => {
+      // 日誌一覧と詳細のキャッシュを無効化
+      const dateObj = new Date(date);
+      queryClient.invalidateQueries({
+        queryKey: diaries.byDate(organizationId, {
+          date: format(dateObj, "yyyy-MM-dd"),
+        }).queryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: diaries.byMonth(organizationId, {
+          year: dateObj.getFullYear().toString(),
+          month: (dateObj.getMonth() + 1).toString(),
+        }).queryKey,
+      });
 
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.detail.queryKey({ diaryId: diaryId }),
-        });
-        actions.closeAll();
-      },
-      onError: (error) => {
-        console.error("Failed to update diary:", error);
-        // TODO: エラートーストを表示
-      },
-    })
-  );
+      queryClient.invalidateQueries({
+        queryKey: diaries.detail(organizationId, diaryId).queryKey,
+      });
+      actions.closeAll();
+    },
+    onError: (error: Error) => {
+      console.error("Failed to update diary:", error);
+      // TODO: エラートーストを表示
+    },
+  });
 
   // 初期データの準備
   const initialData: DiaryFormData | undefined =
@@ -133,6 +162,7 @@ export function DiaryDrawerContainer() {
           weather: diaryData.weather || "",
           temperature: diaryData.temperature || undefined,
           thingIds: diaryData.diaryThings?.map((item) => item.thingId) || [],
+          duration: diaryData.duration || undefined,
         }
       : undefined;
 
@@ -152,6 +182,7 @@ export function DiaryDrawerContainer() {
         weather: data.weather || null,
         temperature: data.temperature ?? null,
         thingIds: data.thingIds || [],
+        duration: data.duration ?? null,
       };
 
       if (isEdit && diaryId) {

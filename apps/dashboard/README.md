@@ -6,7 +6,7 @@
 パッケージマネージャはpnpmを使用し、Node.jsのバージョンは20.xを想定しています。
 
 フロントエンドはNext.jsを使用し、UIはshadcn/uiをベースにしたコンポーネントライブラリを使用します。
-バックエンドはtRPCを使用してFastifyでAPIを提供します。
+バックエンドはHonoを使用してAPIを提供します。
 
 認証はsupabaseを使用する。
 
@@ -17,7 +17,7 @@
 - **@/**: `src/` ディレクトリのエイリアス
 - **@/shadcn**: shadcn/ui コンポーネント用の専用ディレクトリ
 - **@/lib**: ユーティリティ関数やライブラリ設定
-- **@/trpc**: tRPC クライアント設定
+- **@/rpc**: Hono RPC クライアント設定
 - **@/components**: 汎用コンポーネント
 
 ### Next.js 設定
@@ -40,58 +40,49 @@
 - **パッケージマネージャー**: pnpm (Workspace 機能使用)
 - **Monorepo**: Turborepo でパッケージ管理
 - **カタログ機能**: 共通依存関係のバージョン統一
-- **tRPC設定**: "@repo/api" パッケージを使用して、tRPC クライアントとサーバーの設定を統一
+- **API設定**: Hono RPC クライアントとファクトリを使用してAPIエンドポイントの設定を統一
 
 ## 基本的な使用パターン
 
-### tRPC使用方法
+### Hono RPC使用方法
 
-- `@trpc/tanstack-react-query` を使用して、tRPC クライアントを React コンポーネント内で使用します。
+- `@/rpc/client` と `@/rpc/factory` を使用して、Hono RPC クライアントを React コンポーネント内で使用します。
 
 ```tsx
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users } from "@/rpc/factory";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 ...
 
-// コンポーネント内でのtRPC使用
-const trpc = useTRPC();
-
 // Query（データ取得）
-const queryResponse = useQuery(
-  trpc.user.getUser.queryOptions()
-);
+const { data: userData, isLoading } = useQuery({
+  ...users.getUser(),
+  enabled: !!userId, // 条件付きクエリ実行
+});
 
 // Mutation（データ更新）
-const setupMutation = useMutation(
-  trpc.user.setup.mutationOptions({
-    onSuccess: (data) => {
-      // 成功時の処理
-    },
-    onError: (error) => {
-      // エラー時の処理
-    },
-  })
-);
+const queryClient = useQueryClient();
+const setupMutation = useMutation({
+  mutationFn: (data) => client.api.users.setup.$post({ form: data }),
+  onSuccess: (data) => {
+    // 成功時の処理
+    // キャッシュ無効化
+    queryClient.invalidateQueries({ queryKey: users.setupCheck.queryKey });
+  },
+  onError: (error) => {
+    // ClientError を使用したエラーハンドリング
+    if (error instanceof ClientError && error.status === 401) {
+      // 認証エラーの処理
+    }
+  },
+});
 
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  // Create QueryOptions which can be passed to query hooks
-  const myQueryOptions = trpc.user.someRPC.queryOptions({ /** inputs */ }, {
-    /** useQuery options */
-  })
-  const myQuery = useQuery(myQueryOptions)
-  // or:
-  // useSuspenseQuery(myQueryOptions)
-  // useInfiniteQuery(myQueryOptions)
-  // Create MutationOptions which can be passed to useMutation
-  const myMutationOptions = trpc.user.someRPC.mutationOptions()
-  const myMutation = useMutation(myMutationOptions)
-  // Create a QueryKey which can be used to manipulated many methods
-  // on TanStack's QueryClient in a type-safe manner
-  const myQueryKey = trpc.user.someRPC.queryKey()
-  const invalidateMyQueryKey = () => {
-    queryClient.invalidateQueries({ queryKey: myQueryKey })
-  }
+// ファクトリを使用したQueryKey取得
+const userQueryKey = users.getUser.queryKey;
+const invalidateUserQuery = () => {
+  queryClient.invalidateQueries({ queryKey: userQueryKey });
+};
 
 ```
 

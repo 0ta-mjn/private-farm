@@ -3,29 +3,28 @@
 import { Button } from "@/shadcn/button";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
+import { users } from "@/rpc/factory";
+import { ClientError } from "@/rpc/client";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
-  const trpc = useTRPC();
 
   // セットアップ状態をチェック（ログイン済みの場合のみ）
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
-    trpc.user.setupCheck.queryOptions(undefined, {
-      enabled: !!user, // ログイン済みの場合のみクエリを実行
-      retry: (_, e) => {
-        switch (e?.data?.code) {
-          case "UNAUTHORIZED":
-            // 認証エラーの場合はリトライしない
-            return false;
-          default:
-            // その他のエラーはリトライする
-            return true;
-        }
-      },
-    })
-  );
+  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
+    ...users.setupCheck(),
+    enabled: !!user, // ログイン済みの場合のみクエリを実行
+    retry: (_, e: ClientError) => {
+      switch (e.status) {
+        case 401:
+          // 認証エラーの場合はリトライしない
+          return false;
+        default:
+          // その他のエラーはリトライする
+          return true;
+      }
+    },
+  });
 
   const isLoading = authLoading || isCheckingSetup;
   const isAuthenticated = !!user;

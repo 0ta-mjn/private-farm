@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
 import {
   Command,
   CommandInput,
@@ -18,15 +17,18 @@ import { Skeleton } from "@/shadcn/skeleton";
 import { CalendarIcon, MapPinIcon } from "lucide-react";
 import { getWeatherDisplay } from "@/constants/agricultural-constants";
 import { cn } from "@/lib/utils";
-import { RouterOutputs } from "@repo/api";
 import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
 import { ThingFilter, ThingFilterValue } from "@/components/thing/thing-filter";
 import { WorkTypeFilter } from "@/components/diary/work-type-filter";
+import { diaries as diaryFactory } from "@/rpc/factory";
+import { client } from "@/rpc/client";
+
+type DiaryResponse = Awaited<
+  ReturnType<(typeof client)["diary"]["search"][":organizationId"]["$get"]>
+>["diaries"][0];
 
 interface DiarySearchProps {
-  onDiarySelect?: (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => void;
+  onDiarySelect?: (diary: DiaryResponse) => void;
   currentUserId: string;
   organizationId: string;
   className?: string;
@@ -35,9 +37,7 @@ interface DiarySearchProps {
 interface DiarySearchListProps {
   searchQuery: string;
   currentUserId: string;
-  onDiarySelect: (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => void;
+  onDiarySelect: (diary: DiaryResponse) => void;
   organizationId: string;
   workType?: string | null;
   thingId?: string | null;
@@ -51,23 +51,15 @@ function DiarySearchList({
   workType,
   thingId,
 }: DiarySearchListProps) {
-  const trpc = useTRPC();
-
   // 検索結果を取得
   const diariesQuery = useQuery(
-    trpc.diary.search.queryOptions(
-      {
-        organizationId,
-        offset: 0,
-        limit: 20, // インライン表示なので20件まで
+    diaryFactory
+      .list(organizationId, {
+        limit: "20", // インライン表示なので20件まで
         workTypes: workType ? [workType] : undefined,
         thingIds: thingId ? [thingId] : undefined,
-        search: searchQuery || undefined,
-      },
-      {
-        staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-      }
-    )
+      })
+      ._ctx.search(searchQuery || "")
   );
 
   const diaries = diariesQuery.data?.diaries || [];
@@ -203,9 +195,7 @@ export function DiarySearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDiarySelect = (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => {
+  const handleDiarySelect = (diary: DiaryResponse) => {
     onDiarySelect?.(diary);
     setIsOpen(false);
     setSearchQuery(""); // 選択後にクリア
