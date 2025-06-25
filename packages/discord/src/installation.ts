@@ -1,18 +1,13 @@
 import { Database } from "@repo/db/client";
 import { discordChannelsTable } from "@repo/db/schema";
-import { encrypt } from "./utils";
-import { randomBytes, randomUUID } from "crypto";
+import { createRandomHex, encrypt } from "./utils";
 import {
   DISCORD_API_URL,
   DISCORD_OAUTH_URL,
   DISCORD_TOKEN_URL,
   DiscordOAuthConfig,
 } from "@repo/config";
-import {
-  DiscordConfigError,
-  DiscordAPIError,
-  createDiscordErrorFromResponse,
-} from "./errors";
+import { DiscordAPIError, createDiscordErrorFromResponse } from "./errors";
 
 type TokenResp = {
   access_token: string;
@@ -31,8 +26,16 @@ type TokenResp = {
   bot?: { id: string };
 };
 
+export type DiscordRegistrationKeys = {
+  discordClientId: string;
+  discordClientSecret: string;
+  discordBotToken: string;
+  encryptionKey: string;
+};
+
 export async function registerDiscordChannel(
   db: Database,
+  keys: DiscordRegistrationKeys,
   params: {
     organizationId: string;
     code: string;
@@ -40,20 +43,12 @@ export async function registerDiscordChannel(
     redirectUri: string;
   }
 ) {
-  // 環境変数のチェック
-  if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
-    throw new DiscordConfigError("Discord client credentials not configured");
-  }
-  if (!process.env.DISCORD_BOT_TOKEN) {
-    throw new DiscordConfigError("Discord bot token not configured");
-  }
-
   // 1) code → access_token
   const tokRes = await fetch(DISCORD_TOKEN_URL, {
     method: "POST",
     body: new URLSearchParams({
-      client_id: process.env.DISCORD_CLIENT_ID!,
-      client_secret: process.env.DISCORD_CLIENT_SECRET!,
+      client_id: keys.discordClientId,
+      client_secret: keys.discordClientSecret,
       grant_type: "authorization_code",
       code: params.code,
       redirect_uri: params.redirectUri,
@@ -76,7 +71,7 @@ export async function registerDiscordChannel(
         `${DISCORD_API_URL}/guilds/${t.webhook.guild_id}/channels`,
         {
           headers: {
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+            Authorization: `Bot ${keys.discordBotToken}`,
           },
         }
       );
@@ -106,14 +101,14 @@ export async function registerDiscordChannel(
     const channelResult = await db
       .insert(discordChannelsTable)
       .values({
-        id: randomUUID(),
+        id: crypto.randomUUID(),
         organizationId: params.organizationId,
         guildId,
         guildName,
         channelId: t.webhook.channel_id,
         name: channelName,
         webhookId: t.webhook.id,
-        webhookTokenEnc: encrypt(t.webhook.token),
+        webhookTokenEnc: await encrypt(t.webhook.token, keys.encryptionKey),
         notificationSettings: {
           daily: true,
           weekly: true,
@@ -130,7 +125,7 @@ export async function registerDiscordChannel(
           guildName,
           name: channelName,
           webhookId: t.webhook.id,
-          webhookTokenEnc: encrypt(t.webhook.token),
+          webhookTokenEnc: await encrypt(t.webhook.token, keys.encryptionKey),
           updatedAt: new Date(),
         },
       })
@@ -154,17 +149,14 @@ export async function registerDiscordChannel(
 }
 
 export function getDiscordOauthRedirectUrl(
+  keys: DiscordRegistrationKeys,
   organizationId: string,
   redirectUri: string
 ) {
-  if (!process.env.DISCORD_CLIENT_ID) {
-    throw new DiscordConfigError("Discord client ID not configured");
-  }
-
-  const clientId = process.env.DISCORD_CLIENT_ID;
+  const clientId = keys.discordClientId;
   // CSRF対策のためのstateパラメータを生成
   // organizationIdとランダムな値を組み合わせて一意のstateを作成
-  const nonce = randomBytes(16).toString("hex");
+  const nonce = createRandomHex(16); // 16バイトのランダムな値
   const state = `${organizationId}:${nonce}`;
 
   const oauthUrl = new URL(DISCORD_OAUTH_URL);

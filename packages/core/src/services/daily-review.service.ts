@@ -305,6 +305,7 @@ export function generateDailyDigestMessage(data: DailyDigestData): string {
  */
 export async function sendDailyDigest(
   db: Database,
+  encryptionKey: string,
   organization: OrganizationWithNotification,
   targetDate: string
 ): Promise<{
@@ -328,9 +329,14 @@ export async function sendDailyDigest(
     // 各チャンネルに送信
     const sendResults = await Promise.allSettled(
       organization.channels.map(async (channel) => {
-        return await sendMessageViaWebhook(db, channel.channelId, {
-          content: message,
-        });
+        return await sendMessageViaWebhook(
+          db,
+          encryptionKey,
+          channel.channelId,
+          {
+            content: message,
+          }
+        );
       })
     );
 

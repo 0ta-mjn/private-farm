@@ -22,6 +22,7 @@ const db = dbClient();
 
 // fetch APIをモック（vitestの安全なモック方法を使用）
 const mockFetch = vi.fn();
+const testEncryptionKey = "12345678901234567890123456789012"; // 32文字のキー
 
 describe("sendViaWebhook", () => {
   let testOrgId: string;
@@ -36,7 +37,7 @@ describe("sendViaWebhook", () => {
 
     // 暗号化された WebhookToken を準備
     testWebhookToken = "test_webhook_token_12345";
-    testWebhookTokenEnc = await encrypt(testWebhookToken);
+    testWebhookTokenEnc = await encrypt(testWebhookToken, testEncryptionKey);
   });
 
   afterAll(async () => {
@@ -98,7 +99,12 @@ describe("sendViaWebhook", () => {
       });
 
       // Act
-      const result = await sendViaWebhook(db, testChannelUuid, payload);
+      const result = await sendViaWebhook(
+        db,
+        testEncryptionKey,
+        testChannelUuid,
+        payload
+      );
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -132,6 +138,7 @@ describe("sendViaWebhook", () => {
       // Act
       const result = await sendViaWebhook(
         db,
+        testEncryptionKey,
         testChannelUuid,
         payload,
         options
@@ -165,6 +172,7 @@ describe("sendViaWebhook", () => {
       // Act
       const result = await sendViaWebhook(
         db,
+        testEncryptionKey,
         testChannelUuid,
         payload,
         options
@@ -190,7 +198,13 @@ describe("sendViaWebhook", () => {
       });
 
       // Act
-      await sendViaWebhook(db, testChannelUuid, payload, options);
+      await sendViaWebhook(
+        db,
+        testEncryptionKey,
+        testChannelUuid,
+        payload,
+        options
+      );
 
       // Assert
       expect(mockFetch).toHaveBeenCalledWith(
@@ -208,7 +222,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, invalidChannelUuid, payload)
+        sendViaWebhook(db, testEncryptionKey, invalidChannelUuid, payload)
       ).rejects.toThrow(DiscordChannelNotFoundError);
 
       expect(mockFetch).not.toHaveBeenCalled();
@@ -232,7 +246,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, channelWithoutWebhook, payload)
+        sendViaWebhook(db, testEncryptionKey, channelWithoutWebhook, payload)
       ).rejects.toThrow(DiscordChannelNotFoundError);
     });
 
@@ -248,7 +262,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, testChannelUuid, payload)
+        sendViaWebhook(db, testEncryptionKey, testChannelUuid, payload)
       ).rejects.toThrow(DiscordWebhookError);
     });
 
@@ -269,7 +283,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, testChannelUuid, payload)
+        sendViaWebhook(db, testEncryptionKey, testChannelUuid, payload)
       ).rejects.toThrow(DiscordWebhookError);
     });
 
@@ -285,7 +299,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, testChannelUuid, payload, options)
+        sendViaWebhook(db, testEncryptionKey, testChannelUuid, payload, options)
       ).rejects.toThrow(DiscordWebhookError);
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -319,7 +333,12 @@ describe("sendViaWebhook", () => {
         });
 
       // Act
-      const result = await sendViaWebhook(db, testChannelUuid, payload);
+      const result = await sendViaWebhook(
+        db,
+        testEncryptionKey,
+        testChannelUuid,
+        payload
+      );
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -352,7 +371,7 @@ describe("sendViaWebhook", () => {
 
       // Act & Assert
       await expect(
-        sendViaWebhook(db, testChannelUuid, payload, options)
+        sendViaWebhook(db, testEncryptionKey, testChannelUuid, payload, options)
       ).rejects.toThrow(DiscordRateLimitError);
 
       expect(mockFetch).toHaveBeenCalledTimes(3); // 初回 + 2回リトライ

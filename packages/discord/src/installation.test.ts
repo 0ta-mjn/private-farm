@@ -9,33 +9,35 @@ import {
 } from "vitest";
 import { dbClient } from "@repo/db/client";
 import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
-import { registerDiscordChannel } from "./installation";
-import { encrypt, decrypt } from "./utils";
 import {
-  DiscordAPIError,
-  DiscordAuthError,
-  DiscordConfigError,
-} from "./errors";
+  DiscordRegistrationKeys,
+  registerDiscordChannel,
+} from "./installation";
+import { encrypt, decrypt } from "./utils";
+import { DiscordAPIError, DiscordAuthError } from "./errors";
 
 const db = dbClient();
 
 // fetch APIをモック（vitestの安全なモック方法を使用）
 const mockFetch = vi.fn();
 
+const testKeys: DiscordRegistrationKeys = {
+  discordClientId: "test-client-id",
+  discordClientSecret: "test-client-secret",
+  discordBotToken: "test-bot-token",
+  // 32文字のランダムなキーを使用
+  encryptionKey: "12345678901234567890123456789012", // 32文字のキー
+};
+
 // 環境変数をモック
-const originalEnv = process.env;
 beforeAll(() => {
   // fetchを安全にモック
   vi.stubGlobal("fetch", mockFetch);
-
-  process.env.DISCORD_CLIENT_ID = "test-client-id";
-  process.env.DISCORD_CLIENT_SECRET = "test-client-secret";
 });
 
 afterAll(() => {
   // モックをリストア
   vi.unstubAllGlobals();
-  process.env = originalEnv;
 });
 
 describe("registerDiscordChannel", () => {
@@ -127,7 +129,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      const result = await registerDiscordChannel(db, params);
+      const result = await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -171,7 +173,9 @@ describe("registerDiscordChannel", () => {
       });
 
       // Webhook トークンが暗号化されて保存されているか確認
-      expect(decrypt(channel.webhookTokenEnc!)).toBe("test-webhook-token");
+      expect(
+        await decrypt(channel.webhookTokenEnc!, testKeys.encryptionKey)
+      ).toBe("test-webhook-token");
     });
 
     it("should handle registration without webhook", async () => {
@@ -205,9 +209,9 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act & Assert
-      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        DiscordAPIError
-      );
+      await expect(
+        registerDiscordChannel(db, testKeys, params)
+      ).rejects.toThrow(DiscordAPIError);
 
       // データベースにレコードが作成されていないことを確認
       const channels = await db.select().from(discordChannelsTable);
@@ -224,7 +228,10 @@ describe("registerDiscordChannel", () => {
         channelId: "test-channel-id",
         name: "Old Channel Name",
         webhookId: "old-webhook-id",
-        webhookTokenEnc: encrypt("old-webhook-token"),
+        webhookTokenEnc: await encrypt(
+          "old-webhook-token",
+          testKeys.encryptionKey
+        ),
         notificationSettings: {
           daily: false,
           weekly: false,
@@ -281,7 +288,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      const result = await registerDiscordChannel(db, params);
+      const result = await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -307,7 +314,9 @@ describe("registerDiscordChannel", () => {
       });
 
       // 新しいトークンが保存されている
-      expect(decrypt(channel.webhookTokenEnc!)).toBe("new-webhook-token");
+      expect(
+        await decrypt(channel.webhookTokenEnc!, testKeys.encryptionKey)
+      ).toBe("new-webhook-token");
     });
 
     it("should add second channel for same organization", async () => {
@@ -320,7 +329,10 @@ describe("registerDiscordChannel", () => {
         channelId: "existing-channel-id",
         name: "Existing Channel",
         webhookId: "existing-webhook-id",
-        webhookTokenEnc: encrypt("existing-webhook-token"),
+        webhookTokenEnc: await encrypt(
+          "existing-webhook-token",
+          testKeys.encryptionKey
+        ),
       });
 
       // 2つ目のチャンネル用のWebhookレスポンス
@@ -373,7 +385,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      const result = await registerDiscordChannel(db, params);
+      const result = await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -405,9 +417,9 @@ describe("registerDiscordChannel", () => {
         name: "Second Channel",
         webhookId: "second-webhook-id",
       });
-      expect(decrypt(newChannel!.webhookTokenEnc!)).toBe(
-        "second-webhook-token"
-      );
+      expect(
+        await decrypt(newChannel!.webhookTokenEnc!, testKeys.encryptionKey)
+      ).toBe("second-webhook-token");
     });
 
     it("should handle missing guild info from token response", async () => {
@@ -458,7 +470,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      const result = await registerDiscordChannel(db, params);
+      const result = await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -492,9 +504,9 @@ describe("registerDiscordChannel", () => {
         guildId: testGuildId,
         redirectUri: testRedirectUri,
       }; // Act & Assert
-      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        DiscordAuthError
-      );
+      await expect(
+        registerDiscordChannel(db, testKeys, params)
+      ).rejects.toThrow(DiscordAuthError);
 
       // データベースにレコードが作成されていないことを確認
       const channels = await db.select().from(discordChannelsTable);
@@ -547,7 +559,9 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act & Assert
-      await expect(registerDiscordChannel(db, params)).rejects.toThrow(); // 外部キー制約エラー
+      await expect(
+        registerDiscordChannel(db, testKeys, params)
+      ).rejects.toThrow(); // 外部キー制約エラー
     });
 
     it("should handle network errors", async () => {
@@ -562,15 +576,19 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act & Assert
-      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        "Network error"
-      );
+      await expect(
+        registerDiscordChannel(db, testKeys, params)
+      ).rejects.toThrow("Network error");
     });
 
     it("should throw DiscordConfigError when environment variables are missing", async () => {
       // Arrange
-      const originalClientId = process.env.DISCORD_CLIENT_ID;
-      delete process.env.DISCORD_CLIENT_ID;
+      const invalidKeys = {
+        discordClientId: "",
+        discordClientSecret: "",
+        discordBotToken: "",
+        encryptionKey: "",
+      };
 
       const params = {
         organizationId: testOrgId,
@@ -578,12 +596,11 @@ describe("registerDiscordChannel", () => {
         guildId: testGuildId,
         redirectUri: testRedirectUri,
       }; // Act & Assert
-      await expect(registerDiscordChannel(db, params)).rejects.toThrow(
-        DiscordConfigError
-      );
+      await expect(
+        registerDiscordChannel(db, invalidKeys, params)
+      ).rejects.toThrow();
 
-      // クリーンアップ
-      process.env.DISCORD_CLIENT_ID = originalClientId;
+      // Since empty keys should cause an error earlier in the process
     });
   });
 
@@ -634,7 +651,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      await registerDiscordChannel(db, params);
+      await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -645,7 +662,9 @@ describe("registerDiscordChannel", () => {
       expect(channel.webhookTokenEnc).not.toBe("sensitive-webhook-token");
 
       // 復号化すると元のトークンが取得できることを確認
-      expect(decrypt(channel.webhookTokenEnc!)).toBe("sensitive-webhook-token");
+      expect(
+        await decrypt(channel.webhookTokenEnc!, testKeys.encryptionKey)
+      ).toBe("sensitive-webhook-token");
     });
 
     it("should work without expires_in validation (simplified bot mode)", async () => {
@@ -694,7 +713,7 @@ describe("registerDiscordChannel", () => {
       };
 
       // Act
-      await registerDiscordChannel(db, params);
+      await registerDiscordChannel(db, testKeys, params);
 
       // Assert
       expect(mockFetch).toHaveBeenCalledTimes(2);

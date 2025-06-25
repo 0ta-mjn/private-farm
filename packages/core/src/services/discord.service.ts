@@ -1,6 +1,7 @@
 import { Database } from "@repo/db/client";
 import { z } from "zod";
 import {
+  DiscordRegistrationKeys,
   getDiscordOauthRedirectUrl,
   registerDiscordChannel,
   sendViaWebhook,
@@ -35,10 +36,11 @@ export type GetDiscordOauthUrlInput = z.infer<
  */
 
 export const getDiscordOauthUrl = (
+  keys: DiscordRegistrationKeys,
   organizationId: string,
   input: GetDiscordOauthUrlInput
 ) => {
-  return getDiscordOauthRedirectUrl(organizationId, input.redirectUri);
+  return getDiscordOauthRedirectUrl(keys, organizationId, input.redirectUri);
 };
 
 /**
@@ -80,11 +82,12 @@ export const getDiscordChannels = async (
  */
 export const registerDiscordBot = async (
   db: Database,
+  keys: DiscordRegistrationKeys,
   organizationId: string,
   input: RegisterDiscordBotInput
 ) => {
   // ギルドの登録処理を実行
-  const result = await registerDiscordChannel(db, {
+  const result = await registerDiscordChannel(db, keys, {
     organizationId,
     code: input.code,
     guildId: input.guildId,
@@ -180,11 +183,12 @@ export const unlinkDiscordChannel = async (
  */
 export const sendMessageViaWebhook = async (
   db: Database,
+  encryptionKey: string,
   channelId: string,
   payload: WebhookPayload
 ) => {
   // Webhookを介してメッセージを送信
-  const result = await sendViaWebhook(db, channelId, payload);
+  const result = await sendViaWebhook(db, encryptionKey, channelId, payload);
 
   return result;
 };

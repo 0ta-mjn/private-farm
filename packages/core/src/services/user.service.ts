@@ -247,6 +247,15 @@ export async function updateOrganizationLatestViewedAt(
   }
 }
 
+export const UserProfileUpdateSchema = z.object({
+  name: z
+    .string()
+    .min(1, "名前は必須です")
+    .max(50, "名前は50文字以内で入力してください"),
+});
+
+export type UserProfileUpdateInput = z.infer<typeof UserProfileUpdateSchema>;
+
 /**
  * ユーザーのプロフィール情報を更新します。
  *
@@ -258,7 +267,7 @@ export async function updateOrganizationLatestViewedAt(
 export async function updateUserProfile(
   db: Database,
   userId: string,
-  input: { name: string }
+  input: UserProfileUpdateInput
 ) {
   try {
     const result = await db

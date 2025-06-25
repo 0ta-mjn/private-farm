@@ -71,26 +71,29 @@ describe("DiaryService", () => {
   describe("createDiary", () => {
     it("should create a diary with required fields", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "トマトの植え付け作業を行いました。",
         workType: "PLANTING",
         thingIds: [testThingId],
       };
 
-      const result = await createDiary(db, testUserId, input);
+      const result = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
 
       expect(result).toBeDefined();
       expect(result?.id).toBeDefined();
       expect(result?.date).toBe(input.date);
       expect(result?.content).toBe(input.content);
       expect(result?.userId).toBe(testUserId);
-      expect(result?.organizationId).toBe(input.organizationId);
+      expect(result?.organizationId).toBe(testOrganizationId);
     });
 
     it("should create a diary with optional fields", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         title: "トマト植え付け",
         content: "トマトの植え付け作業を行いました。",
@@ -101,7 +104,12 @@ describe("DiaryService", () => {
         thingIds: [testThingId],
       };
 
-      const result = await createDiary(db, testUserId, input);
+      const result = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
 
       expect(result?.title).toBe(input.title);
       expect(result?.workType).toBe(input.workType);
@@ -112,14 +120,18 @@ describe("DiaryService", () => {
 
     it("should create diary-thing relationships", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "複数ほ場での作業",
         workType: "OTHER",
         thingIds: [testThingId],
       };
 
-      const result = await createDiary(db, testUserId, input);
+      const result = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       expect(result).toBeDefined();
       if (!result) throw new Error("Diary creation failed");
 
@@ -135,14 +147,18 @@ describe("DiaryService", () => {
 
     it("should handle empty thingIds", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "一般的な農場作業",
         workType: "OTHER",
         thingIds: [],
       };
 
-      const result = await createDiary(db, testUserId, input);
+      const result = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       expect(result).toBeDefined();
       if (!result) throw new Error("Diary creation failed");
 
@@ -173,42 +189,45 @@ describe("DiaryService", () => {
       });
 
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "無効なほ場IDを使用",
         workType: "OTHER",
         thingIds: [otherThingId], // 異なる組織のほ場ID
       };
 
-      await expect(createDiary(db, testUserId, input)).rejects.toThrow(
+      await expect(
+        createDiary(db, testUserId, testOrganizationId, input)
+      ).rejects.toThrow(
         "指定されたほ場ID [other-thing-id] は存在しないか、この組織に属していません"
       );
     });
 
     it("should throw error for non-existent thingId", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "存在しないほ場IDを使用",
         workType: "OTHER",
         thingIds: ["non-existent-thing-id"],
       };
 
-      await expect(createDiary(db, testUserId, input)).rejects.toThrow(
+      await expect(
+        createDiary(db, testUserId, testOrganizationId, input)
+      ).rejects.toThrow(
         "指定されたほ場ID [non-existent-thing-id] は存在しないか、この組織に属していません"
       );
     });
 
     it("should handle mixed valid and invalid thingIds", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "混在するほ場ID",
         workType: "OTHER",
         thingIds: [testThingId, "invalid-thing-id"],
       };
 
-      await expect(createDiary(db, testUserId, input)).rejects.toThrow(
+      await expect(
+        createDiary(db, testUserId, testOrganizationId, input)
+      ).rejects.toThrow(
         "指定されたほ場ID [invalid-thing-id] は存在しないか、この組織に属していません"
       );
     });
@@ -218,14 +237,18 @@ describe("DiaryService", () => {
     it("should get diary with thing relationships", async () => {
       // テスト用日誌を作成
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "PLANTING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       // 日誌を取得
@@ -265,7 +288,7 @@ describe("DiaryService", () => {
         thingIds: [],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(db, testUserId, otherOrgId, input);
       if (!createdDiary) throw new Error("Diary creation failed");
 
       // 異なる組織IDで取得を試行
@@ -280,14 +303,18 @@ describe("DiaryService", () => {
   describe("updateDiary", () => {
     it("should update diary fields", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "元の内容",
         workType: "PLANTING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
@@ -316,14 +343,18 @@ describe("DiaryService", () => {
 
     it("should update thing relationships", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "WEEDING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       // 新しいthingを作成
@@ -360,14 +391,18 @@ describe("DiaryService", () => {
     it("should throw error for invalid thingId permissions on update", async () => {
       // 日誌を作成
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "FERTILIZING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       // 別の組織のほ場を作成
@@ -406,14 +441,18 @@ describe("DiaryService", () => {
     it("should throw error for non-existent thingId on update", async () => {
       // 日誌を作成
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "WATERING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
@@ -436,14 +475,18 @@ describe("DiaryService", () => {
     it("should handle mixed valid and invalid thingIds on update", async () => {
       // 日誌を作成
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "SEEDING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
@@ -466,14 +509,18 @@ describe("DiaryService", () => {
     it("should allow updating with empty thingIds", async () => {
       // 日誌を作成
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "テスト日誌",
         workType: "PRUNING",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       const updateInput = {
@@ -520,14 +567,18 @@ describe("DiaryService", () => {
   describe("deleteDiary", () => {
     it("should delete diary and relationships", async () => {
       const input = {
-        organizationId: testOrganizationId,
         date: "2025-06-05",
         content: "削除予定の日誌",
         workType: "OTHER",
         thingIds: [testThingId],
       };
 
-      const createdDiary = await createDiary(db, testUserId, input);
+      const createdDiary = await createDiary(
+        db,
+        testUserId,
+        testOrganizationId,
+        input
+      );
       if (!createdDiary) throw new Error("Diary creation failed");
 
       await deleteDiary(db, testUserId, {
@@ -566,16 +617,14 @@ describe("DiaryService", () => {
       const targetDate = "2025-06-05";
 
       // 同じ日付で複数の日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: targetDate,
         content: "午前の作業",
         workType: "PLANTING",
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: targetDate,
         content: "午後の作業",
         workType: "WATERING",
@@ -583,16 +632,14 @@ describe("DiaryService", () => {
       });
 
       // 異なる日付で日誌を作成（結果に含まれないはず）
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-06",
         content: "翌日の作業",
         workType: "HARVESTING",
         thingIds: [testThingId],
       });
 
-      const result = await getDiariesByDate(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByDate(db, testOrganizationId, {
         date: targetDate,
       });
 
@@ -615,8 +662,7 @@ describe("DiaryService", () => {
     });
 
     it("should return empty array for date with no diaries", async () => {
-      const result = await getDiariesByDate(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByDate(db, testOrganizationId, {
         date: "2025-06-05",
       });
 
@@ -634,8 +680,7 @@ describe("DiaryService", () => {
       });
 
       // 元の組織で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: targetDate,
         content: "自組織の作業",
         workType: "PLANTING",
@@ -643,16 +688,14 @@ describe("DiaryService", () => {
       });
 
       // 別の組織で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: otherOrgId,
+      await createDiary(db, testUserId, otherOrgId, {
         date: targetDate,
         content: "他組織の作業",
         workType: "WATERING",
         thingIds: [],
       });
 
-      const result = await getDiariesByDate(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByDate(db, testOrganizationId, {
         date: targetDate,
       });
 
@@ -665,8 +708,7 @@ describe("DiaryService", () => {
       const targetDate = "2025-06-05";
 
       // 複数の日誌を順番に作成
-      const diary1 = await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      const diary1 = await createDiary(db, testUserId, testOrganizationId, {
         date: targetDate,
         content: "最初の作業",
         workType: "PLANTING",
@@ -676,8 +718,7 @@ describe("DiaryService", () => {
       // 少し待ってから次の日誌を作成
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      const diary2 = await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      const diary2 = await createDiary(db, testUserId, testOrganizationId, {
         date: targetDate,
         content: "二番目の作業",
         workType: "WATERING",
@@ -685,8 +726,7 @@ describe("DiaryService", () => {
       });
       if (!diary1 || !diary2) throw new Error("Diary creation failed");
 
-      const result = await getDiariesByDate(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByDate(db, testOrganizationId, {
         date: targetDate,
       });
 
@@ -700,8 +740,7 @@ describe("DiaryService", () => {
   describe("getDiariesByMonth", () => {
     it("should get summary data for all diaries in a month", async () => {
       // 6月の複数の日付で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-01",
         content: "6月1日の作業",
         workType: "PLANTING",
@@ -709,8 +748,7 @@ describe("DiaryService", () => {
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-05",
         content: "6月5日の作業",
         workType: "WATERING",
@@ -718,8 +756,7 @@ describe("DiaryService", () => {
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-15",
         content: "6月15日の作業",
         workType: "HARVESTING",
@@ -728,16 +765,14 @@ describe("DiaryService", () => {
       });
 
       // 別の月の日誌（結果に含まれないはず）
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-07-01",
         content: "7月1日の作業",
         workType: "PLANTING",
         thingIds: [testThingId],
       });
 
-      const result = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 6,
       });
@@ -762,8 +797,7 @@ describe("DiaryService", () => {
     });
 
     it("should return empty array for month with no diaries", async () => {
-      const result = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 6,
       });
@@ -789,24 +823,21 @@ describe("DiaryService", () => {
       });
 
       // 両方の組織で同じ月に日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-01",
         content: "自組織の作業",
         workType: "PLANTING",
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: otherOrgId,
+      await createDiary(db, testUserId, otherOrgId, {
         date: "2025-06-01",
         content: "他組織の作業",
         workType: "WATERING",
         thingIds: [otherThingId],
       });
 
-      const result = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 6,
       });
@@ -827,8 +858,7 @@ describe("DiaryService", () => {
       });
 
       // 複数のほ場に関連付けられた日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-01",
         content: "複数ほ場での作業",
         workType: "PLANTING",
@@ -836,8 +866,7 @@ describe("DiaryService", () => {
         thingIds: [testThingId, anotherThingId],
       });
 
-      const result = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 6,
       });
@@ -852,24 +881,21 @@ describe("DiaryService", () => {
 
     it("should handle different months and years correctly", async () => {
       // 異なる年月で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-01",
         content: "2025年6月の作業",
         workType: "PLANTING",
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-07-01",
         content: "2025年7月の作業",
         workType: "WATERING",
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2024-06-01",
         content: "2024年6月の作業",
         workType: "HARVESTING",
@@ -877,8 +903,7 @@ describe("DiaryService", () => {
       });
 
       // 2025年6月のデータを取得
-      const result2025_06 = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result2025_06 = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 6,
       });
@@ -887,8 +912,7 @@ describe("DiaryService", () => {
       expect(result2025_06[0]!.date).toBe("2025-06-01");
 
       // 2025年7月のデータを取得
-      const result2025_07 = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result2025_07 = await getDiariesByMonth(db, testOrganizationId, {
         year: 2025,
         month: 7,
       });
@@ -897,8 +921,7 @@ describe("DiaryService", () => {
       expect(result2025_07[0]!.date).toBe("2025-07-01");
 
       // 2024年6月のデータを取得
-      const result2024_06 = await getDiariesByMonth(db, {
-        organizationId: testOrganizationId,
+      const result2024_06 = await getDiariesByMonth(db, testOrganizationId, {
         year: 2024,
         month: 6,
       });
@@ -920,8 +943,7 @@ describe("DiaryService", () => {
       });
 
       // 検索用のテストデータを作成
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-01",
         title: "トマト植え付け",
         content: "トマトの苗を植え付けました。土壌の状態が良好です。",
@@ -930,8 +952,7 @@ describe("DiaryService", () => {
         thingIds: [testThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-05",
         title: "水やり作業",
         content: "トマトとキュウリに水やりを行いました。",
@@ -940,8 +961,7 @@ describe("DiaryService", () => {
         thingIds: [testThingId, anotherThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-10",
         title: "収穫作業",
         content: "キュウリを収穫しました。豊作でした。",
@@ -950,8 +970,7 @@ describe("DiaryService", () => {
         thingIds: [anotherThingId],
       });
 
-      await createDiary(db, testUserId, {
-        organizationId: testOrganizationId,
+      await createDiary(db, testUserId, testOrganizationId, {
         date: "2025-06-15",
         title: "除草作業",
         content: "雑草を除去しました。",
@@ -962,8 +981,7 @@ describe("DiaryService", () => {
     });
 
     it("should search by text content", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         search: "トマト",
@@ -980,8 +998,7 @@ describe("DiaryService", () => {
     });
 
     it("should search by work type", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         workTypes: ["PLANTING", "HARVESTING"],
@@ -998,8 +1015,7 @@ describe("DiaryService", () => {
     });
 
     it("should search by date range", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         dateFrom: "2025-06-05",
@@ -1020,8 +1036,7 @@ describe("DiaryService", () => {
     it("should search by thing IDs", async () => {
       const anotherThingId = "another-thing-id";
 
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         thingIds: [anotherThingId],
@@ -1036,8 +1051,7 @@ describe("DiaryService", () => {
     });
 
     it("should search by weather", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         weather: ["晴れ"],
@@ -1051,8 +1065,7 @@ describe("DiaryService", () => {
     });
 
     it("should combine multiple search criteria", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         search: "トマト",
@@ -1068,8 +1081,7 @@ describe("DiaryService", () => {
     });
 
     it("should handle pagination correctly", async () => {
-      const page1 = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const page1 = await searchDiaries(db, testOrganizationId, {
         limit: 2,
         offset: 0,
         sortBy: "date",
@@ -1080,8 +1092,7 @@ describe("DiaryService", () => {
       expect(page1.total).toBe(4);
       expect(page1.hasNext).toBe(true);
 
-      const page2 = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const page2 = await searchDiaries(db, testOrganizationId, {
         limit: 2,
         offset: 2,
         sortBy: "date",
@@ -1099,8 +1110,7 @@ describe("DiaryService", () => {
     });
 
     it("should order results by date desc", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         sortBy: "date",
@@ -1118,8 +1128,7 @@ describe("DiaryService", () => {
     });
 
     it("should include thing relationships", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         search: "水やり",
@@ -1139,8 +1148,7 @@ describe("DiaryService", () => {
     });
 
     it("should return empty results for no matches", async () => {
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         search: "存在しないキーワード",
@@ -1162,8 +1170,7 @@ describe("DiaryService", () => {
       });
 
       // 別の組織で日誌を作成
-      await createDiary(db, testUserId, {
-        organizationId: otherOrgId,
+      await createDiary(db, testUserId, otherOrgId, {
         date: "2025-06-01",
         title: "他組織のトマト作業",
         content: "他組織でのトマト植え付け",
@@ -1171,8 +1178,7 @@ describe("DiaryService", () => {
         thingIds: [],
       });
 
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         search: "トマト",
@@ -1191,8 +1197,7 @@ describe("DiaryService", () => {
 
     it("should handle edge cases for date ranges", async () => {
       // 存在しない日付範囲で検索
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         dateFrom: "2025-07-01",
@@ -1208,8 +1213,7 @@ describe("DiaryService", () => {
     it("should handle multiple thing IDs correctly", async () => {
       const anotherThingId = "another-thing-id";
 
-      const result = await searchDiaries(db, {
-        organizationId: testOrganizationId,
+      const result = await searchDiaries(db, testOrganizationId, {
         limit: 10,
         offset: 0,
         thingIds: [testThingId, anotherThingId],

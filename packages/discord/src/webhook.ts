@@ -28,6 +28,7 @@ export interface WebhookPayload {
 
 export async function sendViaWebhook(
   db: Database,
+  encryptionKey: string,
   channelUuid: string,
   payload: WebhookPayload,
   opts: Options = {}
@@ -52,7 +53,8 @@ export async function sendViaWebhook(
     ...(opts.threadId && { thread_id: opts.threadId }),
   });
 
-  const url = `${DISCORD_WEBHOOK_URL}/${channel.webhookId}/${decrypt(channel.webhookTokenEnc)}?${qp.toString()}`;
+  const webhookToken = await decrypt(channel.webhookTokenEnc, encryptionKey);
+  const url = `${DISCORD_WEBHOOK_URL}/${channel.webhookId}/${webhookToken}?${qp.toString()}`;
 
   const form = opts.files?.length
     ? (() => {

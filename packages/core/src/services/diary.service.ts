@@ -13,7 +13,6 @@ import { z } from "zod";
 
 // Zodスキーマ定義
 export const CreateDiaryInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
@@ -50,20 +49,17 @@ export const UpdateDiaryInputSchema = z.object({
 
 // 新しい3つのエンドポイント用のスキーマ
 export const GetDiariesByDateInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
 });
 
 export const GetDiariesByMonthInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   year: z.number().int().min(1900).max(3000),
   month: z.number().int().min(1).max(12),
 });
 
 export const SearchDiariesInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   limit: z.number().int().min(1).max(100).optional().default(20),
   offset: z.number().int().min(0).optional().default(0),
   search: z.string().optional(),
@@ -108,6 +104,7 @@ export type DiaryParams = z.infer<typeof DiaryParamsSchema>;
 export async function createDiary(
   db: Database,
   userId: string,
+  organizationId: string,
   input: CreateDiaryInput
 ) {
   return await db.transaction(async (tx) => {
@@ -120,7 +117,7 @@ export async function createDiary(
         .where(
           and(
             inArray(thingsTable.id, thingIds),
-            eq(thingsTable.organizationId, input.organizationId)
+            eq(thingsTable.organizationId, organizationId)
           )
         );
 
@@ -151,7 +148,7 @@ export async function createDiary(
             temperature: input.temperature,
             duration: input.duration,
             userId: userId,
-            organizationId: input.organizationId,
+            organizationId: organizationId,
           })
           .returning(),
       { idPrefix: DEFAULT_UUID_CONFIG.diary?.idPrefix || "diary" }
@@ -395,6 +392,7 @@ export async function deleteDiary(
  */
 export async function getDiariesByDate(
   db: Database,
+  organizationId: string,
   input: GetDiariesByDateInput
 ): Promise<DiaryWithOptionalThings[]> {
   // 指定日の日誌を取得（全フィールド含む）
@@ -418,7 +416,7 @@ export async function getDiariesByDate(
     .leftJoin(usersTable, eq(diariesTable.userId, usersTable.id))
     .where(
       and(
-        eq(diariesTable.organizationId, input.organizationId),
+        eq(diariesTable.organizationId, organizationId),
         eq(diariesTable.date, input.date)
       )
     )
@@ -471,6 +469,7 @@ export async function getDiariesByDate(
  */
 export async function getDiariesByMonth(
   db: Database,
+  organizationId: string,
   input: GetDiariesByMonthInput
 ): Promise<
   Array<{
@@ -501,7 +500,7 @@ export async function getDiariesByMonth(
     .from(diariesTable)
     .where(
       and(
-        eq(diariesTable.organizationId, input.organizationId),
+        eq(diariesTable.organizationId, organizationId),
         gte(diariesTable.date, startDate),
         lte(diariesTable.date, endDate)
       )
@@ -542,6 +541,7 @@ export async function getDiariesByMonth(
  */
 export async function searchDiaries(
   db: Database,
+  organizationId: string,
   input: SearchDiariesInput
 ): Promise<{
   diaries: DiaryWithOptionalThings[];
@@ -549,7 +549,6 @@ export async function searchDiaries(
   hasNext: boolean;
 }> {
   const {
-    organizationId,
     limit,
     offset,
     search,

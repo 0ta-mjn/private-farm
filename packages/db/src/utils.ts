@@ -1,5 +1,6 @@
-import { randomUUID, createHash } from "crypto";
 import { DEFAULT_ID_LENGTH, DEFAULT_ID_RETRIES } from "@repo/config";
+
+const te = new TextEncoder();
 
 // PostgreSQLの一意制約違反エラーコード
 const UNIQUE_VIOLATION_ERROR_CODE = "23505";
@@ -43,7 +44,7 @@ export async function withUniqueIdRetry<T>(
   } = options;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const id = generateUniqueId({ idPrefix, length });
+    const id = await generateUniqueId({ idPrefix, length });
 
     try {
       return await insertFn(id);
@@ -102,23 +103,19 @@ function isPostgresError(error: unknown): error is { code: string } {
  * const id4 = generateUniqueId({ idPrefix: "user_", length: 8 }); // "user_a1b2c3d4"
  * ```
  */
-export function generateUniqueId(
-  options: {
-    idPrefix?: string;
-    length?: number;
-  } = {}
-): string {
-  const { idPrefix = "", length } = options;
+// src/unique-id-web.ts
+export async function generateUniqueId(
+  opts: { idPrefix?: string; length?: number } = {}
+): Promise<string> {
+  const { idPrefix = "", length } = opts;
+  const uuid = crypto.randomUUID(); // global
 
-  const uuid = randomUUID();
+  if (!length) return idPrefix + uuid;
 
-  if (length) {
-    // lengthが指定された場合、ハッシュ化して指定長に調整
-    const hash = createHash("sha256").update(uuid).digest("hex");
-    const truncatedHash = hash.substring(0, length);
-    return idPrefix + truncatedHash;
-  }
-
-  // lengthが指定されていない場合は通常のUUID
-  return idPrefix + uuid;
+  // sha-256(uuid) → hex
+  const digest = await crypto.subtle.digest("SHA-256", te.encode(uuid));
+  const hex = Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
+  return idPrefix + hex.slice(0, length);
 }

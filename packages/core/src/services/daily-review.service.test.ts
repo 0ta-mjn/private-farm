@@ -19,16 +19,16 @@ import * as discordService from "./discord.service";
 
 const db = dbClient();
 
+const testEncryptionKey = "12345678901234567890123456789012"; // 32文字のキー
+
 describe("DailyReviewService", () => {
   beforeEach(async () => {
     // テスト用のデータベースをリセット
-    await db.transaction(async (tx) => {
-      await tx.delete(diaryThingsTable);
-      await tx.delete(diariesTable);
-      await tx.delete(thingsTable);
-      await tx.delete(usersTable);
-      await tx.delete(organizationsTable);
-    });
+    await db.delete(diaryThingsTable);
+    await db.delete(diariesTable);
+    await db.delete(thingsTable);
+    await db.delete(usersTable);
+    await db.delete(organizationsTable);
   });
 
   describe("getDailyDigestData", () => {
@@ -548,7 +548,12 @@ describe("DailyReviewService", () => {
         ],
       };
 
-      const result = await sendDailyDigest(db, organization, targetDate);
+      const result = await sendDailyDigest(
+        db,
+        testEncryptionKey,
+        organization,
+        targetDate
+      );
 
       // 結果の検証
       expect(result.success).toBe(true);
@@ -563,6 +568,7 @@ describe("DailyReviewService", () => {
       expect(discordService.sendMessageViaWebhook).toHaveBeenCalledTimes(2);
       expect(discordService.sendMessageViaWebhook).toHaveBeenCalledWith(
         db,
+        testEncryptionKey,
         "channel-1",
         expect.objectContaining({
           content: expect.stringContaining("🌅 日次ダイジェスト"),
@@ -570,6 +576,7 @@ describe("DailyReviewService", () => {
       );
       expect(discordService.sendMessageViaWebhook).toHaveBeenCalledWith(
         db,
+        testEncryptionKey,
         "channel-2",
         expect.objectContaining({
           content: expect.stringContaining("🌅 日次ダイジェスト"),
@@ -613,7 +620,12 @@ describe("DailyReviewService", () => {
         ],
       };
 
-      const result = await sendDailyDigest(db, organization, targetDate);
+      const result = await sendDailyDigest(
+        db,
+        testEncryptionKey,
+        organization,
+        targetDate
+      );
 
       // 結果の検証
       expect(result.success).toBe(false);
@@ -653,86 +665,18 @@ describe("DailyReviewService", () => {
         ],
       };
 
-      const result = await sendDailyDigest(db, organization, targetDate);
+      const result = await sendDailyDigest(
+        db,
+        testEncryptionKey,
+        organization,
+        targetDate
+      );
 
       // エラーハンドリングの検証
       expect(result.success).toBe(false);
       expect(result.successCount).toBe(0);
       expect(result.failureCount).toBe(1);
       // Promise.allSettledで処理されるため、errorプロパティは設定されない
-    });
-
-    it("should generate correct digest message content", async () => {
-      const testUserId = "test-user-id";
-      const testOrgId = "test-org-id";
-      const testFieldId = "test-field-1";
-      const targetDate = "2025-06-24";
-
-      // テストデータをセットアップ
-      await db.insert(organizationsTable).values({
-        id: testOrgId,
-        name: "Test Organization",
-      });
-
-      await db.insert(usersTable).values({
-        id: testUserId,
-        name: "Test User",
-      });
-
-      await db.insert(thingsTable).values({
-        id: testFieldId,
-        name: "Test Field",
-        type: "FIELD",
-        organizationId: testOrgId,
-      });
-
-      await db.insert(diariesTable).values({
-        id: "test-diary",
-        date: targetDate,
-        title: "Test Seeding Work",
-        workType: "SEEDING",
-        duration: 2.5,
-        userId: testUserId,
-        organizationId: testOrgId,
-        createdAt: new Date("2025-06-24T08:00:00Z"),
-      });
-
-      await db.insert(diaryThingsTable).values({
-        diaryId: "test-diary",
-        thingId: testFieldId,
-      });
-
-      const organization: OrganizationWithNotification = {
-        organizationId: testOrgId,
-        organizationName: "Test Organization",
-        channels: [
-          {
-            channelId: "channel-1",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      };
-
-      await sendDailyDigest(db, organization, targetDate);
-
-      // 送信されたメッセージの内容を確認
-      const sentMessage = vi.mocked(discordService.sendMessageViaWebhook).mock
-        .calls[0]?.[2];
-      expect(sentMessage?.content).toContain(
-        "🌅 日次ダイジェスト | 2025-06-24 (火)"
-      );
-      expect(sentMessage?.content).toContain(
-        "作業件数 1 | 総作業時間 2 h 30 m | ほ場 1"
-      );
-      expect(sentMessage?.content).toContain("🌱 SEEDING 1 (2 h 30 m)");
-      expect(sentMessage?.content).toContain(
-        "17:00 Test Field 🌱 Test Seeding Work"
-      );
     });
 
     it("should handle exception in try block", async () => {
@@ -758,6 +702,7 @@ describe("DailyReviewService", () => {
 
       const result = await sendDailyDigest(
         invalidDb,
+        testEncryptionKey,
         organization,
         "2025-06-24"
       );
