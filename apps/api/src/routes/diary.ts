@@ -4,12 +4,12 @@ import {
   updateDiary,
   deleteDiary,
   getDiariesByDate,
-  getDiariesByMonth,
+  getDiariesByDateRange,
   searchDiaries,
   CreateDiaryInputSchema,
   UpdateDiaryInputSchema,
   GetDiariesByDateInputSchema,
-  GetDiariesByMonthInputSchema,
+  GetDiariesByDateRangeInputSchema,
   SearchDiariesInputSchema,
   DiaryParamsSchema,
   UnauthorizedError,
@@ -243,67 +243,6 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
   )
 
   /**
-   * Get diaries by month (requires authentication and organization membership)
-   */
-  .get(
-    "/by-month/:organizationId",
-    zValidator("param", z.object({ organizationId: z.string() })),
-    zValidator("query", GetDiariesByMonthInputSchema, undefined, {
-      validationFunction: (schema, input) => {
-        try {
-          if (
-            typeof input.year !== "string" ||
-            typeof input.month !== "string"
-          ) {
-            throw new ValidationError("年と月は文字列で指定してください");
-          }
-          const year = parseInt(input.year, 10);
-          const month = parseInt(input.month, 10);
-          return schema.safeParse({ year: year, month: month });
-        } catch {
-          throw new ValidationError("年と月は数値で指定してください");
-        }
-      },
-    }),
-    OrganizationMembershipMiddleware(),
-    async (c) => {
-      const { organizationId } = c.req.valid("param");
-      const input = c.req.valid("query");
-
-      try {
-        const diaries = await getDiariesByMonth(
-          c.var.db,
-          organizationId,
-          input
-        );
-        return c.json(diaries);
-      } catch (error) {
-        console.error("Diaries by month error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "指定月の日誌取得に失敗しました",
-        });
-      }
-    }
-  )
-
-  /**
    * Search diaries (requires authentication and organization membership)
    */
   .get(
@@ -339,6 +278,81 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
 
         throw new HTTPException(500, {
           message: "日誌検索に失敗しました",
+        });
+      }
+    }
+  )
+
+  /**
+   * Get diaries by date range (requires authentication and organization membership)
+   */
+  .get(
+    "/by-date-range/:organizationId",
+    zValidator("param", z.object({ organizationId: z.string() })),
+    zValidator("query", GetDiariesByDateRangeInputSchema, undefined, {
+      validationFunction: (schema, input) => {
+        try {
+          const result = schema.safeParse(input);
+          if (!result.success) {
+            return result;
+          }
+
+          // 40日制限をvalidationFunctionで実装
+          const start = new Date(result.data.startDate);
+          const end = new Date(result.data.endDate);
+          const diffTime = Math.abs(end.getTime() - start.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays > 40) {
+            throw new HTTPException(400, {
+              message: "期間は最大40日までです",
+            });
+          }
+
+          return result;
+        } catch (error) {
+          if (error instanceof HTTPException) {
+            throw error;
+          }
+          throw new HTTPException(400, {
+            message: "日付の形式が正しくありません",
+          });
+        }
+      },
+    }),
+    OrganizationMembershipMiddleware(),
+    async (c) => {
+      const { organizationId } = c.req.valid("param");
+      const input = c.req.valid("query");
+
+      try {
+        const diaries = await getDiariesByDateRange(
+          c.var.db,
+          organizationId,
+          input
+        );
+        return c.json(diaries);
+      } catch (error) {
+        console.error("Diaries by date range error:", error);
+
+        if (error instanceof HTTPException) {
+          throw error;
+        }
+
+        if (error instanceof UnauthorizedError) {
+          throw new HTTPException(403, {
+            message: error.message,
+          });
+        }
+
+        if (error instanceof ValidationError) {
+          throw new HTTPException(400, {
+            message: error.message,
+          });
+        }
+
+        throw new HTTPException(500, {
+          message: "指定期間の日誌取得に失敗しました",
         });
       }
     }

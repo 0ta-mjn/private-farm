@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { client } from "@/rpc/client";
 import { things, diaries } from "@/rpc/factory";
 import { useOrganization } from "@/contexts/organization-context";
@@ -82,9 +82,9 @@ export function DiaryDrawerContainer() {
         }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: diaries.byMonth(organizationId, {
-          year: dateObj.getFullYear().toString(),
-          month: (dateObj.getMonth() + 1).toString(),
+        queryKey: diaries.byDateRange(organizationId, {
+          startDate: format(startOfMonth(dateObj), "yyyy-MM-dd"),
+          endDate: format(endOfMonth(dateObj), "yyyy-MM-dd"),
         }).queryKey,
       });
       actions.closeAll();
@@ -134,9 +134,9 @@ export function DiaryDrawerContainer() {
         }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: diaries.byMonth(organizationId, {
-          year: dateObj.getFullYear().toString(),
-          month: (dateObj.getMonth() + 1).toString(),
+        queryKey: diaries.byDateRange(organizationId, {
+          startDate: format(startOfMonth(dateObj), "yyyy-MM-dd"),
+          endDate: format(endOfMonth(dateObj), "yyyy-MM-dd"),
         }).queryKey,
       });
 

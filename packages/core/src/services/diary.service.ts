@@ -54,10 +54,31 @@ export const GetDiariesByDateInputSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
 });
 
-export const GetDiariesByMonthInputSchema = z.object({
-  year: z.number().int().min(1900).max(3000),
-  month: z.number().int().min(1).max(12),
-});
+export const GetDiariesByDateRangeInputSchema = z
+  .object({
+    startDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        "開始日は YYYY-MM-DD 形式で入力してください"
+      ),
+    endDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        "終了日は YYYY-MM-DD 形式で入力してください"
+      ),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      return start <= end;
+    },
+    {
+      message: "開始日は終了日より前の日付を指定してください",
+    }
+  );
 
 export const SearchDiariesInputSchema = z.object({
   limit: z.number().int().min(1).max(100).optional().default(20),
@@ -87,8 +108,8 @@ export const DiaryParamsSchema = z.object({
 export type CreateDiaryInput = z.infer<typeof CreateDiaryInputSchema>;
 export type UpdateDiaryInput = z.infer<typeof UpdateDiaryInputSchema>;
 export type GetDiariesByDateInput = z.infer<typeof GetDiariesByDateInputSchema>;
-export type GetDiariesByMonthInput = z.infer<
-  typeof GetDiariesByMonthInputSchema
+export type GetDiariesByDateRangeInput = z.infer<
+  typeof GetDiariesByDateRangeInputSchema
 >;
 export type SearchDiariesInput = z.infer<typeof SearchDiariesInputSchema>;
 export type DiaryParams = z.infer<typeof DiaryParamsSchema>;
@@ -461,16 +482,17 @@ export async function getDiariesByDate(
 }
 
 /**
- * 指定した月の日誌のサマリーデータを取得します（日付、ほ場、天気、作業種別のみ）
+ * 指定された期間内の日誌一覧を取得します（サマリー情報）
  *
  * @param db - データベース接続
- * @param input - 組織ID、年、月
- * @returns 指定月の日誌サマリーデータ
+ * @param organizationId - 組織ID
+ * @param input - 期間指定（最大40日）
+ * @returns 期間内の日誌一覧（サマリー情報のみ）
  */
-export async function getDiariesByMonth(
+export async function getDiariesByDateRange(
   db: Database,
   organizationId: string,
-  input: GetDiariesByMonthInput
+  input: GetDiariesByDateRangeInput
 ): Promise<
   Array<{
     id: string;
@@ -483,13 +505,9 @@ export async function getDiariesByMonth(
     }>;
   }>
 > {
-  const { year, month } = input;
+  const { startDate, endDate } = input;
 
-  // 月の範囲を計算
-  const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split("T")[0]!; // 月末日
-
-  // 指定月の日誌を取得（サマリー情報のみ）
+  // 指定期間の日誌を取得（サマリー情報のみ）
   const diariesResult = await db
     .select({
       id: diariesTable.id,

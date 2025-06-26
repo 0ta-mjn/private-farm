@@ -23,6 +23,8 @@ import {
   subMonths,
   parse,
   isValid,
+  startOfMonth,
+  endOfMonth,
 } from "date-fns";
 import { DiaryDateDetail } from "@/components/diary/diary-date-detail";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
@@ -46,9 +48,9 @@ function DiaryPageContent() {
 
   // 月のサマリーデータを取得（カレンダー表示用）
   const monthSummaryQuery = useQuery({
-    ...diaryFactory.byMonth(currentOrganizationId || "", {
-      year: currentMonth.getFullYear().toString(),
-      month: (currentMonth.getMonth() + 1).toString(),
+    ...diaryFactory.byDateRange(currentOrganizationId || "", {
+      startDate: format(startOfMonth(currentMonth), "yyyy-MM-dd"),
+      endDate: format(endOfMonth(currentMonth), "yyyy-MM-dd"),
     }),
     enabled: !!currentOrganizationId,
   });

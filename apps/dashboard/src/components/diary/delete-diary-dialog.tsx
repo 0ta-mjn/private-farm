@@ -45,7 +45,7 @@ export function DeleteDiaryDialog({
       toast.success("日誌を削除しました");
       // カレンダー用のキャッシュを無効化
       queryClient.invalidateQueries({
-        queryKey: diaries.byMonth._def,
+        queryKey: diaries.byDateRange._def,
       });
       queryClient.invalidateQueries({
         queryKey: diaries.byDate._def,

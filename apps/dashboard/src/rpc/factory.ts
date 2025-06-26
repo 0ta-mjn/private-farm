@@ -80,15 +80,15 @@ export const diaries = createQueryKeys("diaries", {
         query: input,
       }),
   }),
-  byMonth: (
+  byDateRange: (
     organizationId: string,
     input: Parameters<
-      (typeof client.diary)["by-month"][":organizationId"]["$get"]
+      (typeof client.diary)["by-date-range"][":organizationId"]["$get"]
     >[0]["query"]
   ) => ({
     queryKey: [organizationId, input],
     queryFn: () =>
-      client.diary["by-month"][":organizationId"].$get({
+      client.diary["by-date-range"][":organizationId"].$get({
         param: { organizationId },
         query: input,
       }),

@@ -15,7 +15,7 @@ import {
   updateDiary,
   deleteDiary,
   getDiariesByDate,
-  getDiariesByMonth,
+  getDiariesByDateRange,
   searchDiaries,
 } from "./diary.service";
 
@@ -737,200 +737,6 @@ describe("DiaryService", () => {
     });
   });
 
-  describe("getDiariesByMonth", () => {
-    it("should get summary data for all diaries in a month", async () => {
-      // 6月の複数の日付で日誌を作成
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-01",
-        content: "6月1日の作業",
-        workType: "PLANTING",
-        weather: "晴れ",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-05",
-        content: "6月5日の作業",
-        workType: "WATERING",
-        weather: "曇り",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-15",
-        content: "6月15日の作業",
-        workType: "HARVESTING",
-        weather: "雨",
-        thingIds: [testThingId],
-      });
-
-      // 別の月の日誌（結果に含まれないはず）
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-07-01",
-        content: "7月1日の作業",
-        workType: "PLANTING",
-        thingIds: [testThingId],
-      });
-
-      const result = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 6,
-      });
-
-      expect(result).toHaveLength(3);
-
-      // 各レコードがサマリーデータのみを含んでいることを確認
-      result?.forEach((diary) => {
-        expect(diary.date).toBeDefined();
-        expect(diary.workType).toBeDefined();
-        expect(diary.weather).toBeDefined();
-        expect(diary.fields).toBeDefined();
-        expect(diary.fields.length).toBeGreaterThan(0);
-        expect(diary.fields[0]!.id).toBe(testThingId);
-        expect(diary.fields[0]!.name).toBe("Test Field");
-      });
-
-      // 日付順（新しい順）に並んでいることを確認
-      expect(result[0]!.date).toBe("2025-06-15");
-      expect(result[1]!.date).toBe("2025-06-05");
-      expect(result[2]!.date).toBe("2025-06-01");
-    });
-
-    it("should return empty array for month with no diaries", async () => {
-      const result = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 6,
-      });
-
-      expect(result).toHaveLength(0);
-    });
-
-    it("should only return diaries for the specified organization", async () => {
-      // 別の組織を作成
-      const otherOrgId = "other-org-id";
-      const otherThingId = "other-thing-id";
-
-      await db.insert(organizationsTable).values({
-        id: otherOrgId,
-        name: "Other Organization",
-      });
-
-      await db.insert(thingsTable).values({
-        id: otherThingId,
-        name: "Other Field",
-        type: "field",
-        organizationId: otherOrgId,
-      });
-
-      // 両方の組織で同じ月に日誌を作成
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-01",
-        content: "自組織の作業",
-        workType: "PLANTING",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, otherOrgId, {
-        date: "2025-06-01",
-        content: "他組織の作業",
-        workType: "WATERING",
-        thingIds: [otherThingId],
-      });
-
-      const result = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 6,
-      });
-
-      expect(result).toHaveLength(1);
-      expect(result[0]!.fields[0]!.id).toBe(testThingId);
-      expect(result[0]!.fields[0]!.name).toBe("Test Field");
-    });
-
-    it("should handle diaries with multiple fields correctly", async () => {
-      // 追加のほ場を作成
-      const anotherThingId = "another-thing-id";
-      await db.insert(thingsTable).values({
-        id: anotherThingId,
-        name: "Another Field",
-        type: "field",
-        organizationId: testOrganizationId,
-      });
-
-      // 複数のほ場に関連付けられた日誌を作成
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-01",
-        content: "複数ほ場での作業",
-        workType: "PLANTING",
-        weather: "晴れ",
-        thingIds: [testThingId, anotherThingId],
-      });
-
-      const result = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 6,
-      });
-
-      expect(result).toHaveLength(1);
-      expect(result[0]!.fields).toHaveLength(2);
-
-      const fieldNames = result[0]!.fields.map((f) => f.name);
-      expect(fieldNames).toContain("Test Field");
-      expect(fieldNames).toContain("Another Field");
-    });
-
-    it("should handle different months and years correctly", async () => {
-      // 異なる年月で日誌を作成
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-06-01",
-        content: "2025年6月の作業",
-        workType: "PLANTING",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2025-07-01",
-        content: "2025年7月の作業",
-        workType: "WATERING",
-        thingIds: [testThingId],
-      });
-
-      await createDiary(db, testUserId, testOrganizationId, {
-        date: "2024-06-01",
-        content: "2024年6月の作業",
-        workType: "HARVESTING",
-        thingIds: [testThingId],
-      });
-
-      // 2025年6月のデータを取得
-      const result2025_06 = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 6,
-      });
-
-      expect(result2025_06).toHaveLength(1);
-      expect(result2025_06[0]!.date).toBe("2025-06-01");
-
-      // 2025年7月のデータを取得
-      const result2025_07 = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2025,
-        month: 7,
-      });
-
-      expect(result2025_07).toHaveLength(1);
-      expect(result2025_07[0]!.date).toBe("2025-07-01");
-
-      // 2024年6月のデータを取得
-      const result2024_06 = await getDiariesByMonth(db, testOrganizationId, {
-        year: 2024,
-        month: 6,
-      });
-
-      expect(result2024_06).toHaveLength(1);
-      expect(result2024_06[0]!.date).toBe("2024-06-01");
-    });
-  });
-
   describe("searchDiaries", () => {
     beforeEach(async () => {
       // 追加のほ場を作成
@@ -1225,6 +1031,143 @@ describe("DiaryService", () => {
       expect(result?.total).toBe(3);
       // 除草作業（thingIds: []）は含まれないはず
       expect(result?.diaries.some((d) => d.title === "除草作業")).toBe(false);
+    });
+  });
+
+  describe("getDiariesByDateRange", () => {
+    it("指定された期間内の日誌を取得できる", async () => {
+      // テスト用の日誌データを作成
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-06-15",
+        title: "Test Diary 1",
+        content: "Content for test diary 1",
+        workType: "草取り",
+        weather: "晴れ",
+        temperature: 25,
+        duration: 2.5,
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-06-20",
+        title: "Test Diary 2",
+        content: "Content for test diary 2",
+        workType: "収穫",
+        weather: "曇り",
+        temperature: 22,
+        duration: 1.5,
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-06-25",
+        title: "Test Diary 3",
+        content: "Content for test diary 3",
+        workType: "肥料散布",
+        weather: "雨",
+        temperature: 18,
+        duration: 1.0,
+        thingIds: [testThingId],
+      });
+
+      // 期間外の日誌（取得されないはず）
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-06-10",
+        title: "Outside Range",
+        content: "This should not be included",
+        workType: "草取り",
+        thingIds: [testThingId],
+      });
+
+      const result = await getDiariesByDateRange(db, testOrganizationId, {
+        startDate: "2025-06-15",
+        endDate: "2025-06-25",
+      });
+
+      expect(result).toHaveLength(3);
+      expect(result[0]!.date).toBe("2025-06-25"); // 日付の降順
+      expect(result[1]!.date).toBe("2025-06-20");
+      expect(result[2]!.date).toBe("2025-06-15");
+
+      // 各日誌にfieldsが含まれていることを確認
+      expect(result[0]!.fields).toHaveLength(1);
+      expect(result[0]!.fields[0]!.name).toBe("Test Field");
+    });
+
+    it("期間内に日誌がない場合は空配列を返す", async () => {
+      const result = await getDiariesByDateRange(db, testOrganizationId, {
+        startDate: "2023-01-01",
+        endDate: "2023-01-31",
+      });
+
+      expect(result).toHaveLength(0);
+    });
+
+    it("1日だけの期間でも取得できる", async () => {
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-07-01",
+        title: "Single Day Diary",
+        content: "Single day test",
+        workType: "観察",
+        thingIds: [testThingId],
+      });
+
+      const result = await getDiariesByDateRange(db, testOrganizationId, {
+        startDate: "2025-07-01",
+        endDate: "2025-07-01",
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.date).toBe("2025-07-01");
+      expect(result[0]!.workType).toBe("観察");
+    });
+
+    it("40日を超える期間でも取得できる（制限はAPI側で実装）", async () => {
+      // 41日間のテスト用データ
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-08-01",
+        title: "Start Date Diary",
+        content: "Start date test",
+        workType: "準備",
+        thingIds: [testThingId],
+      });
+
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-09-10", // 2025-08-01から40日後
+        title: "End Date Diary",
+        content: "End date test",
+        workType: "完了",
+        thingIds: [testThingId],
+      });
+
+      // サービス関数では制限なく取得できる
+      const result = await getDiariesByDateRange(db, testOrganizationId, {
+        startDate: "2025-08-01",
+        endDate: "2025-09-10",
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result[0]!.date).toBe("2025-09-10");
+      expect(result[1]!.date).toBe("2025-08-01");
+    });
+
+    it("他の組織の日誌は取得されない", async () => {
+      // テスト組織に日誌を作成
+      await createDiary(db, testUserId, testOrganizationId, {
+        date: "2025-09-15",
+        title: "Test Org Diary",
+        content: "This should be included",
+        workType: "作業",
+        thingIds: [testThingId],
+      });
+
+      // 存在しない組織IDで検索（アクセスできない）
+      const result = await getDiariesByDateRange(db, "non-existent-org", {
+        startDate: "2025-09-15",
+        endDate: "2025-09-15",
+      });
+
+      expect(result).toHaveLength(0);
     });
   });
 });
