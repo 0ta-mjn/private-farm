@@ -9,6 +9,7 @@ import { DiaryDrawerProvider } from "@/contexts/diary-drawer-context";
 import { ThingDrawerProvider } from "@/contexts/thing-drawer-context";
 import { DiaryDrawerContainer } from "@/components/diary/diary-drawer-container";
 import { ThingDrawerContainer } from "@/components/thing/thing-drawer-container";
+import { useOrganization } from "@/contexts/organization-context";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardMain({ children }: DashboardLayoutProps) {
   const { loading: isLoading } = useRequireAuthAndSetup();
+  const { currentOrganizationId } = useOrganization();
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full"></div>;
@@ -33,8 +35,13 @@ export default function DashboardMain({ children }: DashboardLayoutProps) {
                 {children}
               </main>
             </SidebarInset>
-            <DiaryDrawerContainer />
-            <ThingDrawerContainer />
+
+            {currentOrganizationId && (
+              <>
+                <DiaryDrawerContainer organizationId={currentOrganizationId} />
+                <ThingDrawerContainer organizationId={currentOrganizationId} />
+              </>
+            )}
           </SidebarProvider>
         </ThingDrawerProvider>
       </DiaryDrawerProvider>

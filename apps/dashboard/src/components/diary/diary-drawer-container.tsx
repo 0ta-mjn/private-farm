@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { client } from "@/rpc/client";
 import { things, diaries } from "@/rpc/factory";
-import { useOrganization } from "@/contexts/organization-context";
 import {
   useDiaryDrawerState,
   useDiaryDrawerActions,
@@ -15,12 +14,17 @@ import {
   type FieldOption,
 } from "./diary-form-drawer";
 
-export function DiaryDrawerContainer() {
+interface DiaryDrawerContainerProps {
+  organizationId: string;
+}
+
+export function DiaryDrawerContainer({
+  organizationId: currentOrganizationId,
+}: DiaryDrawerContainerProps) {
   // コンテキストとクライアント
   const state = useDiaryDrawerState();
   const actions = useDiaryDrawerActions();
   const queryClient = useQueryClient();
-  const { currentOrganizationId } = useOrganization();
 
   const open = state.createOpen || state.editOpen;
   const isEdit = state.editOpen;

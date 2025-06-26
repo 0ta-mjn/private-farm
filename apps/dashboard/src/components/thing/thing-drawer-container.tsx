@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/rpc/client";
 import { things } from "@/rpc/factory";
-import { useOrganization } from "@/contexts/organization-context";
 import {
   useThingDrawerState,
   useThingDrawerActions,
@@ -11,12 +10,17 @@ import {
 import { ThingFormDrawer, type ThingFormData } from "./thing-form-drawer";
 import { toast } from "sonner";
 
-export function ThingDrawerContainer() {
+interface ThingDrawerContainerProps {
+  organizationId: string;
+}
+
+export function ThingDrawerContainer({
+  organizationId: currentOrganizationId,
+}: ThingDrawerContainerProps) {
   // コンテキストとクライアント
   const state = useThingDrawerState();
   const actions = useThingDrawerActions();
   const queryClient = useQueryClient();
-  const { currentOrganizationId } = useOrganization();
 
   const open = state.createOpen || state.editOpen;
   const isEdit = state.editOpen;
