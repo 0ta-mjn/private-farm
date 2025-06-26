@@ -17,7 +17,6 @@ interface DashboardLayoutProps {
 
 export default function DashboardMain({ children }: DashboardLayoutProps) {
   const { loading: isLoading } = useRequireAuthAndSetup();
-  const { currentOrganizationId } = useOrganization();
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-full"></div>;
@@ -36,15 +35,25 @@ export default function DashboardMain({ children }: DashboardLayoutProps) {
               </main>
             </SidebarInset>
 
-            {currentOrganizationId && (
-              <>
-                <DiaryDrawerContainer organizationId={currentOrganizationId} />
-                <ThingDrawerContainer organizationId={currentOrganizationId} />
-              </>
-            )}
+            <OrganizationFloating />
           </SidebarProvider>
         </ThingDrawerProvider>
       </DiaryDrawerProvider>
     </OrganizationProvider>
   );
 }
+
+const OrganizationFloating = () => {
+  const { currentOrganizationId } = useOrganization();
+
+  if (!currentOrganizationId) {
+    return null;
+  }
+
+  return (
+    <>
+      <DiaryDrawerContainer organizationId={currentOrganizationId} />
+      <ThingDrawerContainer organizationId={currentOrganizationId} />
+    </>
+  );
+};
