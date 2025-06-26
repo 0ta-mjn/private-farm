@@ -187,7 +187,7 @@ function DiaryPageContent() {
   return (
     <div className="container mx-auto pb-6">
       {/* ヘッダー */}
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 mb-6 md:flex-row md:justify-between">
         <div className="flex items-center flex-1 flex-wrap gap-2">
           <DiarySearch
             onDiarySelect={handleDiaryClick}
