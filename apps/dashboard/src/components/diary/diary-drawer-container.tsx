@@ -86,10 +86,7 @@ export function DiaryDrawerContainer({
         }).queryKey,
       });
       queryClient.invalidateQueries({
-        queryKey: diaries.byDateRange(organizationId, {
-          startDate: format(startOfMonth(dateObj), "yyyy-MM-dd"),
-          endDate: format(endOfMonth(dateObj), "yyyy-MM-dd"),
-        }).queryKey,
+        queryKey: diaries.byDateRange._def,
       });
       actions.closeAll();
     },

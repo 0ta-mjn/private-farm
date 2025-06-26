@@ -1,13 +1,15 @@
 "use client";
 
-import { CheckCircleIcon, PlusIcon, MapIcon, BellIcon } from "lucide-react";
+import { PlusIcon, MapIcon, BellIcon } from "lucide-react";
 import { Button } from "@/shadcn/button";
-import { Card, CardContent } from "@/shadcn/card";
 import Link from "next/link";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
+import { useOrganization } from "@/contexts/organization-context";
+import { DiarySummary } from "@/app/(dashboard)/dashboard/diary-summary";
 
 export default function DashboardPage() {
   const diaryDrawerActions = useDiaryDrawerActions();
+  const { currentOrganizationId } = useOrganization();
 
   return (
     <div className="container mx-auto pb-8 space-y-6">
@@ -66,28 +68,10 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <p className="text-muted-foreground">
-        このダッシュボードは、個人農家向けの農作業の管理と農場の運営を支援するために設計されています。
-        <br />
-        現在はプロトタイプ段階であり、日誌記入機能のみが利用可能です。
-      </p>
-
-      <Card className="bg-muted/50 border-none shadow-none">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="font-medium text-sm">開発中機能</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• センサー・デバイス管理機能</li>
-                <li>• センサーリアルタイムダッシュボード</li>
-                <li>• 履歴データ表示機能</li>
-                <li>• 異常データアラート機能</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Diary Summary */}
+      {currentOrganizationId && (
+        <DiarySummary organizationId={currentOrganizationId} />
+      )}
     </div>
   );
 }
