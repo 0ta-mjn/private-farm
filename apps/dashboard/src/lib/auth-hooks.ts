@@ -71,7 +71,7 @@ export function useRequireAuthAndSetup(
 
     // ユーザーが認証されていない場合またはAPIエラーの場合はログインページにリダイレクト
     if (!user || (error instanceof ClientError && error.status === 401)) {
-      console.info(
+      console.warn(
         "Redirecting to login page due to unauthenticated user or API error"
       );
       router.replace(loginRedirectTo);
@@ -80,8 +80,7 @@ export function useRequireAuthAndSetup(
 
     // 初期設定が完了していない場合はセットアップページにリダイレクト
     if (setupStatus && !setupStatus.isCompleted) {
-      console.info(setupStatus);
-      console.info("Redirecting to setup page due to incomplete setup");
+      console.warn("Redirecting to setup page due to incomplete setup");
       router.replace(setupRedirectTo);
       return;
     }
@@ -118,7 +117,7 @@ export function useRedirectIfAuthenticated(redirectTo: string = "/dashboard") {
 
     // ユーザーが認証済みの場合はダッシュボードにリダイレクト
     if (user) {
-      console.info("Redirecting to dashboard due to authenticated user");
+      console.warn("Redirecting to dashboard due to authenticated user");
       router.replace(redirectTo);
     }
   }, [user, loading, router, redirectTo]);
