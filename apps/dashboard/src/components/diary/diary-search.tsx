@@ -209,7 +209,7 @@ export function DiarySearch({
           insideRefSet.current.add(commandRef);
         }
       }}
-      className={cn("relative min-w-sm lg:min-w-md", className)}
+      className={cn("relative md:min-w-sm lg:min-w-md", className)}
     >
       <Command className="border focus:shadow-sm">
         <CommandInput

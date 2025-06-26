@@ -493,18 +493,7 @@ export async function getDiariesByDateRange(
   db: Database,
   organizationId: string,
   input: GetDiariesByDateRangeInput
-): Promise<
-  Array<{
-    id: string;
-    date: string;
-    weather: string | null;
-    workType: string | null;
-    fields: Array<{
-      id: string;
-      name: string;
-    }>;
-  }>
-> {
+) {
   const { startDate, endDate } = input;
 
   // 指定期間の日誌を取得（サマリー情報のみ）
@@ -514,6 +503,7 @@ export async function getDiariesByDateRange(
       date: diariesTable.date,
       weather: diariesTable.weather,
       workType: diariesTable.workType,
+      duration: diariesTable.duration,
     })
     .from(diariesTable)
     .where(
@@ -542,6 +532,7 @@ export async function getDiariesByDateRange(
         date: diary.date,
         weather: diary.weather,
         workType: diary.workType,
+        duration: diary.duration,
         fields: fieldsResult,
       };
     })

@@ -1089,6 +1089,11 @@ describe("DiaryService", () => {
       expect(result[1]!.date).toBe("2025-06-20");
       expect(result[2]!.date).toBe("2025-06-15");
 
+      // durationフィールドが含まれていることを確認
+      expect(result[0]!.duration).toBe(1.0);
+      expect(result[1]!.duration).toBe(1.5);
+      expect(result[2]!.duration).toBe(2.5);
+
       // 各日誌にfieldsが含まれていることを確認
       expect(result[0]!.fields).toHaveLength(1);
       expect(result[0]!.fields[0]!.name).toBe("Test Field");
@@ -1120,6 +1125,7 @@ describe("DiaryService", () => {
       expect(result).toHaveLength(1);
       expect(result[0]!.date).toBe("2025-07-01");
       expect(result[0]!.workType).toBe("観察");
+      expect(result[0]!.duration).toBeNull(); // durationが設定されていない場合はnull
     });
 
     it("40日を超える期間でも取得できる（制限はAPI側で実装）", async () => {

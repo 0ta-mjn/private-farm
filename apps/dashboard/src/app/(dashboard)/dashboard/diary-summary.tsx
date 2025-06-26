@@ -3,18 +3,34 @@
 import { useQuery } from "@tanstack/react-query";
 import { diaries } from "@/rpc/factory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadcn/card";
-import { CalendarIcon, FileTextIcon, PlusIcon } from "lucide-react";
+import { CalendarIcon, FileTextIcon, MapPinIcon, PlusIcon } from "lucide-react";
 import { Badge } from "@/shadcn/badge";
 import { Skeleton } from "@/shadcn/skeleton";
 import { Button } from "@/shadcn/button";
 import { format, subDays } from "date-fns";
 import { ja } from "date-fns/locale";
-import { getWorkTypeDisplay } from "@/constants/agricultural-constants";
 import { useDiaryDrawerActions } from "@/contexts/diary-drawer-context";
 import Link from "next/link";
+import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
 
 interface DiarySummaryProps {
   organizationId: string;
+}
+
+// 作業時間を見やすい形式でフォーマット
+function formatDuration(hours: number): string {
+  if (hours === 0) return "0分";
+
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours - wholeHours) * 60);
+
+  if (wholeHours === 0) {
+    return `${minutes}分`;
+  } else if (minutes === 0) {
+    return `${wholeHours}時間`;
+  } else {
+    return `${wholeHours}時間${minutes}分`;
+  }
 }
 
 export function DiarySummary({ organizationId }: DiarySummaryProps) {
@@ -32,17 +48,24 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
 
   const recentDiaries = diaryData || [];
 
-  // 日付ごとにグループ化
+  // 日付ごとにグループ化（日誌配列と総作業時間を含む）
   const diariesByDate = recentDiaries.reduce(
     (acc, diary) => {
       const date = diary.date;
       if (!acc[date]) {
-        acc[date] = [];
+        acc[date] = {
+          diaries: [],
+          totalDuration: 0,
+        };
       }
-      acc[date].push(diary);
+      acc[date].diaries.push(diary);
+      acc[date].totalDuration += diary.duration || 0;
       return acc;
     },
-    {} as Record<string, typeof recentDiaries>
+    {} as Record<
+      string,
+      { diaries: typeof recentDiaries; totalDuration: number }
+    >
   );
 
   // 作業種類別の統計
@@ -55,6 +78,11 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
     },
     {} as Record<string, number>
   );
+
+  // 総作業時間の計算
+  const totalDuration = recentDiaries.reduce((sum, diary) => {
+    return sum + (diary.duration || 0);
+  }, 0);
 
   if (isLoading) {
     return (
@@ -102,7 +130,7 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
-            <CardTitle>過去7日間の活動サマリー</CardTitle>
+            <CardTitle>過去7日間の活動</CardTitle>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/diary">今月の日誌を確認</Link>
@@ -111,36 +139,42 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 統計情報 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">記録数</p>
-            <p className="text-2xl font-bold text-primary">{totalEntries}件</p>
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <p className="text-sm text-muted-foreground">活動日数</p>
             <p className="text-2xl font-bold text-primary">{activeDays}日</p>
           </div>
-        </div>
 
-        {/* 作業種類別統計 */}
-        {Object.keys(workTypeStats).length > 0 && (
           <div>
-            <p className="text-sm text-muted-foreground mb-2">作業種類</p>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(workTypeStats)
-                .sort(([, a], [, b]) => (b as number) - (a as number))
-                .slice(0, 5)
-                .map(([workType, count]) => {
-                  const workTypeDisplay = getWorkTypeDisplay(workType);
-                  return (
-                    <Badge key={workType} variant="secondary">
-                      {workTypeDisplay?.label || workType} ({count})
-                    </Badge>
-                  );
-                })}
-            </div>
+            <p className="text-sm text-muted-foreground">総作業時間</p>
+            <p className="text-2xl font-bold text-primary">
+              {formatDuration(totalDuration)}
+            </p>
           </div>
-        )}
+
+          {/* 作業種類別統計 */}
+          {Object.keys(workTypeStats).length > 0 && (
+            <div className="lg:col-span-1">
+              <p className="text-sm text-muted-foreground mb-2">作業種類</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(workTypeStats)
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
+                  .map(([workType, count]) => (
+                    <DiaryWorkTypeChip
+                      key={workType}
+                      workType={workType}
+                      count={count}
+                    />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <p className="text-sm text-muted-foreground">記録数</p>
+            <p className="text-2xl font-bold text-primary">{totalEntries}件</p>
+          </div>
+        </div>
 
         {/* 最近の記録 */}
         <div>
@@ -165,8 +199,7 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
                 .sort(
                   ([a], [b]) => new Date(b).getTime() - new Date(a).getTime()
                 )
-                .slice(0, 5)
-                .map(([date, dateDiaries]) => (
+                .map(([date, dateData]) => (
                   <div
                     key={date}
                     className="flex items-start gap-3 p-3 rounded-lg border bg-card"
@@ -182,57 +215,48 @@ export function DiarySummary({ organizationId }: DiarySummaryProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium">
-                          {dateDiaries.length}件の記録
+                          {dateData.diaries.length}件の記録
                         </span>
-                        {dateDiaries.length > 1 && (
+                        <span className="text-sm text-muted-foreground">
+                          ({formatDuration(dateData.totalDuration)})
+                        </span>
+                        {dateData.diaries.length > 1 && (
                           <Badge variant="outline" className="text-xs">
                             複数作業
                           </Badge>
                         )}
                       </div>
                       <div className="space-y-1">
-                        {dateDiaries.slice(0, 2).map((diary) => {
-                          const workTypeDisplay = getWorkTypeDisplay(
-                            diary.workType
-                          );
+                        {dateData.diaries.map((diary) => {
                           return (
                             <div
                               key={diary.id}
-                              className="text-xs text-muted-foreground"
+                              className="flex items-center gap-1 flex-wrap"
                             >
-                              {diary.workType && workTypeDisplay && (
-                                <span className="inline-block mr-2">
-                                  [{workTypeDisplay.label}]
-                                </span>
+                              {diary.workType && (
+                                <DiaryWorkTypeChip workType={diary.workType} />
                               )}
-                              {diary.fields.length > 0 ? (
-                                <span className="line-clamp-1">
-                                  {diary.fields
-                                    .map((field) => field.name)
-                                    .join(", ")}
-                                </span>
-                              ) : (
-                                <span className="line-clamp-1">記録</span>
+                              {diary.fields.length > 0 && (
+                                <>
+                                  <MapPinIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  {diary.fields.map((dt, index: number) => (
+                                    <Badge
+                                      key={index}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {dt.name}
+                                    </Badge>
+                                  ))}
+                                </>
                               )}
                             </div>
                           );
                         })}
-                        {dateDiaries.length > 2 && (
-                          <div className="text-xs text-muted-foreground">
-                            ...他{dateDiaries.length - 2}件
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
                 ))}
-              {Object.keys(diariesByDate).length > 5 && (
-                <div className="text-center pt-2">
-                  <p className="text-xs text-muted-foreground">
-                    他{Object.keys(diariesByDate).length - 5}日分の記録
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
