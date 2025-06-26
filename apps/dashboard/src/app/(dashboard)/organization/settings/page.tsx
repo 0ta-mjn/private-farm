@@ -1,11 +1,11 @@
 "use client";
 
 import { useOrganization } from "@/contexts/organization-context";
-import { DeleteOrganization } from "@/components/organization/delete-organization";
-import { OrganizationDiscordSettings } from "@/components/organization/organization-discord-settings";
+import { DeleteOrganization } from "@/app/(dashboard)/organization/settings/delete-organization";
+import { OrganizationDiscordSettings } from "@/app/(dashboard)/organization/settings/organization-discord-settings";
 import { Separator } from "@/shadcn/separator";
 import { Skeleton } from "@/shadcn/skeleton";
-import { OrganizationProfileSettings } from "@/components/organization/organization-profile-settings";
+import { OrganizationProfileSettings } from "@/app/(dashboard)/organization/settings/organization-profile-settings";
 import { useSearchParams } from "next/navigation";
 
 export default function OrganizationSettingsPage() {
