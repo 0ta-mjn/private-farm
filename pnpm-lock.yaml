@@ -513,6 +513,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.15.31
+      discord-api-types:
+        specifier: ^0.38.13
+        version: 0.38.13
       dotenv-cli:
         specifier: 'catalog:'
         version: 8.0.0
@@ -3633,6 +3636,9 @@ packages:
 
   detect-node-es@1.1.0:
     resolution: {integrity: sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ==}
+
+  discord-api-types@0.38.13:
+    resolution: {integrity: sha512-FELWJRgLVQuR7Az8RhdEZE0k6QNjSW9PCUcU1iyP2Gke8HrJmnMceSS9pD93UM64s3tvZzJPajpPLjWZJylf4g==}
 
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
@@ -8922,6 +8928,8 @@ snapshots:
   detect-libc@2.0.4: {}
 
   detect-node-es@1.1.0: {}
+
+  discord-api-types@0.38.13: {}
 
   doctrine@2.1.0:
     dependencies:

@@ -26,12 +26,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "@repo/eslint-config": "workspace:*",
-    "eslint": "catalog:",
+    "discord-api-types": "^0.38.13",
     "dotenv-cli": "catalog:",
     "drizzle-orm": "catalog:",
+    "eslint": "catalog:",
     "postgres": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

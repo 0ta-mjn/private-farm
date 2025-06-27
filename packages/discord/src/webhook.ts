@@ -8,22 +8,13 @@ import {
   DiscordRateLimitError,
   DiscordChannelNotFoundError,
 } from "./errors";
+import { WebhookPayload } from "./types";
 
 interface Options {
   threadId?: string;
   wait?: boolean; // default true
   maxRetries?: number; // default 3
   files?: { name: string; data: Buffer | Blob; mime?: string }[];
-}
-
-/** Execute-Webhook body (抜粋) */
-export interface WebhookPayload {
-  content?: string; // ≤ 2000 chars
-  username?: string;
-  avatar_url?: string;
-  embeds?: unknown[]; // Embed Object[]
-  allowed_mentions?: unknown;
-  components?: unknown[]; // Buttons など
 }
 
 export async function sendViaWebhook(

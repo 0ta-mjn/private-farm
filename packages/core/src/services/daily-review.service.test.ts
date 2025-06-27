@@ -354,14 +354,18 @@ describe("DailyReviewService", () => {
         recentEntries: [],
       };
 
-      const message = generateDailyDigestMessage(emptyData);
+      const result = generateDailyDigestMessage(emptyData);
 
-      expect(message).toContain("🌅 日次ダイジェスト | 2025-06-24 (火)");
-      expect(message).toContain("作業件数 0 | 総作業時間 0 h | ほ場 0");
-      expect(message).toContain("作業記録なし");
-      expect(message).toContain(
-        "🔗 詳細を開く -> https://dashboard.example.com/logs?date=2025-06-24"
-      );
+      expect(result.embeds).toHaveLength(1);
+      const embed = result.embeds![0]!;
+      expect(embed.title).toContain("🌅 日次ダイジェスト");
+      expect(embed.description).toContain("作業件数:");
+      expect(embed.description).toContain("0");
+      expect(embed.description).toContain("総作業時間:");
+      expect(embed.description).toContain("0 h");
+      expect(embed.description).toContain("ほ場:");
+      expect(embed.description).toContain("0");
+      expect(embed.fields).toEqual([]);
     });
 
     it("should generate message with work type summary", () => {
@@ -381,13 +385,32 @@ describe("DailyReviewService", () => {
         recentEntries: [],
       };
 
-      const message = generateDailyDigestMessage(testData);
+      const result = generateDailyDigestMessage(testData);
 
-      expect(message).toContain("作業件数 3 | 総作業時間 5 h 30 m | ほ場 2");
-      expect(message).toContain("🌱 SEEDING 2 (3 h 30 m)");
-      expect(message).toContain("🍃 WEEDING 1 (2 h)");
-      expect(message).toContain("Field A: 3 h 30 m");
-      expect(message).toContain("Field B: 2 h");
+      expect(result.embeds).toHaveLength(1);
+      const embed = result.embeds![0]!;
+      expect(embed.description).toContain("作業件数:");
+      expect(embed.description).toContain("3");
+      expect(embed.description).toContain("総作業時間:");
+      expect(embed.description).toContain("5 h 30 m");
+      expect(embed.description).toContain("ほ場:");
+      expect(embed.description).toContain("2");
+
+      // 作業種別サマリーのフィールドをチェック
+      const workTypeSummaryField = embed.fields?.find(
+        (f) => f.name === "🗒️ 作業種別サマリー"
+      );
+      expect(workTypeSummaryField).toBeDefined();
+      expect(workTypeSummaryField?.value).toContain("SEEDING 2 (3 h 30 m)");
+      expect(workTypeSummaryField?.value).toContain("WEEDING 1 (2 h)");
+
+      // ほ場別作業時間のフィールドをチェック
+      const fieldSummaryField = embed.fields?.find(
+        (f) => f.name === "ほ場別作業時間"
+      );
+      expect(fieldSummaryField).toBeDefined();
+      expect(fieldSummaryField?.value).toContain("Field A: 3 h 30 m");
+      expect(fieldSummaryField?.value).toContain("Field B: 2 h");
     });
 
     it("should include field summary only for multiple fields", () => {
@@ -403,11 +426,16 @@ describe("DailyReviewService", () => {
         recentEntries: [],
       };
 
-      const message = generateDailyDigestMessage(singleFieldData);
+      const result = generateDailyDigestMessage(singleFieldData);
+
+      expect(result.embeds).toHaveLength(1);
+      const embed = result.embeds![0]!;
 
       // 単一ほ場の場合はほ場別サマリーを表示しない
-      expect(message).not.toContain("**ほ場別作業時間:**");
-      expect(message).not.toContain("Field A: 2 h");
+      const fieldSummaryField = embed.fields?.find(
+        (f) => f.name === "ほ場別作業時間"
+      );
+      expect(fieldSummaryField).toBeUndefined();
     });
 
     it("should include recent entries with proper formatting", () => {
@@ -442,11 +470,21 @@ describe("DailyReviewService", () => {
         ],
       };
 
-      const message = generateDailyDigestMessage(testData);
+      const result = generateDailyDigestMessage(testData);
 
-      expect(message).toContain("**作業明細:**");
-      expect(message).toContain("17:00 Test Field 🌱 ニンジン播種"); // UTC+9の時間
-      expect(message).toContain("19:00 未指定 🍃 WEEDING");
+      expect(result.embeds).toHaveLength(1);
+      const embed = result.embeds![0]!;
+
+      const entriesField = embed.fields?.find((f) =>
+        f.name.includes("作業明細")
+      );
+      expect(entriesField).toBeDefined();
+      expect(entriesField?.value).toContain("17:00"); // UTC+9の時間
+      expect(entriesField?.value).toContain("Test Field");
+      expect(entriesField?.value).toContain("ニンジン播種");
+      expect(entriesField?.value).toContain("19:00"); // UTC+9の時間
+      expect(entriesField?.value).toContain("未指定");
+      expect(entriesField?.value).toContain("WEEDING");
     });
 
     it("should handle entry without title by using workType", () => {
@@ -472,9 +510,18 @@ describe("DailyReviewService", () => {
         ],
       };
 
-      const message = generateDailyDigestMessage(testData);
+      const result = generateDailyDigestMessage(testData);
 
-      expect(message).toContain("17:00 Test Field 📝 作業記録"); // workType=nullの場合のフォールバック
+      expect(result.embeds).toHaveLength(1);
+      const embed = result.embeds![0]!;
+
+      const entriesField = embed.fields?.find((f) =>
+        f.name.includes("作業明細")
+      );
+      expect(entriesField).toBeDefined();
+      expect(entriesField?.value).toContain("17:00"); // UTC+9の時間
+      expect(entriesField?.value).toContain("Test Field");
+      expect(entriesField?.value).toContain("作業記録"); // workType=nullの場合のフォールバック
     });
   });
 
@@ -571,7 +618,11 @@ describe("DailyReviewService", () => {
         testEncryptionKey,
         "channel-1",
         expect.objectContaining({
-          content: expect.stringContaining("🌅 日次ダイジェスト"),
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              title: expect.stringContaining("🌅 日次ダイジェスト"),
+            }),
+          ]),
         })
       );
       expect(discordService.sendMessageViaWebhook).toHaveBeenCalledWith(
@@ -579,7 +630,11 @@ describe("DailyReviewService", () => {
         testEncryptionKey,
         "channel-2",
         expect.objectContaining({
-          content: expect.stringContaining("🌅 日次ダイジェスト"),
+          embeds: expect.arrayContaining([
+            expect.objectContaining({
+              title: expect.stringContaining("🌅 日次ダイジェスト"),
+            }),
+          ]),
         })
       );
     });

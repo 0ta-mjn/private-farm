@@ -9,6 +9,7 @@ import {
 import { WORK_TYPE_OPTIONS, workTypeOptions } from "@repo/config";
 import { sendMessageViaWebhook } from "./discord.service";
 import { type OrganizationWithNotification } from "./organization.service";
+import { EmbedMessage, WebhookPayload } from "@repo/discord";
 
 /**
  * 日次ダイジェストのデータ型
@@ -215,7 +216,12 @@ export function formatDate(dateStr: string): string {
 /**
  * Discord用の日次ダイジェストメッセージを生成
  */
-export function generateDailyDigestMessage(data: DailyDigestData): string {
+export function generateDailyDigestMessage(
+  data: DailyDigestData,
+  options: {
+    baseUrl?: string; // ダッシュボードのベースURL
+  } = {}
+): WebhookPayload {
   const {
     date,
     totalEntries,
@@ -226,78 +232,84 @@ export function generateDailyDigestMessage(data: DailyDigestData): string {
     recentEntries,
   } = data;
 
-  // タイトル行
-  const title = `🌅 日次ダイジェスト | ${formatDate(date)}`;
+  const embed: EmbedMessage = {
+    title: `🌅 日次ダイジェスト | ${formatDate(date)}`,
+    color: 0x4caf50, // material green 500
+    timestamp: new Date(`${date}T23:59:59+09:00`).toISOString(),
+    description: [
+      `**作業件数:** ${totalEntries}`,
+      `**総作業時間:** ${formatDuration(totalDuration)}`,
+      `**ほ場:** ${totalFields}`,
+    ].join("\u2003"), // em‑space で視覚的に区切る
+    fields: [],
+    footer: {
+      text: "次の週間サマリー: 月曜 07:00 JST",
+    },
+  };
 
-  // ヘッダー KPI
-  const kpiHeader = `作業件数 ${totalEntries} | 総作業時間 ${formatDuration(totalDuration)} | ほ場 ${totalFields}`;
-
-  // 作業種別サマリー
-  let workTypeSummaryText = "";
-  if (workTypeSummary.length > 0) {
-    workTypeSummaryText = workTypeSummary
-      .map((item) => {
-        const emoji = getWorkTypeEmoji(item.workType);
-        return `${emoji} ${item.workType} ${item.count} (${formatDuration(item.totalDuration)})`;
-      })
-      .join(" ・ ");
-  } else {
-    workTypeSummaryText = "作業記録なし";
-  }
-
-  // ほ場別サマリー（任意 - 複数ほ場がある場合のみ表示）
-  let fieldSummaryText = "";
-  if (fieldSummary.length > 1) {
-    fieldSummaryText =
-      "\n**ほ場別作業時間:**\n" +
-      fieldSummary
+  /* 作業種別サマリー */
+  if (workTypeSummary.length) {
+    embed.fields!.push({
+      name: "🗒️ 作業種別サマリー",
+      value: workTypeSummary
         .map(
-          (item) => `${item.fieldName}: ${formatDuration(item.totalDuration)}`
+          (item) =>
+            `${getWorkTypeEmoji(item.workType)} ${item.workType} ${item.count} (${formatDuration(item.totalDuration)})`
         )
-        .join(" / ");
+        .join(" ・ "),
+      inline: false,
+    });
   }
 
-  // 明細（最大5件）
-  let detailsText = "";
-  if (recentEntries.length > 0) {
-    detailsText =
-      "\n**作業明細:**\n" +
-      recentEntries
+  /* ほ場別サマリー（複数ある場合のみ） */
+  if (fieldSummary.length > 1) {
+    embed.fields!.push({
+      name: "ほ場別作業時間",
+      value: fieldSummary
+        .map((f) => `${f.fieldName}: ${formatDuration(f.totalDuration)}`)
+        .join(" / "),
+      inline: false,
+    });
+  }
+
+  /* 明細 (最新 5 件) */
+  if (recentEntries.length) {
+    embed.fields!.push({
+      name: `作業明細 (最新 ${Math.min(recentEntries.length, 5)} 件)`,
+      value: recentEntries
+        .slice(0, 5)
         .map((entry) => {
-          const emoji = getWorkTypeEmoji(entry.workType || "");
-          const time = entry.createdAt.toLocaleTimeString("ja-JP", {
+          const t = entry.createdAt.toLocaleTimeString("ja-JP", {
             hour: "2-digit",
             minute: "2-digit",
             timeZone: "Asia/Tokyo",
           });
-          const fields =
-            entry.fieldNames.length > 0
-              ? entry.fieldNames.join(", ")
-              : "未指定";
+          const fieldsTxt = entry.fieldNames.join(", ") || "未指定";
+          const emoji = getWorkTypeEmoji(entry.workType || "");
           const title = entry.title || entry.workType || "作業記録";
-
-          return `${time} ${fields} ${emoji} ${title}`;
+          return `• \`${t}\` ${fieldsTxt} ${emoji} ${title}`;
         })
-        .join("\n");
+        .join("\n"),
+      inline: false,
+    });
+
+    /* サムネイル：写真があれば 1 枚目を使用 */
+    const firstPhoto = (
+      recentEntries.find((e) => "photoUrl" in e && e.photoUrl) as DiaryEntry & {
+        photoUrl?: string;
+      }
+    )?.photoUrl;
+    if (firstPhoto) {
+      embed.thumbnail = { url: firstPhoto };
+    }
   }
 
-  // ダッシュボードリンク（仮のURL）
-  const dashboardLink = `\n🔗 詳細を開く -> https://dashboard.example.com/logs?date=${date}`;
+  /* ダッシュボード詳細リンク */
+  if (options.baseUrl) embed.url = `${options.baseUrl}/diary?date=${date}`;
 
-  // フッター
-  const footer = "\n次の週間サマリー: 月曜 07:00 JST";
-
-  return [
-    `**${title}**`,
-    `\`${kpiHeader}\``,
-    workTypeSummaryText,
-    fieldSummaryText,
-    detailsText,
-    dashboardLink,
-    footer,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return {
+    embeds: [embed],
+  };
 }
 
 /**
@@ -328,16 +340,9 @@ export async function sendDailyDigest(
 
     // 各チャンネルに送信
     const sendResults = await Promise.allSettled(
-      organization.channels.map(async (channel) => {
-        return await sendMessageViaWebhook(
-          db,
-          encryptionKey,
-          channel.channelId,
-          {
-            content: message,
-          }
-        );
-      })
+      organization.channels.map((channel) =>
+        sendMessageViaWebhook(db, encryptionKey, channel.channelId, message)
+      )
     );
 
     const successCount = sendResults.filter(
