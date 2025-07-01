@@ -1,5 +1,4 @@
 import express from "express";
-import { handler as helloWorld } from "./hello-world";
 import { handler as dailyReview } from "./daily-review";
 import bodyParser from "body-parser";
 
@@ -8,7 +7,6 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 const endpoints = {
-  "hello-world": helloWorld,
   "daily-review": dailyReview,
 };
 

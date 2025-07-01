@@ -1,5 +1,10 @@
 import { Request, Response } from "express";
-import { getOrganizationsWithNotification, sendDailyDigest } from "@repo/core";
+import {
+  generateDailyDigestMessage,
+  getDailyDigestData,
+  getOrganizationsWithNotification,
+  sendMessageViaWebhook,
+} from "@repo/core";
 import { dbClient } from "@repo/db/client";
 
 /**
@@ -12,24 +17,35 @@ function getYesterdayDate(): string {
   return yesterday.toISOString().split("T")[0]!;
 }
 
+const SLEEP_AFTER_ORG = 1000; // 組織間の待機時間（ミリ秒）
+
 /**
  * 全組織の日次ダイジェストを一括送信するハンドラー
  * Cloud Schedulerなどから毎日05:30 JSTに実行される想定
  */
-export const handler = async (req: Request, res: Response) => {
-  const db = dbClient();
+export const handler = async (_: Request, res: Response) => {
+  const db = dbClient(process.env.DATABASE_URL);
 
   try {
+    const discordEncryptionKey = process.env.DISCORD_ENCRYPTION_KEY;
+    if (!discordEncryptionKey) {
+      throw new Error(
+        "DISCORD_ENCRYPTION_KEY is not set in environment variables"
+      );
+    }
+
     // 前日の日付を取得
     const targetDate = getYesterdayDate();
 
     console.log(`Starting daily digest processing for date: ${targetDate}`);
 
     // 日次通知が有効な組織とチャンネル情報を取得
-    const organizationsWithDailyNotification =
-      await getOrganizationsWithNotification(db, "daily");
+    const orgsWithDailyNotification = await getOrganizationsWithNotification(
+      db,
+      "daily"
+    );
 
-    if (organizationsWithDailyNotification.length === 0) {
+    if (orgsWithDailyNotification.length === 0) {
       console.log("No organizations with daily notification enabled");
       res.json({
         success: true,
@@ -40,39 +56,67 @@ export const handler = async (req: Request, res: Response) => {
     }
 
     console.log(
-      `Found ${organizationsWithDailyNotification.length} organizations with daily notification enabled`
+      `Found ${orgsWithDailyNotification.length} organizations with daily notification enabled`
     );
 
     // 各組織に対して日次ダイジェストを送信（レート制限対策でシーケンシャル実行）
     const results = [];
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
-    const errors = [];
 
-    for (const org of organizationsWithDailyNotification) {
+    for (const org of orgsWithDailyNotification) {
       try {
         console.log(
           `Processing daily digest for org: ${org.organizationName} (${org.organizationId}), channels: ${org.channels.length}`
         );
 
-        const result = await sendDailyDigest(
+        // 日次ダイジェストデータを取得
+        const digestData = await getDailyDigestData(
           db,
-          process.env.DISCORD_ENCRYPTION_KEY!,
-          org,
+          org.organizationId,
           targetDate
         );
-        results.push({ status: "fulfilled" as const, value: result });
 
-        totalSuccessCount += result.successCount || 0;
-        totalFailureCount += result.failureCount || 0;
+        // Discordメッセージを生成
+        const message = generateDailyDigestMessage(digestData);
 
-        if (!result.success) {
-          errors.push(result.error || "Unknown error");
-        }
+        // 各チャンネルに送信
+        const sendResults = await Promise.allSettled(
+          org.channels.map((channel) =>
+            sendMessageViaWebhook(
+              db,
+              discordEncryptionKey,
+              channel.channelUuid,
+              message
+            ).catch((error) => {
+              console.error(
+                `Failed to send message to channel ${channel.channelUuid} for org ${org.organizationId}`,
+                error
+              );
+              throw error; // エラーを再スローして後でキャッチする
+            })
+          )
+        );
+
+        results.push(
+          ...sendResults.map((result) => ({
+            status: result.status,
+            ...(result.status === "fulfilled"
+              ? { value: result.value }
+              : { reason: result.reason }),
+          }))
+        );
+
+        const successCount = sendResults.filter(
+          (result) => result.status === "fulfilled"
+        ).length;
+
+        totalSuccessCount += successCount;
+        totalFailureCount += sendResults.length - successCount;
 
         // レート制限対策: 組織間で少し待機
         if (org.channels.length > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, SLEEP_AFTER_ORG));
         }
       } catch (error) {
         console.error(
@@ -81,26 +125,15 @@ export const handler = async (req: Request, res: Response) => {
         );
         results.push({
           status: "rejected" as const,
-          reason: error instanceof Error ? error : new Error("Unknown error"),
+          reason: error,
         });
         totalFailureCount += org.channels.length;
-        errors.push(error instanceof Error ? error.message : "Unknown error");
       }
     }
-
-    const organizationFailures = results.filter(
-      (result) =>
-        result.status === "rejected" ||
-        (result.status === "fulfilled" && !result.value.success)
-    ).length;
 
     console.log(
       `Daily digest processing completed. Success: ${totalSuccessCount}, Failures: ${totalFailureCount}`
     );
-
-    if (errors.length > 0) {
-      console.error("Errors during daily digest processing:", errors);
-    }
 
     res.json({
       success: true,
@@ -108,8 +141,6 @@ export const handler = async (req: Request, res: Response) => {
       processedCount: results.length,
       successCount: totalSuccessCount,
       failureCount: totalFailureCount,
-      organizationFailures,
-      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
     console.error("Daily digest batch processing failed:", error);

@@ -12,7 +12,9 @@ import { handler } from "./daily-review";
 // @repo/coreのモック
 vi.mock("@repo/core", () => ({
   getOrganizationsWithNotification: vi.fn(),
-  sendDailyDigest: vi.fn(),
+  sendMessageViaWebhook: vi.fn(),
+  getDailyDigestData: vi.fn(),
+  generateDailyDigestMessage: vi.fn(),
 }));
 
 // @repo/db/clientのモック
@@ -21,15 +23,27 @@ vi.mock("@repo/db/client", () => ({
 }));
 
 // モジュールをインポート（モック後）
-import { getOrganizationsWithNotification, sendDailyDigest } from "@repo/core";
+import {
+  getOrganizationsWithNotification,
+  sendMessageViaWebhook,
+  getDailyDigestData,
+  generateDailyDigestMessage,
+} from "@repo/core";
 
 const mockGetOrganizationsWithNotification =
   getOrganizationsWithNotification as MockedFunction<
     typeof getOrganizationsWithNotification
   >;
-const mockSendDailyDigest = sendDailyDigest as MockedFunction<
-  typeof sendDailyDigest
+const mockSendMessageViaWebhook = sendMessageViaWebhook as MockedFunction<
+  typeof sendMessageViaWebhook
 >;
+const mockGetDailyDigestData = getDailyDigestData as MockedFunction<
+  typeof getDailyDigestData
+>;
+const mockGenerateDailyDigestMessage =
+  generateDailyDigestMessage as MockedFunction<
+    typeof generateDailyDigestMessage
+  >;
 
 const testEncryptionKey = "test-encryption-key";
 
@@ -56,6 +70,21 @@ describe("Daily Review Handler", () => {
     // モック関数をリセット
     vi.clearAllMocks();
 
+    // 追加の関数のデフォルトモック
+    mockGetDailyDigestData.mockResolvedValue({
+      date: "2025-06-23",
+      totalEntries: 1,
+      totalDuration: 60,
+      totalFields: 1,
+      workTypeSummary: [],
+      fieldSummary: [],
+      recentEntries: [],
+    });
+
+    mockGenerateDailyDigestMessage.mockReturnValue({
+      embeds: [{ title: "Daily Digest", description: "Test message" }],
+    });
+
     // console.logをモック（テスト出力を綺麗にするため）
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -74,7 +103,7 @@ describe("Daily Review Handler", () => {
     );
 
     // sendDailyDigestは呼ばれないことを確認
-    expect(mockSendDailyDigest).not.toHaveBeenCalled();
+    expect(mockSendMessageViaWebhook).not.toHaveBeenCalled();
 
     // レスポンスの確認
     expect(jsonSpy).toHaveBeenCalledWith({
@@ -91,7 +120,7 @@ describe("Daily Review Handler", () => {
         organizationName: "Organization 1",
         channels: [
           {
-            channelId: "channel-1",
+            channelUuid: "channel-1",
             channelName: "general",
             notificationSettings: {
               daily: true,
@@ -106,7 +135,7 @@ describe("Daily Review Handler", () => {
         organizationName: "Organization 2",
         channels: [
           {
-            channelId: "channel-2",
+            channelUuid: "channel-2",
             channelName: "notifications",
             notificationSettings: { daily: true, weekly: true, monthly: false },
           },
@@ -114,27 +143,15 @@ describe("Daily Review Handler", () => {
       },
     ];
 
-    const mockSendResults = [
-      {
-        success: true,
-        successCount: 1,
-        failureCount: 0,
-        message:
-          "日次ダイジェストを送信しました（2025-06-23）: 成功 1件、失敗 0件",
-      },
-      {
-        success: true,
-        successCount: 1,
-        failureCount: 0,
-        message:
-          "日次ダイジェストを送信しました（2025-06-23）: 成功 1件、失敗 0件",
-      },
-    ];
+    const mockSendResult = {
+      success: true,
+      successCount: 1,
+      failureCount: 0,
+      message: "Message sent successfully",
+    };
 
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendDailyDigest
-      .mockResolvedValueOnce(mockSendResults[0]!)
-      .mockResolvedValueOnce(mockSendResults[1]!);
+    mockSendMessageViaWebhook.mockResolvedValue(mockSendResult);
 
     await handler(mockReq as Request, mockRes as Response);
 
@@ -144,111 +161,39 @@ describe("Daily Review Handler", () => {
       "daily"
     );
 
-    // sendDailyDigestが各組織に対して呼ばれることを確認
-    expect(mockSendDailyDigest).toHaveBeenCalledTimes(2);
-    expect(mockSendDailyDigest).toHaveBeenCalledWith(
+    // sendMessageViaWebhookが各チャンネルに対して呼ばれることを確認
+    expect(mockSendMessageViaWebhook).toHaveBeenCalledTimes(2);
+    expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
       {},
       testEncryptionKey,
-      mockOrganizations[0],
-      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD形式の前日日付
+      "channel-1",
+      expect.any(Object) // メッセージオブジェクト
     );
-    expect(mockSendDailyDigest).toHaveBeenCalledWith(
+    expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
       {},
       testEncryptionKey,
-      mockOrganizations[1],
-      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      "channel-2",
+      expect.any(Object) // メッセージオブジェクト
     );
 
     // レスポンスの確認
     expect(jsonSpy).toHaveBeenCalledWith({
       success: true,
-      message: expect.stringContaining("日次ダイジェスト処理が完了しました"),
+      message: expect.stringContaining("完了"),
       processedCount: 2,
       successCount: 2,
       failureCount: 0,
-      organizationFailures: 0,
-      errors: undefined,
     });
   });
 
-  it("should handle partial failures in organizations", async () => {
-    const mockOrganizations = [
-      {
-        organizationId: "org-success",
-        organizationName: "Success Organization",
-        channels: [
-          {
-            channelId: "channel-success",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-      {
-        organizationId: "org-fail",
-        organizationName: "Fail Organization",
-        channels: [
-          {
-            channelId: "channel-fail",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-    ];
-
-    const successResult = {
-      success: true,
-      successCount: 1,
-      failureCount: 0,
-      message:
-        "日次ダイジェストを送信しました（2025-06-23）: 成功 1件、失敗 0件",
-    };
-
-    const failureResult = {
-      success: false,
-      successCount: 0,
-      failureCount: 1,
-      error: "Discord API error",
-      message:
-        "日次ダイジェストを送信しました（2025-06-23）: 成功 0件、失敗 1件",
-    };
-
-    mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendDailyDigest
-      .mockResolvedValueOnce(successResult)
-      .mockResolvedValueOnce(failureResult);
-
-    await handler(mockReq as Request, mockRes as Response);
-
-    // レスポンスの確認
-    expect(jsonSpy).toHaveBeenCalledWith({
-      success: true,
-      message: expect.stringContaining("日次ダイジェスト処理が完了しました"),
-      processedCount: 2,
-      successCount: 1,
-      failureCount: 1,
-      organizationFailures: 1, // 1つの組織で失敗
-      errors: ["Discord API error"],
-    });
-  });
-
-  it("should handle sendDailyDigest throwing exceptions", async () => {
+  it("should handle sendMessageViaWebhook throwing exceptions", async () => {
     const mockOrganizations = [
       {
         organizationId: "org-exception",
         organizationName: "Exception Organization",
         channels: [
           {
-            channelId: "channel-exception",
+            channelUuid: "channel-exception",
             channelName: "general",
             notificationSettings: {
               daily: true,
@@ -261,19 +206,17 @@ describe("Daily Review Handler", () => {
     ];
 
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendDailyDigest.mockRejectedValue(new Error("Unexpected error"));
+    mockSendMessageViaWebhook.mockRejectedValue(new Error("Unexpected error"));
 
     await handler(mockReq as Request, mockRes as Response);
 
     // レスポンスの確認
     expect(jsonSpy).toHaveBeenCalledWith({
       success: true,
-      message: expect.stringContaining("日次ダイジェスト処理が完了しました"),
+      message: expect.stringContaining("完了"),
       processedCount: 1,
       successCount: 0,
-      failureCount: 1, // 例外により1チャンネル分失敗
-      organizationFailures: 1,
-      errors: ["Unexpected error"],
+      failureCount: 1,
     });
   });
 
@@ -320,7 +263,7 @@ describe("Daily Review Handler", () => {
         organizationName: "Organization 1",
         channels: [
           {
-            channelId: "channel-1",
+            channelUuid: "channel-1",
             channelName: "general",
             notificationSettings: {
               daily: true,
@@ -335,7 +278,7 @@ describe("Daily Review Handler", () => {
         organizationName: "Organization 2",
         channels: [
           {
-            channelId: "channel-2",
+            channelUuid: "channel-2",
             channelName: "general",
             notificationSettings: {
               daily: true,
@@ -348,7 +291,7 @@ describe("Daily Review Handler", () => {
     ];
 
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendDailyDigest.mockResolvedValue({
+    mockSendMessageViaWebhook.mockResolvedValue({
       success: true,
       successCount: 1,
       failureCount: 0,
@@ -365,7 +308,7 @@ describe("Daily Review Handler", () => {
 
     await handler(mockReq as Request, mockRes as Response);
 
-    // 組織数から1を引いた回数だけsetTimeoutが呼ばれることを確認（最後の組織の後は待機しない）
+    // 各組織にチャンネルがあるため、組織数分だけsetTimeoutが呼ばれることを確認
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
 

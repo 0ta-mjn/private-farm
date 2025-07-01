@@ -267,7 +267,7 @@ export interface OrganizationWithNotification {
   organizationId: string;
   organizationName: string;
   channels: {
-    channelId: string;
+    channelUuid: string;
     channelName: string;
     notificationSettings: DiscordNotificationSettings;
   }[];
@@ -288,7 +288,7 @@ export async function getOrganizationsWithNotification(
     .select({
       organizationId: discordChannelsTable.organizationId,
       organizationName: organizationsTable.name,
-      channelId: discordChannelsTable.channelId,
+      channelUuid: discordChannelsTable.id,
       channelName: discordChannelsTable.name,
       notificationSettings: discordChannelsTable.notificationSettings,
     })
@@ -315,7 +315,7 @@ export async function getOrganizationsWithNotification(
 
     const org = map.get(result.organizationId)!;
     org.channels.push({
-      channelId: result.channelId,
+      channelUuid: result.channelUuid,
       channelName: result.channelName,
       notificationSettings: result.notificationSettings,
     });

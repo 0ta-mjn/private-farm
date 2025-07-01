@@ -7,8 +7,6 @@ import {
   usersTable,
 } from "@repo/db/schema";
 import { WORK_TYPE_OPTIONS, workTypeOptions } from "@repo/config";
-import { sendMessageViaWebhook } from "./discord.service";
-import { type OrganizationWithNotification } from "./organization.service";
 import { EmbedMessage, WebhookPayload } from "@repo/discord";
 
 /**
@@ -243,7 +241,10 @@ export function generateDailyDigestMessage(
     ].join("\u2003"), // em‑space で視覚的に区切る
     fields: [],
     footer: {
-      text: "次の週間サマリー: 月曜 07:00 JST",
+      text:
+        data.totalEntries > 0
+          ? "今日もお疲れ様でした！"
+          : "今日は作業がありませんでした。",
     },
   };
 
@@ -310,62 +311,4 @@ export function generateDailyDigestMessage(
   return {
     embeds: [embed],
   };
-}
-
-/**
- * 日次ダイジェストを生成して組織の全チャンネルに送信
- */
-export async function sendDailyDigest(
-  db: Database,
-  encryptionKey: string,
-  organization: OrganizationWithNotification,
-  targetDate: string
-): Promise<{
-  success: boolean;
-  message?: string;
-  error?: string;
-  successCount: number;
-  failureCount: number;
-}> {
-  try {
-    // 日次ダイジェストデータを取得
-    const digestData = await getDailyDigestData(
-      db,
-      organization.organizationId,
-      targetDate
-    );
-
-    // Discordメッセージを生成
-    const message = generateDailyDigestMessage(digestData);
-
-    // 各チャンネルに送信
-    const sendResults = await Promise.allSettled(
-      organization.channels.map((channel) =>
-        sendMessageViaWebhook(db, encryptionKey, channel.channelId, message)
-      )
-    );
-
-    const successCount = sendResults.filter(
-      (result) => result.status === "fulfilled"
-    ).length;
-    const failureCount = sendResults.length - successCount;
-
-    return {
-      success: failureCount === 0,
-      message: `日次ダイジェストを送信しました（${targetDate}）: 成功 ${successCount}件、失敗 ${failureCount}件`,
-      successCount,
-      failureCount,
-    };
-  } catch (error) {
-    console.error(
-      `Daily digest send failed for org:${organization.organizationId}`,
-      error
-    );
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      successCount: 0,
-      failureCount: organization.channels.length,
-    };
-  }
 }

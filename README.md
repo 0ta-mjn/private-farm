@@ -1,4 +1,4 @@
-# Private Farm IoT システム
+# SatoPod IoT システム
 
 小規模個人農家向けのIoT基盤システムです。農業の効率化・省力化と生産性向上を目指します。
 
@@ -17,7 +17,7 @@
 - **パッケージマネージャ**: pnpm
 - **フロントエンド**: Next.js 15 (App Router) + React 19
 - **UI**: shadcn/ui + Tailwind CSS v4.0
-- **バックエンド**: tRPC + Fastify
+- **バックエンド**: Hono（TypeScript製軽量Webフレームワーク）
 - **データベース**: PostgreSQL + Drizzle ORM
 - **認証**: Supabase Auth
 - **開発環境**: Turbopack
@@ -29,8 +29,7 @@
 ### Apps and Packages
 
 - `apps/dashboard`: Next.js製のフロントエンドダッシュボード
-- `apps/api`: Fastify製のAPIサーバー
-- `packages/api`: tRPCルーターとエンドポイント定義
+- `apps/api`: Hono製のAPIサーバー
 - `packages/core`: ビジネスロジック実装
 - `packages/db`: Drizzle ORMによるデータベース設定
 - `packages/config`: 設定ファイルとエラー定義
@@ -43,7 +42,7 @@
 
 #### 必要な環境
 
-- Node.js 20.x
+- Node.js 22.x
 - pnpm
 - Docker (Supabaseエミュレータ用)
 
@@ -125,7 +124,7 @@
 
 ### バックエンド
 
-- **API実装**: tRPCプロシージャとしてエンドポイントを定義
+- **API実装**: HonoルーターでREST APIを実装
 - **エラーハンドリング**: カスタムエラークラスによる型安全なエラー処理
 - **データベース**: Drizzle ORMによる型安全なクエリ
 
