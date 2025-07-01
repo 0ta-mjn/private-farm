@@ -65,19 +65,19 @@ export default function HomePage() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col container mx-auto items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <div className="text-2xl font-bold text-center">
         プライベートファームダッシュボード
       </div>
 
-      <p className="text-muted-foreground">
-        このダッシュボードは、個人農家向けの農作業の管理と農場の運営を支援するために設計されています。
-        <br />
-        現在はプロトタイプ段階であり、日誌記入機能のみが利用可能です。
-      </p>
+      <Card className="bg-muted/50 w-full border-none shadow-none">
+        <CardContent className="p-8 space-y-8">
+          <p className="text-muted-foreground">
+            このダッシュボードは、個人農家向けの農作業の管理と農場の運営を支援するために設計されています。
+            <br />
+            現在はプロトタイプ段階であり、日誌記入機能のみが利用可能です。
+          </p>
 
-      <Card className="bg-muted/50 border-none shadow-none">
-        <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
