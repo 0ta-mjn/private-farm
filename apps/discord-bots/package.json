@@ -17,7 +17,6 @@
   },
   "devDependencies": {
     "@esbuild-plugins/tsconfig-paths": "catalog:",
-    "@google-cloud/functions-framework": "catalog:",
     "@repo/core": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/eslint-config": "workspace:*",
