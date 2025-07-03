@@ -11,12 +11,13 @@
   },
   "scripts": {
     "build": "tsc --noEmit && tsup",
-    "dev": "wrangler dev --port 8000 src/app.ts",
+    "dev": "wrangler dev --port 8000 src/app.ts --config ../../infra/cloudflare/api/wrangler.toml",
     "start": "dotenv -e .env node dist/server.cjs",
-    "start:testing": "wrangler dev --port 8000 src/app.ts --env testing",
+    "start:testing": "wrangler dev --port 8000 src/app.ts --config ../../infra/cloudflare/api/wrangler.toml --env testing",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
+    "test": "dotenv -e .env.testing -- vitest",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
