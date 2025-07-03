@@ -27,38 +27,43 @@ export default function AuthEmailPage() {
     setMessage("");
   }, []);
 
+  const params = useSearchParams();
   useEffect(() => {
-    if (!email) return;
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        if (session?.user.email == email) {
-          // 成功時の処理
-          onSuccess();
-        } else {
-          // 認証に失敗した場合
-          setStatus("error");
-          setMessage("認証に失敗しました。もう一度お試しください。");
+    const code = params.get("code");
+    if (!code) {
+      setStatus("error");
+      setMessage("認証コードが見つかりません。もう一度お試しください。");
+      return;
+    }
+
+    // 認証コードを使ってサインイン
+    const handler = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (data?.user) {
+        // 成功時の処理
+        onSuccess();
+      } else {
+        // 認証に失敗した場合
+        setStatus("error");
+        switch (error?.code) {
+          case "auth/invalid-credentials":
+            setMessage("無効な認証情報です。もう一度お試しください。");
+            break;
+          case "auth/session-expired":
+            setMessage("セッションが期限切れです。再度ログインしてください。");
+            break;
+          default:
+            setMessage("認証に失敗しました。もう一度お試しください。");
         }
       }
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
     };
-  }, [email, onSuccess, router]);
 
-  useEffect(() => {
-    if (!email) return;
-
-    const handler = async () => {
-      // ページがロードされたときにSupabaseのセッションを確認
-      const session = await supabase.auth.getSession();
-      if (session.data.session?.user.email == email) {
-        onSuccess();
-      }
-    };
-    handler();
-  }, [email, onSuccess]);
+    handler().catch((error) => {
+      console.error("認証処理中にエラー:", error);
+      setStatus("error");
+      setMessage("認証処理中にエラーが発生しました。もう一度お試しください。");
+    });
+  }, [email, onSuccess, params, router]);
 
   const handleGoToDashboard = () => {
     router.push("/dashboard");

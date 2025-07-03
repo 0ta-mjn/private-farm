@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -42,24 +42,43 @@ export default function AuthCallbackPage() {
     }
   }, [router]);
 
+  const params = useSearchParams();
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        if (session?.user.confirmed_at) {
-          // 成功時の処理
-          onSuccess();
-        } else {
-          // 認証に失敗した場合
-          setStatus("error");
-          setMessage("認証に失敗しました。もう一度お試しください。");
+    const code = params.get("code");
+    if (!code) {
+      setStatus("error");
+      setMessage("認証コードが見つかりません。もう一度お試しください。");
+      return;
+    }
+
+    // 認証コードを使ってサインイン
+    const handler = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (data?.user) {
+        // 成功時の処理
+        onSuccess();
+      } else {
+        // 認証に失敗した場合
+        setStatus("error");
+        switch (error?.code) {
+          case "auth/invalid-credentials":
+            setMessage("無効な認証情報です。もう一度お試しください。");
+            break;
+          case "auth/session-expired":
+            setMessage("セッションが期限切れです。再度ログインしてください。");
+            break;
+          default:
+            setMessage("認証に失敗しました。もう一度お試しください。");
         }
       }
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
     };
-  }, [onSuccess, router]);
+
+    handler().catch((error) => {
+      console.error("認証処理中にエラー:", error);
+      setStatus("error");
+      setMessage("認証処理中にエラーが発生しました。もう一度お試しください。");
+    });
+  }, [onSuccess, router, params]);
 
   useEffect(() => {
     const handler = async () => {

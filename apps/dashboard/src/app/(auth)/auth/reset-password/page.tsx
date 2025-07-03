@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -55,7 +55,7 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AuthResetPasswordPage() {
   const router = useRouter();
   const [status, setStatus] = useState<
-    "loading" | "form" | "success" | "error" | "expired"
+    "loading" | "form" | "success" | "error"
   >("loading");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -70,22 +70,47 @@ export default function AuthResetPasswordPage() {
     },
   });
 
+  const params = useSearchParams();
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "PASSWORD_RECOVERY" || session) {
-          setStatus("form");
-        } else {
-          // 認証に失敗した場合
-          setStatus("error");
+    const code = params.get("code");
+    if (!code) {
+      setStatus("error");
+      setGeneralError("認証コードが見つかりません。もう一度お試しください。");
+      return;
+    }
+
+    // 認証コードを使ってサインイン
+    const handler = async () => {
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      if (data?.user) {
+        // 成功時の処理
+        setStatus("form");
+      } else {
+        // 認証に失敗した場合
+        setStatus("error");
+        switch (error?.code) {
+          case "auth/invalid-credentials":
+            setGeneralError("無効な認証情報です。もう一度お試しください。");
+            break;
+          case "auth/session-expired":
+            setGeneralError(
+              "セッションが期限切れです。再度ログインしてください。"
+            );
+            break;
+          default:
+            setGeneralError("認証に失敗しました。もう一度お試しください。");
         }
       }
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
     };
-  }, [router]);
+
+    handler().catch((error) => {
+      console.error("認証処理中にエラー:", error);
+      setStatus("error");
+      setGeneralError(
+        "認証処理中にエラーが発生しました。もう一度お試しください。"
+      );
+    });
+  }, [params, router]);
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -109,7 +134,6 @@ export default function AuthResetPasswordPage() {
             setGeneralError(
               "セッションが見つかりません。リンクの有効期限が切れている可能性があります。"
             );
-            setStatus("expired");
             break;
           case "same_password":
             setGeneralError(
@@ -175,20 +199,15 @@ export default function AuthResetPasswordPage() {
   }
 
   // エラー画面またはリンク期限切れ画面
-  if (status === "error" || status === "expired") {
+  if (status === "error") {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
             <AlertCircleIcon className="h-6 w-6 text-red-600" />
           </div>
-          <CardTitle className="text-2xl">
-            {status === "expired" ? "リンクの有効期限切れ" : "エラー"}
-          </CardTitle>
           <CardDescription>
-            {status === "expired"
-              ? "パスワードリセットリンクの有効期限が切れています。新しいリセットリンクを要求してください。"
-              : generalError || "パスワードリセット中にエラーが発生しました"}
+            {generalError || "パスワードリセット中にエラーが発生しました"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
