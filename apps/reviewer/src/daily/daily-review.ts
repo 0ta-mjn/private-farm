@@ -171,13 +171,13 @@ export async function getDailyDigestData(
 /**
  * 作業種別にEmojiを付与（@repo/configから取得）
  */
-export function getWorkTypeEmoji(workType: string): string {
+export function getWorkType(workType: string | null) {
   // 設定からworkTypeを取得して対応するiconを返す
   const parsedWorkType = workTypeOptions.safeParse(workType);
   const key = parsedWorkType.success
     ? parsedWorkType.data
     : workTypeOptions.enum.OTHER;
-  return WORK_TYPE_OPTIONS[key].icon;
+  return WORK_TYPE_OPTIONS[key];
 }
 
 /**
@@ -211,14 +211,16 @@ export function formatDate(dateStr: string): string {
   return `${dateStr} (${weekday})`;
 }
 
+export type DailyDigestOptions = {
+  baseUrl?: string; // ダッシュボードのベースURL
+};
+
 /**
  * Discord用の日次ダイジェストメッセージを生成
  */
 export function generateDailyDigestMessage(
   data: DailyDigestData,
-  options: {
-    baseUrl?: string; // ダッシュボードのベースURL
-  } = {}
+  options: DailyDigestOptions = {}
 ): WebhookPayload {
   const {
     date,
@@ -241,10 +243,7 @@ export function generateDailyDigestMessage(
     ].join("\u2003"), // em‑space で視覚的に区切る
     fields: [],
     footer: {
-      text:
-        data.totalEntries > 0
-          ? "今日もお疲れ様でした！"
-          : "今日は作業がありませんでした。",
+      text: "今日はどんな作業をしますか？",
     },
   };
 
@@ -253,10 +252,10 @@ export function generateDailyDigestMessage(
     embed.fields!.push({
       name: "🗒️ 作業種別サマリー",
       value: workTypeSummary
-        .map(
-          (item) =>
-            `${getWorkTypeEmoji(item.workType)} ${item.workType} ${item.count} (${formatDuration(item.totalDuration)})`
-        )
+        .map((item) => {
+          const type = getWorkType(item.workType);
+          return `${type.icon} ${type.label} ${item.count} (${formatDuration(item.totalDuration)})`;
+        })
         .join(" ・ "),
       inline: false,
     });
@@ -273,22 +272,17 @@ export function generateDailyDigestMessage(
     });
   }
 
-  /* 明細 (最新 5 件) */
+  /* 明細 */
   if (recentEntries.length) {
     embed.fields!.push({
-      name: `作業明細 (最新 ${Math.min(recentEntries.length, 5)} 件)`,
+      name: `作業明細`,
       value: recentEntries
         .slice(0, 5)
         .map((entry) => {
-          const t = entry.createdAt.toLocaleTimeString("ja-JP", {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Asia/Tokyo",
-          });
           const fieldsTxt = entry.fieldNames.join(", ") || "未指定";
-          const emoji = getWorkTypeEmoji(entry.workType || "");
-          const title = entry.title || entry.workType || "作業記録";
-          return `• \`${t}\` ${fieldsTxt} ${emoji} ${title}`;
+          const type = getWorkType(entry.workType);
+          const title = entry.title || type.label || "作業記録";
+          return `• ${fieldsTxt} ${type.icon} ${title}`;
         })
         .join("\n"),
       inline: false,

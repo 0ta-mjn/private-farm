@@ -12,7 +12,7 @@ import {
   generateDailyDigestMessage,
   formatDuration,
   type DailyDigestData,
-} from "./daily-review.service";
+} from "./daily-review";
 
 const db = dbClient();
 
@@ -519,4 +519,6 @@ describe("DailyReviewService", () => {
       expect(entriesField?.value).toContain("作業記録"); // workType=nullの場合のフォールバック
     });
   });
+
+  describe("dailyReviewHandler", () => {});
 });

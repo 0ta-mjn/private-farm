@@ -1,36 +1,36 @@
 {
-  "name": "discord-bots",
+  "name": "reviewer",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc --noEmit && tsup",
-    "dev": "dotenv -e .env -- tsup --watch --onSuccess \"tsx src/index.ts\"",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "test": "dotenv -e .env.testing -- vitest",
-    "test:watch": "dotenv -e .env.testing -- vitest --watch",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "test": "dotenv -e .env.testing -- vitest",
+    "e2e:daily": "tsx tests/e2e-daily.ts",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "generate:types": "wrangler types --config ../../infra/cloudflare/reviewer/wrangler.toml"
   },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
     "@esbuild-plugins/tsconfig-paths": "catalog:",
+    "@repo/config": "workspace:*",
     "@repo/core": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/discord": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@types/body-parser": "^1.19.6",
-    "@types/express": "^5.0.3",
     "@types/node": "catalog:",
-    "body-parser": "^2.2.0",
     "dotenv-cli": "catalog:",
     "eslint": "catalog:",
-    "express": "^5.1.0",
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   }
 }

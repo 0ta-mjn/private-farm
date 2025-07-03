@@ -41,3 +41,6 @@ yarn-error.log*
 .cache
 .wrangler
 .dev.vars
+.dev.vars.*
+!.dev.vars.sample
+!.dev.vars.testing

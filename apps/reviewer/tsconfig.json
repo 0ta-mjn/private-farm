@@ -12,7 +12,9 @@
     }
   },
   "include": [
-    "src"
+    "src",
+    "./worker-configuration.d.ts",
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules"

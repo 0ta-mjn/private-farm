@@ -6,13 +6,16 @@ import {
   beforeEach,
   type MockedFunction,
 } from "vitest";
-import { Request, Response } from "express";
-import { handler } from "./daily-review";
+import { dailyReviewHandler } from "./handler";
 
 // @repo/coreのモック
 vi.mock("@repo/core", () => ({
   getOrganizationsWithNotification: vi.fn(),
   sendMessageViaWebhook: vi.fn(),
+}));
+
+// ./daily-reviewのモック
+vi.mock("./daily-review", () => ({
   getDailyDigestData: vi.fn(),
   generateDailyDigestMessage: vi.fn(),
 }));
@@ -26,9 +29,9 @@ vi.mock("@repo/db/client", () => ({
 import {
   getOrganizationsWithNotification,
   sendMessageViaWebhook,
-  getDailyDigestData,
-  generateDailyDigestMessage,
 } from "@repo/core";
+import { getDailyDigestData, generateDailyDigestMessage } from "./daily-review";
+import { Database } from "@repo/db/client";
 
 const mockGetOrganizationsWithNotification =
   getOrganizationsWithNotification as MockedFunction<
@@ -46,26 +49,17 @@ const mockGenerateDailyDigestMessage =
   >;
 
 const testEncryptionKey = "test-encryption-key";
+const mockDB = {} as Database;
+const testDate = new Date("2025-06-24T10:00:00Z").toISOString().split("T")[0]!; // 2025-06-24
 
 describe("Daily Review Handler", () => {
-  let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
   let jsonSpy: ReturnType<typeof vi.fn>;
   let statusSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    // Requestモック
-    mockReq = {};
-
-    process.env.DISCORD_ENCRYPTION_KEY = testEncryptionKey;
-
     // Responseモック
     jsonSpy = vi.fn();
     statusSpy = vi.fn().mockReturnValue({ json: jsonSpy });
-    mockRes = {
-      json: jsonSpy,
-      status: statusSpy,
-    };
 
     // モック関数をリセット
     vi.clearAllMocks();
@@ -94,7 +88,7 @@ describe("Daily Review Handler", () => {
     // 空の組織リストを返すようにモック
     mockGetOrganizationsWithNotification.mockResolvedValue([]);
 
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // getOrganizationsWithNotificationが正しく呼ばれることを確認
     expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
@@ -153,7 +147,7 @@ describe("Daily Review Handler", () => {
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
     mockSendMessageViaWebhook.mockResolvedValue(mockSendResult);
 
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // getOrganizationsWithNotificationが正しく呼ばれることを確認
     expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
@@ -208,7 +202,7 @@ describe("Daily Review Handler", () => {
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
     mockSendMessageViaWebhook.mockRejectedValue(new Error("Unexpected error"));
 
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // レスポンスの確認
     expect(jsonSpy).toHaveBeenCalledWith({
@@ -226,7 +220,7 @@ describe("Daily Review Handler", () => {
       new Error("Database connection failed")
     );
 
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // エラーレスポンスの確認
     expect(statusSpy).toHaveBeenCalledWith(500);
@@ -242,10 +236,7 @@ describe("Daily Review Handler", () => {
     mockGetOrganizationsWithNotification.mockResolvedValue([]);
 
     // 現在の日付をモック（テストの一貫性のため）
-    const mockDate = new Date("2025-06-24T10:00:00Z");
-    vi.setSystemTime(mockDate);
-
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // console.logが前日の日付（2025-06-23）で呼ばれることを確認
     expect(console.log).toHaveBeenCalledWith(
@@ -306,7 +297,7 @@ describe("Daily Review Handler", () => {
         return 1 as unknown as NodeJS.Timeout; // NodeJS.Timeoutの代わり
       });
 
-    await handler(mockReq as Request, mockRes as Response);
+    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
 
     // 各組織にチャンネルがあるため、組織数分だけsetTimeoutが呼ばれることを確認
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
