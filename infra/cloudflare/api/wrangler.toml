@@ -1,4 +1,4 @@
-name = "satopod-farm-api"
+name = "satopod-api"
 compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-06-17"
 
@@ -17,5 +17,5 @@ SUPABASE_KEY = "<YOUR_SUPABASE_KEY>"
 # Discord Auth configurations
 DISCORD_CLIENT_ID = "<YOUR_DISCORD_CLIENT_ID>"
 DISCORD_CLIENT_SECRET = "<YOUR_DISCORD_CLIENT_SECRET>"
-DISCORD_TOKEN_ENCRYPTION_KEY = "<YOUR_DISCORD_TOKEN_ENCRYPTION_KEY>"
+DISCORD_ENCRYPTION_KEY = "<YOUR_DISCORD_ENCRYPTION_KEY>"
 DISCORD_BOT_TOKEN = "<YOUR_DISCORD_BOT_TOKEN>"
