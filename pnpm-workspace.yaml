@@ -1,15 +1,16 @@
 packages:
   - apps/*
   - packages/*
+  - tools/*
 
 catalog:
   prettier: ^3.5.3
   eslint: ^9.29.0
   typescript: ^5.8.3
   zod: ^3.25.47
-  "@trpc/tanstack-react-query": ^11.2.0
-  "@tanstack/react-query": ^5.79.0
-  "@supabase/supabase-js": ^2.50.0
+  '@trpc/tanstack-react-query': ^11.2.0
+  '@tanstack/react-query': ^5.79.0
+  '@supabase/supabase-js': ^2.50.0
   fastify: 5.3.3
   tsx: 4.19.4
   superjson: ^2.2.2
@@ -18,15 +19,15 @@ catalog:
   drizzle-zod: ^0.8.2
   postgres: ^3.4.7
   drizzle-kit: ^0.31.1
-  "@types/node": 22.15.31
+  '@types/node': 22.15.31
   dotenv-cli: ^8.0.0
   wait-on: ^8.0.3
-  "@esbuild-plugins/tsconfig-paths": 0.1.2
+  '@esbuild-plugins/tsconfig-paths': 0.1.2
   tsup: ^8.5.0
-  "@google-cloud/functions-framework": ^4.0.0
-  "@hono/zod-validator": ^0.7.0
+  '@google-cloud/functions-framework': ^4.0.0
+  '@hono/zod-validator': ^0.7.0
   hono: 4.8.2
-  wrangler: ^4.21.0
+  wrangler: 4.21.0
 
 onlyBuiltDependencies:
   - supabase
