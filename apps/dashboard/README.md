@@ -211,3 +211,15 @@ const Button = ({ className, variant, ...props }) => {
 
 - コンポーネントテスト: `vitest`, `@testing-library/react` を使用
 - e2eテスト: `playwright` を使用
+
+## デプロイメント
+
+### Cloudflare Workers
+
+[OpenNext](https://opennext.js.org/cloudflare) を使用して、Cloudflare Workers 上にデプロイします。
+
+1. `../../infra/cloudflare/dashboard/wrangler.toml` を確認し、
+   - `NEXT_INC_CACHE_R2_BUCKET` のバケット名を確認
+1. `pnpm cf:preview` でローカルプレビュー
+1. `pnpm wrangler r2 bucket create <bucket_name>` でR2バケットを作成
+1. `pnpm cf:deploy` でデプロイ
