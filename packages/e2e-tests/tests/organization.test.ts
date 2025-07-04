@@ -8,11 +8,16 @@ test.describe("Organization CRUD Test", () => {
     await setupUser(page);
 
     // ページに移動
-    await openSidebarIfNotVisible(page);
+    const isClicked = await openSidebarIfNotVisible(page);
 
     // リンクをクリック
     await page.click('a[href="/organization/settings"]');
     await page.waitForSelector('h1:has-text("組織設定")');
+    if (isClicked) {
+      await page.waitForSelector('[data-slot="sidebar-content"]', {
+        state: "hidden",
+      });
+    }
   });
 
   test("should update organization information successfully", async ({
@@ -116,13 +121,13 @@ test.describe("Organization CRUD Test", () => {
   }) => {
     await openSidebarIfNotVisible(page);
 
-    // Wait for the sidebar to load
-    await page.waitForSelector('[data-slot="dropdown-menu-trigger"]', {
-      timeout: 10000,
-    });
-
     // Click on organization dropdown in sidebar using more specific selector
-    await page.click('[data-slot="dropdown-menu-trigger"]');
+    await page.click(
+      '[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]',
+      {
+        timeout: 10000,
+      }
+    );
 
     // Wait for dropdown menu to appear and click on "Create new organization" option
     await page.waitForSelector(
@@ -280,11 +285,11 @@ test.describe("Organization CRUD Test", () => {
     // Create an additional organization first
     await page.click(
       '[data-slot="sidebar-header"] [data-slot="dropdown-menu-trigger"]',
-      { timeout: 5000 }
+      { timeout: 10000 }
     );
     await page.waitForSelector(
       '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")',
-      { timeout: 5000 }
+      { timeout: 10000 }
     );
     await page.click(
       '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")'

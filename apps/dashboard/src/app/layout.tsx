@@ -2,8 +2,8 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { Poppins } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
-import { TRPCProvider } from "@/trpc/trpc-provider";
 import { Toaster } from "@/shadcn/sonner";
+import { TanstackQueryProvider } from "@/contexts/tanstack-query-provider";
 
 // Google Fonts を next/font からインポート
 const inter = Inter({
@@ -26,10 +26,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className={`${inter.variable} ${poppins.variable} antialiased`}>
-        <TRPCProvider>
+        <TanstackQueryProvider>
           <AuthProvider>{children}</AuthProvider>
           <Toaster />
-        </TRPCProvider>
+        </TanstackQueryProvider>
       </body>
     </html>
   );

@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -14,6 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shadcn/alert-dialog";
+import { client } from "@/rpc/client";
+import { diaries } from "@/rpc/factory";
 
 interface DeleteDiaryDialogProps {
   diaryId: string | null;
@@ -26,37 +27,44 @@ export function DeleteDiaryDialog({
   organizationId,
   onClose,
 }: DeleteDiaryDialogProps) {
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  // 削除mutation - instructions.mdの推奨パターンを使用
-  const deleteMutation = useMutation(
-    trpc.diary.delete.mutationOptions({
-      onSuccess: () => {
-        toast.success("日誌を削除しました");
-        // カレンダー用のキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byMonth.queryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.diary.byDate.queryKey(),
-        });
-        // ダイアログを閉じる
-        onClose();
-      },
-      onError: (error) => {
-        console.error("Failed to delete diary:", error);
-        toast.error("日誌の削除に失敗しました");
-        // エラー時もダイアログを閉じる
-        onClose();
-      },
-    })
-  );
+  // 削除mutation - Honoクライアントを使用
+  const deleteMutation = useMutation({
+    mutationFn: async ({
+      diaryId,
+      organizationId,
+    }: {
+      diaryId: string;
+      organizationId: string;
+    }) =>
+      client.diary.delete[":organizationId"][":diaryId"].$delete({
+        param: { diaryId, organizationId },
+      }),
+    onSuccess: () => {
+      toast.success("日誌を削除しました");
+      // カレンダー用のキャッシュを無効化
+      queryClient.invalidateQueries({
+        queryKey: diaries.byDateRange._def,
+      });
+      queryClient.invalidateQueries({
+        queryKey: diaries.byDate._def,
+      });
+      // ダイアログを閉じる
+      onClose();
+    },
+    onError: (error) => {
+      console.error("Failed to delete diary:", error);
+      toast.error("日誌の削除に失敗しました");
+      // エラー時もダイアログを閉じる
+      onClose();
+    },
+  });
 
   const handleConfirmDelete = () => {
     if (!diaryId) return;
 
-    // tRPC削除mutationを実行
+    // Hono削除mutationを実行
     deleteMutation.mutate({
       diaryId,
       organizationId,

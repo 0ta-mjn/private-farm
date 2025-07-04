@@ -46,6 +46,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-discord-bg: var(--discord-bg);
 }
 
 :root {
@@ -119,6 +120,8 @@
   /* フォント設定はそのまま利用 */
   --font-inter: "Inter", sans-serif; /* Neo-grotesque 系で可読性高い */
   --font-poppins: "Poppins", sans-serif; /* 見出しなど強調部分に適する */
+
+  --discord-bg: #5865f2;
 }
 
 .dark {

@@ -1,0 +1,16 @@
+name = "satopod-dashboard"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+compatibility_date = "2025-06-17"
+main = "../../../apps/dashboard/.open-next/worker.js"
+
+[assets]
+directory = "../../../apps/dashboard/.open-next/assets"
+binding = "ASSETS"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "satopod-dashboard"
+
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "satopod-dashboard-r2-cache"

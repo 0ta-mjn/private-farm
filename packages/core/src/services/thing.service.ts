@@ -1,11 +1,6 @@
 import { eq, withUniqueIdRetry, and } from "@repo/db";
 import { thingsTable } from "@repo/db/schema";
-import {
-  DEFAULT_UUID_CONFIG,
-  NotFoundError,
-  ThingCreationError,
-  ThingUpdateError,
-} from "@repo/config";
+import { DEFAULT_UUID_CONFIG } from "@repo/config";
 import type { Database } from "@repo/db/client";
 import { z } from "zod";
 
@@ -107,9 +102,6 @@ export async function createThing(db: Database, input: CreateThingInput) {
   );
 
   const thing = thingResult[0];
-  if (!thing) {
-    throw new ThingCreationError();
-  }
 
   return thing;
 }
@@ -155,11 +147,7 @@ export async function getThingById(db: Database, params: ThingParams) {
     )
     .limit(1);
 
-  if (thing.length === 0) {
-    throw new NotFoundError("ほ場が見つかりません");
-  }
-
-  return thing[0]!;
+  return thing[0];
 }
 
 /**
@@ -172,22 +160,6 @@ export async function getThingById(db: Database, params: ThingParams) {
 export async function updateThing(db: Database, params: UpdateThingParams) {
   const { thingId, organizationId, ...updateData } = params;
 
-  // 更新対象のほ場が存在するか確認
-  const existingThing = await db
-    .select({ id: thingsTable.id })
-    .from(thingsTable)
-    .where(
-      and(
-        eq(thingsTable.id, thingId),
-        eq(thingsTable.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  if (existingThing.length === 0) {
-    throw new NotFoundError("ほ場が見つかりません");
-  }
-
   // ほ場情報を更新
   const updatedThing = await db
     .update(thingsTable)
@@ -195,14 +167,15 @@ export async function updateThing(db: Database, params: UpdateThingParams) {
       ...updateData,
       updatedAt: new Date(),
     })
-    .where(eq(thingsTable.id, thingId))
+    .where(
+      and(
+        eq(thingsTable.id, thingId),
+        eq(thingsTable.organizationId, organizationId)
+      )
+    )
     .returning();
 
-  if (updatedThing.length === 0) {
-    throw new ThingUpdateError();
-  }
-
-  return updatedThing[0]!;
+  return updatedThing[0];
 }
 
 /**
@@ -216,26 +189,15 @@ export async function deleteThing(
   db: Database,
   params: ThingParams
 ): Promise<boolean> {
-  // 削除対象のほ場が存在するか確認
-  const existingThing = await db
-    .select({ id: thingsTable.id })
-    .from(thingsTable)
+  // ほ場を削除
+  const deletedThing = await db
+    .delete(thingsTable)
     .where(
       and(
         eq(thingsTable.id, params.thingId),
         eq(thingsTable.organizationId, params.organizationId)
       )
     )
-    .limit(1);
-
-  if (existingThing.length === 0) {
-    throw new NotFoundError("ほ場が見つかりません");
-  }
-
-  // ほ場を削除
-  const deletedThing = await db
-    .delete(thingsTable)
-    .where(eq(thingsTable.id, params.thingId))
     .returning();
 
   return deletedThing.length > 0;

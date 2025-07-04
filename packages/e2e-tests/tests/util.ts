@@ -103,10 +103,15 @@ export const openSidebarIfNotVisible = async (page: Page) => {
 
   if (!isLinkVisible) {
     // モバイルの場合はサイドバーを開く
-    await page.click('[data-slot="sidebar-trigger"]');
-    // サイドバーが開くまで待機
-    await page.waitForSelector('[data-slot="sidebar-content"]', {
-      state: "visible",
+    await page.click('[data-slot="sidebar-trigger"]', {
+      timeout: 5000,
     });
   }
+
+  // サイドバーが開くまで待機
+  await page.waitForSelector('[data-slot="sidebar-content"]', {
+    state: "visible",
+  });
+
+  return !isLinkVisible;
 };

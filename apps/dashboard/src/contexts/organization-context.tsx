@@ -8,7 +8,8 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users } from "@/rpc/factory";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface OrganizationContextType {
@@ -31,26 +32,26 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
   >(null);
   const lastInvalidatedOrgRef = useRef<string | null>(null);
 
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   // 組織の最終閲覧時刻を更新するmutation
-  const updateOrganizationViewedMutation = useMutation(
-    trpc.user.updateOrganizationViewed.mutationOptions({
-      onSuccess: (_, variables) => {
-        // 前回無効化した組織と異なる場合のみキャッシュを無効化
-        if (lastInvalidatedOrgRef.current !== variables.organizationId) {
-          lastInvalidatedOrgRef.current = variables.organizationId;
-          queryClient.invalidateQueries({
-            queryKey: trpc.user.sidebarData.queryKey(),
-          });
-        }
-      },
-      onError: (error: unknown) => {
-        console.warn("Failed to update organization viewed:", error);
-      },
-    })
-  );
+  const updateOrganizationViewedMutation = useMutation({
+    mutationFn: async (data: { organizationId: string }) => {
+      return client.user["organization-viewed"].$put({
+        json: data,
+      });
+    },
+    onSuccess: (_, variables) => {
+      // 前回無効化した組織と異なる場合のみキャッシュを無効化
+      if (lastInvalidatedOrgRef.current !== variables.organizationId) {
+        lastInvalidatedOrgRef.current = variables.organizationId;
+        queryClient.invalidateQueries(users.sidebarData());
+      }
+    },
+    onError: (error: unknown) => {
+      console.warn("Failed to update organization viewed:", error);
+    },
+  });
 
   const setCurrentOrganization = useCallback(
     (organizationId: string) => {

@@ -3,14 +3,14 @@ import { eq, withUniqueIdRetry, and } from "@repo/db";
 import {
   organizationsTable,
   organizationMembersTable,
+  discordChannelsTable,
   MemberRoleSchema,
 } from "@repo/db/schema";
 import {
   DEFAULT_UUID_CONFIG,
-  OrganizationCreationError,
-  MembershipCreationError,
-  OrganizationUpdateError,
+  type DiscordNotificationSettings,
 } from "@repo/config";
+import { MembershipCreationError } from "../errors";
 import type { Database, Transaction } from "@repo/db/client";
 
 // バリデーションスキーマ
@@ -64,7 +64,7 @@ export async function createOrganizationCore(
 
   const organization = organizationResult[0]!;
   if (!organization) {
-    throw new OrganizationCreationError();
+    return undefined; // 組織の作成に失敗した場合はundefinedを返す
   }
 
   // メンバーシップ作成（管理者として）
@@ -238,10 +238,6 @@ export async function updateOrganization(
     .returning();
 
   const updatedOrganization = updateResult[0];
-  if (!updatedOrganization) {
-    throw new OrganizationUpdateError("組織の更新に失敗しました");
-  }
-
   return updatedOrganization;
 }
 
@@ -253,30 +249,79 @@ export async function updateOrganization(
  * @param userId - 削除を実行するユーザーのID（権限チェック用）
  * @returns 削除された組織の情報
  */
-export async function deleteOrganization(
+export async function deleteOrganization(db: Database, organizationId: string) {
+  const deletedOrganizations = await db
+    .delete(organizationsTable)
+    .where(eq(organizationsTable.id, organizationId))
+    .returning({
+      id: organizationsTable.id,
+      name: organizationsTable.name,
+    });
+  return deletedOrganizations.length > 0;
+}
+
+/**
+ * 通知が有効な組織とチャンネル情報の型定義
+ */
+export interface OrganizationWithNotification {
+  organizationId: string;
+  organizationName: string;
+  channels: {
+    channelUuid: string;
+    channelName: string;
+    notificationSettings: DiscordNotificationSettings;
+  }[];
+}
+
+/**
+ * 指定された通知タイプが有効な組織とチャンネル情報を取得
+ * 組織ごとにグルーピングして返す
+ */
+export async function getOrganizationsWithNotification(
   db: Database,
-  organizationId: string
-): Promise<{ id: string; name: string }> {
-  return await db.transaction(async (tx) => {
-    // 関連するメンバーシップを削除
-    await tx
-      .delete(organizationMembersTable)
-      .where(eq(organizationMembersTable.organizationId, organizationId));
+  notificationType: keyof Pick<
+    DiscordNotificationSettings,
+    "daily" | "weekly" | "monthly"
+  >
+): Promise<OrganizationWithNotification[]> {
+  const results = await db
+    .select({
+      organizationId: discordChannelsTable.organizationId,
+      organizationName: organizationsTable.name,
+      channelUuid: discordChannelsTable.id,
+      channelName: discordChannelsTable.name,
+      notificationSettings: discordChannelsTable.notificationSettings,
+    })
+    .from(discordChannelsTable)
+    .innerJoin(
+      organizationsTable,
+      eq(discordChannelsTable.organizationId, organizationsTable.id)
+    );
 
-    // 組織を削除
-    const deletedOrganizations = await tx
-      .delete(organizationsTable)
-      .where(eq(organizationsTable.id, organizationId))
-      .returning({
-        id: organizationsTable.id,
-        name: organizationsTable.name,
+  // 指定された通知タイプが有効なもののみフィルタリング
+  const filteredResults = results.filter(
+    (result) => result.notificationSettings?.[notificationType] === true
+  );
+
+  // 組織ごとにグルーピング
+  const organizationMap = filteredResults.reduce((map, result) => {
+    if (!map.has(result.organizationId)) {
+      map.set(result.organizationId, {
+        organizationId: result.organizationId,
+        organizationName: result.organizationName,
+        channels: [],
       });
-
-    const deletedOrganization = deletedOrganizations[0];
-    if (!deletedOrganization) {
-      throw new OrganizationUpdateError("組織の削除に失敗しました");
     }
 
-    return deletedOrganization;
-  });
+    const org = map.get(result.organizationId)!;
+    org.channels.push({
+      channelUuid: result.channelUuid,
+      channelName: result.channelName,
+      notificationSettings: result.notificationSettings,
+    });
+
+    return map;
+  }, new Map<string, OrganizationWithNotification>());
+
+  return Array.from(organizationMap.values());
 }

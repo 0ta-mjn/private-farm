@@ -6,7 +6,7 @@
 パッケージマネージャはpnpmを使用し、Node.jsのバージョンは20.xを想定しています。
 
 フロントエンドはNext.jsを使用し、UIはshadcn/uiをベースにしたコンポーネントライブラリを使用します。
-バックエンドはtRPCを使用してFastifyでAPIを提供します。
+バックエンドはHonoでREST APIを提供します。
 データベースはPostgreSQLを使用し、ORMにはDrizzleを使用します。
 
 以下のディレクトリ構成で開発を進めます。
@@ -16,7 +16,6 @@ apps/ # ダッシュボードやAPIサーバーなどのアプリケーション
   dashboard/ # フロントエンドダッシュボード
   api/ # バックエンドAPIサーバー
 packages/ # 共通ライブラリやコンポーネント
-  api/ # tRPCクライアント
   config/ # 共通設定
   core/ # サーバー内のビジネスロジック
   db/ # データベース関連のコード（Drizzle ORM）

@@ -13,6 +13,7 @@
     "build": "tsc",
     "test": "dotenv -e .env.testing -- vitest",
     "test:watch": "dotenv -e .env.testing -- vitest --watch",
+    "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -21,7 +22,10 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@repo/discord": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
+    "eslint": "catalog:",
     "dotenv-cli": "catalog:",
     "drizzle-orm": "catalog:",
     "postgres": "catalog:",

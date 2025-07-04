@@ -10,8 +10,8 @@
     "install-browsers": "pnpm playwright install --with-deps"
   },
   "dependencies": {
-    "api": "workspace:*",
-    "dashboard": "workspace:*",
+    "@repo/api": "workspace:*",
+    "@repo/dashboard": "workspace:*",
     "date-fns": "^4.1.0"
   },
   "devDependencies": {

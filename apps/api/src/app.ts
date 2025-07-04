@@ -1,0 +1,116 @@
+import { dbClient } from "@repo/db/client";
+import { supaClient } from "@repo/supabase";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { timingMiddleware } from "./middleware/util";
+import { HonoEnv } from "./env";
+import { authMiddleware } from "./middleware/auth";
+import { organizationRoute } from "./routes/organization";
+import { env } from "hono/adapter";
+import { HTTPException } from "hono/http-exception";
+import { userRoute } from "./routes/user";
+import { thingRoute } from "./routes/thing";
+import { diaryRoute } from "./routes/diary";
+import { discordRoute } from "./routes/discord";
+
+const app = new Hono<HonoEnv>()
+  .use((c, next) => {
+    const {
+      SUPABASE_KEY,
+      SUPABASE_URL,
+      DATABASE_URL,
+      DISCORD_CLIENT_ID,
+      DISCORD_CLIENT_SECRET,
+      DISCORD_BOT_TOKEN,
+      DISCORD_ENCRYPTION_KEY,
+    } = env<{
+      SUPABASE_URL: string | undefined;
+      SUPABASE_KEY: string | undefined;
+      DATABASE_URL: string | undefined;
+      DISCORD_CLIENT_ID: string | undefined;
+      DISCORD_CLIENT_SECRET: string | undefined;
+      DISCORD_BOT_TOKEN: string | undefined;
+      DISCORD_ENCRYPTION_KEY: string | undefined;
+      ACCEPT_ORIGINS: string | undefined;
+    }>(c);
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      throw new HTTPException(500, {
+        message: "Supabase URL or key is not set in environment variables.",
+      });
+    }
+    if (!DATABASE_URL) {
+      throw new HTTPException(500, {
+        message: "Database URL is not set in environment variables.",
+      });
+    }
+    if (
+      !DISCORD_CLIENT_ID ||
+      !DISCORD_CLIENT_SECRET ||
+      !DISCORD_BOT_TOKEN ||
+      !DISCORD_ENCRYPTION_KEY
+    ) {
+      throw new HTTPException(500, {
+        message: "Discord configuration is not set in environment variables.",
+      });
+    }
+    const db = dbClient(DATABASE_URL);
+    const supabase = supaClient(SUPABASE_URL, SUPABASE_KEY);
+    c.set("db", db);
+    c.set("supabase", supabase);
+    c.set("discordKeys", {
+      discordClientId: DISCORD_CLIENT_ID,
+      discordClientSecret: DISCORD_CLIENT_SECRET,
+      discordBotToken: DISCORD_BOT_TOKEN,
+      encryptionKey: DISCORD_ENCRYPTION_KEY,
+    });
+    return next();
+  })
+  .use(
+    cors({
+      origin: (origin, c) => {
+        const { ACCEPT_ORIGINS } = env<{ ACCEPT_ORIGINS: string | undefined }>(
+          c
+        );
+        if (ACCEPT_ORIGINS) {
+          const allowedOrigins = ACCEPT_ORIGINS.split(",");
+          if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+            console.log("CORS Origin:", origin, ACCEPT_ORIGINS);
+            return origin; // オリジンが許可されている場合はそのまま返す
+          }
+        } else if (process.env.NODE_ENV === "development") {
+          // 開発環境では全てのオリジンを許可
+          return origin; // 開発環境では全てのオリジンを許可
+        }
+        throw new HTTPException(403, {
+          message:
+            "CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+        }); // オリジンが許可されていない場合はエラーを返す
+      },
+      allowMethods: [
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+      ],
+      allowHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    })
+  )
+  .use(timingMiddleware, authMiddleware)
+  .route("/organization", organizationRoute)
+  .route("/user", userRoute)
+  .route("/thing", thingRoute)
+  .route("/diary", diaryRoute)
+  .route("/discord", discordRoute)
+  .onError((err, c) => {
+    console.error("Error occurred:", err);
+    if (err instanceof HTTPException) {
+      return err.getResponse();
+    }
+    return c.newResponse("Internal Server Error", 500);
+  });
+
+export default app;

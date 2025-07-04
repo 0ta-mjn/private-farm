@@ -1,0 +1,22 @@
+{
+  "extends": "@repo/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "paths": {
+      "@repo/core": [
+        "../../packages/core/src"
+      ],
+      "@repo/db/*": [
+        "../../packages/db/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "./worker-configuration.d.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

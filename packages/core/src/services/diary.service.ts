@@ -6,17 +6,13 @@ import {
   thingsTable,
   usersTable,
 } from "@repo/db/schema";
-import {
-  DEFAULT_UUID_CONFIG,
-  NotFoundError,
-  UnauthorizedError,
-} from "@repo/config";
+import { DEFAULT_UUID_CONFIG } from "@repo/config";
+import { UnauthorizedError } from "../errors";
 import type { Database } from "@repo/db/client";
 import { z } from "zod";
 
 // Zodスキーマ定義
 export const CreateDiaryInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
@@ -25,6 +21,11 @@ export const CreateDiaryInputSchema = z.object({
   workType: z.string().min(1, "作業種別を選択してください"),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
+  duration: z
+    .number()
+    .min(0.1, "作業時間は0.1時間以上で入力してください")
+    .nullable()
+    .optional(),
   thingIds: z.array(z.string()).optional().default([]),
 });
 
@@ -38,25 +39,48 @@ export const UpdateDiaryInputSchema = z.object({
   workType: z.string().optional(),
   weather: z.string().nullable().optional(),
   temperature: z.number().nullable().optional(),
+  duration: z
+    .number()
+    .min(0.1, "作業時間は0.1時間以上で入力してください")
+    .nullable()
+    .optional(),
   thingIds: z.array(z.string()).optional(),
 });
 
 // 新しい3つのエンドポイント用のスキーマ
 export const GetDiariesByDateInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で入力してください"),
 });
 
-export const GetDiariesByMonthInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
-  year: z.number().int().min(1900).max(3000),
-  month: z.number().int().min(1).max(12),
-});
+export const GetDiariesByDateRangeInputSchema = z
+  .object({
+    startDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        "開始日は YYYY-MM-DD 形式で入力してください"
+      ),
+    endDate: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        "終了日は YYYY-MM-DD 形式で入力してください"
+      ),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      return start <= end;
+    },
+    {
+      message: "開始日は終了日より前の日付を指定してください",
+    }
+  );
 
 export const SearchDiariesInputSchema = z.object({
-  organizationId: z.string().min(1, "組織IDは必須です"),
   limit: z.number().int().min(1).max(100).optional().default(20),
   offset: z.number().int().min(0).optional().default(0),
   search: z.string().optional(),
@@ -84,8 +108,8 @@ export const DiaryParamsSchema = z.object({
 export type CreateDiaryInput = z.infer<typeof CreateDiaryInputSchema>;
 export type UpdateDiaryInput = z.infer<typeof UpdateDiaryInputSchema>;
 export type GetDiariesByDateInput = z.infer<typeof GetDiariesByDateInputSchema>;
-export type GetDiariesByMonthInput = z.infer<
-  typeof GetDiariesByMonthInputSchema
+export type GetDiariesByDateRangeInput = z.infer<
+  typeof GetDiariesByDateRangeInputSchema
 >;
 export type SearchDiariesInput = z.infer<typeof SearchDiariesInputSchema>;
 export type DiaryParams = z.infer<typeof DiaryParamsSchema>;
@@ -101,6 +125,7 @@ export type DiaryParams = z.infer<typeof DiaryParamsSchema>;
 export async function createDiary(
   db: Database,
   userId: string,
+  organizationId: string,
   input: CreateDiaryInput
 ) {
   return await db.transaction(async (tx) => {
@@ -113,7 +138,7 @@ export async function createDiary(
         .where(
           and(
             inArray(thingsTable.id, thingIds),
-            eq(thingsTable.organizationId, input.organizationId)
+            eq(thingsTable.organizationId, organizationId)
           )
         );
 
@@ -142,16 +167,17 @@ export async function createDiary(
             workType: input.workType,
             weather: input.weather,
             temperature: input.temperature,
+            duration: input.duration,
             userId: userId,
-            organizationId: input.organizationId,
+            organizationId: organizationId,
           })
           .returning(),
       { idPrefix: DEFAULT_UUID_CONFIG.diary?.idPrefix || "diary" }
     );
 
-    const diary = diaryResult[0]!;
+    const diary = diaryResult[0];
     if (!diary) {
-      throw new Error("日誌の作成に失敗しました");
+      return undefined;
     }
 
     // ほ場関連付けの作成
@@ -186,6 +212,7 @@ export async function getDiary(db: Database, params: DiaryParams) {
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,
@@ -249,6 +276,7 @@ type DiaryWithOptionalThings = {
   workType: string | null;
   weather: string | null;
   temperature: number | null;
+  duration: number | null;
   userId: string | null;
   organizationId: string;
   createdAt: Date;
@@ -282,7 +310,6 @@ export async function updateDiary(
   params: DiaryParams,
   input: UpdateDiaryInput
 ) {
-  console.info("Updating diary with params:", params, "and input:", input);
   return await db.transaction(async (tx) => {
     // thingIdsが指定されている場合、権限チェックを実行
     if (input.thingIds != undefined && input.thingIds.length > 0) {
@@ -326,7 +353,7 @@ export async function updateDiary(
 
     const updatedDiary = updateResult[0];
     if (!updatedDiary) {
-      throw new NotFoundError("日誌が見つからないか、更新権限がありません");
+      return undefined;
     }
 
     // ほ場関連付けの更新
@@ -386,6 +413,7 @@ export async function deleteDiary(
  */
 export async function getDiariesByDate(
   db: Database,
+  organizationId: string,
   input: GetDiariesByDateInput
 ): Promise<DiaryWithOptionalThings[]> {
   // 指定日の日誌を取得（全フィールド含む）
@@ -398,6 +426,7 @@ export async function getDiariesByDate(
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,
@@ -408,7 +437,7 @@ export async function getDiariesByDate(
     .leftJoin(usersTable, eq(diariesTable.userId, usersTable.id))
     .where(
       and(
-        eq(diariesTable.organizationId, input.organizationId),
+        eq(diariesTable.organizationId, organizationId),
         eq(diariesTable.date, input.date)
       )
     )
@@ -453,45 +482,33 @@ export async function getDiariesByDate(
 }
 
 /**
- * 指定した月の日誌のサマリーデータを取得します（日付、ほ場、天気、作業種別のみ）
+ * 指定された期間内の日誌一覧を取得します（サマリー情報）
  *
  * @param db - データベース接続
- * @param input - 組織ID、年、月
- * @returns 指定月の日誌サマリーデータ
+ * @param organizationId - 組織ID
+ * @param input - 期間指定（最大40日）
+ * @returns 期間内の日誌一覧（サマリー情報のみ）
  */
-export async function getDiariesByMonth(
+export async function getDiariesByDateRange(
   db: Database,
-  input: GetDiariesByMonthInput
-): Promise<
-  Array<{
-    id: string;
-    date: string;
-    weather: string | null;
-    workType: string | null;
-    fields: Array<{
-      id: string;
-      name: string;
-    }>;
-  }>
-> {
-  const { year, month } = input;
+  organizationId: string,
+  input: GetDiariesByDateRangeInput
+) {
+  const { startDate, endDate } = input;
 
-  // 月の範囲を計算
-  const startDate = `${year}-${month.toString().padStart(2, "0")}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split("T")[0]!; // 月末日
-
-  // 指定月の日誌を取得（サマリー情報のみ）
+  // 指定期間の日誌を取得（サマリー情報のみ）
   const diariesResult = await db
     .select({
       id: diariesTable.id,
       date: diariesTable.date,
       weather: diariesTable.weather,
       workType: diariesTable.workType,
+      duration: diariesTable.duration,
     })
     .from(diariesTable)
     .where(
       and(
-        eq(diariesTable.organizationId, input.organizationId),
+        eq(diariesTable.organizationId, organizationId),
         gte(diariesTable.date, startDate),
         lte(diariesTable.date, endDate)
       )
@@ -515,6 +532,7 @@ export async function getDiariesByMonth(
         date: diary.date,
         weather: diary.weather,
         workType: diary.workType,
+        duration: diary.duration,
         fields: fieldsResult,
       };
     })
@@ -532,6 +550,7 @@ export async function getDiariesByMonth(
  */
 export async function searchDiaries(
   db: Database,
+  organizationId: string,
   input: SearchDiariesInput
 ): Promise<{
   diaries: DiaryWithOptionalThings[];
@@ -539,7 +558,6 @@ export async function searchDiaries(
   hasNext: boolean;
 }> {
   const {
-    organizationId,
     limit,
     offset,
     search,
@@ -666,6 +684,7 @@ export async function searchDiaries(
       workType: diariesTable.workType,
       weather: diariesTable.weather,
       temperature: diariesTable.temperature,
+      duration: diariesTable.duration,
       userId: diariesTable.userId,
       organizationId: diariesTable.organizationId,
       createdAt: diariesTable.createdAt,

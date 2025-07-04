@@ -31,9 +31,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRequireAuth } from "@/lib/auth-hooks";
-import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { users } from "@/rpc/factory";
+import { client } from "@/rpc/client";
 
 // フォームバリデーションスキーマ
 const setupSchema = z.object({
@@ -52,16 +53,14 @@ type SetupFormValues = z.infer<typeof setupSchema>;
 export default function SetupPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useRequireAuth();
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   // 初期設定状態の確認
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
-    trpc.user.setupCheck.queryOptions(undefined, {
-      enabled: !!user && !authLoading,
-    })
-  );
+  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
+    ...users.setupCheck(),
+    enabled: !!user && !authLoading,
+  });
 
   // 初期設定が完了している場合はダッシュボードにリダイレクト
   useEffect(() => {
@@ -78,32 +77,44 @@ export default function SetupPage() {
     },
   });
 
-  // フォーム送信処理
-  const setupMutation = useMutation(
-    trpc.user.setup.mutationOptions({
-      onSuccess: async (data) => {
-        console.log("Setup successful:", data);
+  useEffect(() => {
+    // ユーザー情報が取得できた場合、フォームに初期値を設定
+    if (setupStatus && user) {
+      form.reset((v) => ({
+        ...v,
+        userName:
+          v.userName ||
+          setupStatus?.user?.name ||
+          user?.user_metadata["display_name"] ||
+          "",
+      }));
+    }
+  }, [user, form, setupStatus]); // フォーム送信処理
+  const setupMutation = useMutation({
+    mutationFn: async (values: SetupFormValues) =>
+      client.user.setup.$post({
+        json: values,
+      }),
+    onSuccess: async () => {
+      // 初期設定状態のキャッシュを無効化
+      await queryClient.invalidateQueries({
+        queryKey: users.setupCheck().queryKey,
+      });
 
-        // 初期設定状態のキャッシュを無効化
-        await queryClient.invalidateQueries({
-          queryKey: trpc.user.setupCheck.queryKey(),
-        });
+      // ユーザー関連のキャッシュも無効化（サイドバーデータなど）
+      queryClient.invalidateQueries({
+        queryKey: users.sidebarData().queryKey,
+      });
 
-        // ユーザー関連のキャッシュも無効化（サイドバーデータなど）
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.sidebarData.queryKey(),
-        });
-
-        router.push("/dashboard");
-      },
-      onError: (error) => {
-        console.error("Setup error:", error);
-        setGeneralError(
-          error instanceof Error ? error.message : "初期設定に失敗しました"
-        );
-      },
-    })
-  );
+      router.push("/dashboard");
+    },
+    onError: (error: Error) => {
+      console.error("Setup error:", error);
+      setGeneralError(
+        error instanceof Error ? error.message : "初期設定に失敗しました"
+      );
+    },
+  });
 
   const onSubmit = async (values: SetupFormValues) => {
     if (!user) {
