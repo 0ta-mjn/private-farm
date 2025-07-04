@@ -1,5 +1,5 @@
 import { type Database } from "@repo/db/client";
-import { eq, and, desc, count, sum } from "drizzle-orm";
+import { eq, and, desc, count, sum } from "@repo/db";
 import {
   diariesTable,
   thingsTable,
