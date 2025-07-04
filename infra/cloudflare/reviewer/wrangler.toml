@@ -2,10 +2,6 @@ name = "satopod-reviewer"
 compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-06-17"
 
-[vars]
-
-DATABASE_URL = "<YOUR_DATABASE_URL>"
-DISCORD_ENCRYPTION_KEY = "<YOUR_DISCORD_ENCRYPTION_KEY>"
 
 [env.daily]
 name = "satopod-reviewer-daily"

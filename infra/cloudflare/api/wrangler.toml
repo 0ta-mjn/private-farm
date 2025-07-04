@@ -1,21 +1,3 @@
 name = "satopod-api"
 compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-06-17"
-
-[vars]
-
-# Postgres Database URL (direct connection to emulator DB)
-DATABASE_URL = "<YOUR_DATABASE_URL>"
-
-# API Port for your backend services
-ACCEPT_ORIGINS = "<YOUR_ACCEPT_ORIGINS>"
-
-# Supabase Emulator configurations
-SUPABASE_URL = "<YOUR_SUPABASE_URL>"
-SUPABASE_KEY = "<YOUR_SUPABASE_KEY>"
-
-# Discord Auth configurations
-DISCORD_CLIENT_ID = "<YOUR_DISCORD_CLIENT_ID>"
-DISCORD_CLIENT_SECRET = "<YOUR_DISCORD_CLIENT_SECRET>"
-DISCORD_ENCRYPTION_KEY = "<YOUR_DISCORD_ENCRYPTION_KEY>"
-DISCORD_BOT_TOKEN = "<YOUR_DISCORD_BOT_TOKEN>"
