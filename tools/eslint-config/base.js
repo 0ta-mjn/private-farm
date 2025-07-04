@@ -30,6 +30,8 @@ export const config = [
     ignores: [
       "dist/**",
       ".turbo/**",
+      ".cache/**",
+      ".wrangler/**",
       "node_modules/**",
       "playwright-report/**",
       "test-results/**",

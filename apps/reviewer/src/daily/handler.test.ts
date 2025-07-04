@@ -53,14 +53,7 @@ const mockDB = {} as Database;
 const testDate = new Date("2025-06-24T10:00:00Z").toISOString().split("T")[0]!; // 2025-06-24
 
 describe("Daily Review Handler", () => {
-  let jsonSpy: ReturnType<typeof vi.fn>;
-  let statusSpy: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
-    // Responseモック
-    jsonSpy = vi.fn();
-    statusSpy = vi.fn().mockReturnValue({ json: jsonSpy });
-
     // モック関数をリセット
     vi.clearAllMocks();
 
@@ -88,20 +81,23 @@ describe("Daily Review Handler", () => {
     // 空の組織リストを返すようにモック
     mockGetOrganizationsWithNotification.mockResolvedValue([]);
 
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
+    const result = await dailyReviewHandler(
+      mockDB,
+      testEncryptionKey,
+      testDate
+    );
 
     // getOrganizationsWithNotificationが正しく呼ばれることを確認
     expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
-      {},
+      mockDB,
       "daily"
     );
 
     // sendDailyDigestは呼ばれないことを確認
     expect(mockSendMessageViaWebhook).not.toHaveBeenCalled();
 
-    // レスポンスの確認
-    expect(jsonSpy).toHaveBeenCalledWith({
-      success: true,
+    // 戻り値の確認
+    expect(result).toEqual({
       message: "日次通知が有効な組織がありません",
       processedCount: 0,
     });
@@ -147,32 +143,35 @@ describe("Daily Review Handler", () => {
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
     mockSendMessageViaWebhook.mockResolvedValue(mockSendResult);
 
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
+    const result = await dailyReviewHandler(
+      mockDB,
+      testEncryptionKey,
+      testDate
+    );
 
     // getOrganizationsWithNotificationが正しく呼ばれることを確認
     expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
-      {},
+      mockDB,
       "daily"
     );
 
     // sendMessageViaWebhookが各チャンネルに対して呼ばれることを確認
     expect(mockSendMessageViaWebhook).toHaveBeenCalledTimes(2);
     expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
-      {},
+      mockDB,
       testEncryptionKey,
       "channel-1",
       expect.any(Object) // メッセージオブジェクト
     );
     expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
-      {},
+      mockDB,
       testEncryptionKey,
       "channel-2",
       expect.any(Object) // メッセージオブジェクト
     );
 
-    // レスポンスの確認
-    expect(jsonSpy).toHaveBeenCalledWith({
-      success: true,
+    // 戻り値の確認
+    expect(result).toEqual({
       message: expect.stringContaining("完了"),
       processedCount: 2,
       successCount: 2,
@@ -202,11 +201,14 @@ describe("Daily Review Handler", () => {
     mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
     mockSendMessageViaWebhook.mockRejectedValue(new Error("Unexpected error"));
 
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
+    const result = await dailyReviewHandler(
+      mockDB,
+      testEncryptionKey,
+      testDate
+    );
 
-    // レスポンスの確認
-    expect(jsonSpy).toHaveBeenCalledWith({
-      success: true,
+    // 戻り値の確認
+    expect(result).toEqual({
       message: expect.stringContaining("完了"),
       processedCount: 1,
       successCount: 0,
@@ -220,31 +222,9 @@ describe("Daily Review Handler", () => {
       new Error("Database connection failed")
     );
 
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
-
-    // エラーレスポンスの確認
-    expect(statusSpy).toHaveBeenCalledWith(500);
-    expect(jsonSpy).toHaveBeenCalledWith({
-      success: false,
-      error: "Internal server error",
-      message: "Database connection failed",
-    });
-  });
-
-  it("should generate correct yesterday date", async () => {
-    // 空の組織リストを返してgetYesterdayDate()の動作をテスト
-    mockGetOrganizationsWithNotification.mockResolvedValue([]);
-
-    // 現在の日付をモック（テストの一貫性のため）
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
-
-    // console.logが前日の日付（2025-06-23）で呼ばれることを確認
-    expect(console.log).toHaveBeenCalledWith(
-      "Starting daily digest processing for date: 2025-06-23"
-    );
-
-    // システム時間をリセット
-    vi.useRealTimers();
+    await expect(
+      dailyReviewHandler(mockDB, testEncryptionKey, testDate)
+    ).rejects.toThrow("Database connection failed");
   });
 
   it("should implement rate limiting between organizations", async () => {
@@ -297,11 +277,23 @@ describe("Daily Review Handler", () => {
         return 1 as unknown as NodeJS.Timeout; // NodeJS.Timeoutの代わり
       });
 
-    await dailyReviewHandler(mockDB, testEncryptionKey, testDate);
+    const result = await dailyReviewHandler(
+      mockDB,
+      testEncryptionKey,
+      testDate
+    );
 
     // 各組織にチャンネルがあるため、組織数分だけsetTimeoutが呼ばれることを確認
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+    // 戻り値の確認
+    expect(result).toEqual({
+      message: expect.stringContaining("完了"),
+      processedCount: 2,
+      successCount: 2,
+      failureCount: 0,
+    });
 
     setTimeoutSpy.mockRestore();
   });

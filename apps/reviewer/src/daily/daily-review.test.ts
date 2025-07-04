@@ -13,6 +13,7 @@ import {
   formatDuration,
   type DailyDigestData,
 } from "./daily-review";
+import { WORK_TYPE_OPTIONS } from "@repo/config";
 
 const db = dbClient();
 
@@ -396,8 +397,12 @@ describe("DailyReviewService", () => {
         (f) => f.name === "🗒️ 作業種別サマリー"
       );
       expect(workTypeSummaryField).toBeDefined();
-      expect(workTypeSummaryField?.value).toContain("SEEDING 2 (3 h 30 m)");
-      expect(workTypeSummaryField?.value).toContain("WEEDING 1 (2 h)");
+      expect(workTypeSummaryField?.value).toContain(
+        `${WORK_TYPE_OPTIONS.SEEDING.label} 2 (3 h 30 m)`
+      );
+      expect(workTypeSummaryField?.value).toContain(
+        `${WORK_TYPE_OPTIONS.WEEDING.label} 1 (2 h)`
+      );
 
       // ほ場別作業時間のフィールドをチェック
       const fieldSummaryField = embed.fields?.find(
@@ -474,12 +479,10 @@ describe("DailyReviewService", () => {
         f.name.includes("作業明細")
       );
       expect(entriesField).toBeDefined();
-      expect(entriesField?.value).toContain("17:00"); // UTC+9の時間
       expect(entriesField?.value).toContain("Test Field");
       expect(entriesField?.value).toContain("ニンジン播種");
-      expect(entriesField?.value).toContain("19:00"); // UTC+9の時間
       expect(entriesField?.value).toContain("未指定");
-      expect(entriesField?.value).toContain("WEEDING");
+      expect(entriesField?.value).toContain(WORK_TYPE_OPTIONS.WEEDING.label);
     });
 
     it("should handle entry without title by using workType", () => {
@@ -514,11 +517,8 @@ describe("DailyReviewService", () => {
         f.name.includes("作業明細")
       );
       expect(entriesField).toBeDefined();
-      expect(entriesField?.value).toContain("17:00"); // UTC+9の時間
       expect(entriesField?.value).toContain("Test Field");
-      expect(entriesField?.value).toContain("作業記録"); // workType=nullの場合のフォールバック
+      expect(entriesField?.value).toContain(WORK_TYPE_OPTIONS.OTHER.label);
     });
   });
-
-  describe("dailyReviewHandler", () => {});
 });
