@@ -25,7 +25,8 @@ import {
   FormMessage,
 } from "@/shadcn/form";
 import { AlertCircleIcon, CheckCircleIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 interface EmailSettingRowProps {
   onSuccess?: () => void | Promise<unknown>;
@@ -118,51 +119,46 @@ export function EmailChangeDialog({
 
     try {
       // Supabaseでメールアドレス更新
-      const { error, data } = await supabase.auth.updateUser(
-        { email: values.newEmail },
-        {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/email?email=${encodeURIComponent(
-            values.newEmail
-          )}`,
-        }
-      );
-
-      if (error) {
-        // エラーコードによる分岐処理
-        switch (error.code) {
-          case "email_address_invalid":
-            setError(
-              "無効なメールアドレスです。正しいメールアドレスを入力してください。"
-            );
-            break;
-          case "email_already_exists":
-            setError("このメールアドレスは既に使用されています。");
-            break;
-          case "over_request_rate_limit":
-            setError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          default:
-            setError(
-              error.message || "メールアドレスの変更中にエラーが発生しました。"
-            );
-            break;
-        }
-        return;
-      }
+      const data = await auth.updateEmail({
+        newEmail: values.newEmail,
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/email?email=${encodeURIComponent(
+          values.newEmail
+        )}`,
+      });
 
       // 成功時の処理
       form.reset();
       onSuccess?.();
-      if (values.newEmail == data.user.new_email) {
+      if (data.isSentVerificationEmail) {
         setSentEmail(values.newEmail);
       } else {
         onOpenChange(false);
       }
     } catch (err) {
       console.error("Email update error:", err);
-      setError("メールアドレスの変更中にエラーが発生しました。");
+      if (err instanceof AuthError) {
+        // エラーコードによる分岐処理
+        switch (err.code) {
+          case "invalid_request":
+            setError(
+              "無効なメールアドレスです。正しいメールアドレスを入力してください。"
+            );
+            break;
+          case "user_already_exists":
+            setError("このメールアドレスは既に使用されています。");
+            break;
+          case "rate_limit_exceeded":
+            setError(
+              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
+            );
+            break;
+          default:
+            setError(
+              err.message || "メールアドレスの変更中にエラーが発生しました。"
+            );
+            break;
+        }
+      }
     } finally {
       setIsLoading(false);
     }

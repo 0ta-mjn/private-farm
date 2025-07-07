@@ -31,8 +31,9 @@ import {
   CheckCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import DiscordSvg from "@/assets/discord-symbol.svg";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z
@@ -88,17 +89,9 @@ export default function SignupPage() {
     setGeneralError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "discord",
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        },
+      await auth.redirectOAuthSigninUrl("discord", {
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       });
-
-      if (error) {
-        setGeneralError("Discord認証中にエラーが発生しました");
-        console.error("Discord auth error:", error);
-      }
     } catch (err) {
       console.error("Discord signup error:", err);
       setGeneralError("Discord認証中にエラーが発生しました");
@@ -114,26 +107,29 @@ export default function SignupPage() {
 
     try {
       // Supabase Auth にユーザー登録リクエスト
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+      const data = await auth.signUp({
+        provider: "email",
+        input: {
+          email: values.email,
+          password: values.password,
+          redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
         },
       });
 
-      if (error) {
+      if (data) {
+        setUserEmail(values.email);
+        setEmailSent(true);
+      }else {
+        console.warn("Signup response did not contain accessToken", data);
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      if (error instanceof AuthError) {
         // エラーコードによる分岐処理
         switch (error.code) {
-          case "email_exists":
           case "user_already_exists":
             setGeneralError(
               "このメールアドレスは既に登録されています。ログインしてください。"
-            );
-            break;
-          case "validation_failed":
-            setGeneralError(
-              "入力内容に問題があります。もう一度確認してください。"
             );
             break;
           case "weak_password":
@@ -141,23 +137,10 @@ export default function SignupPage() {
               "パスワードが脆弱です。より強力なパスワードを設定してください。"
             );
             break;
-          case "signup_disabled":
-            setGeneralError(
-              "サインアップが無効になっています。管理者にお問い合わせください。"
-            );
-            break;
-          case "over_request_rate_limit":
-            setGeneralError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          case "over_email_send_rate_limit":
+          case "rate_limit_exceeded":
             setGeneralError(
               "メール送信の制限に達しました。しばらく時間をおいてから再度お試しください。"
             );
-            break;
-          case "captcha_failed":
-            setGeneralError("認証に失敗しました。再度お試しください。");
             break;
           default:
             setGeneralError(
@@ -165,16 +148,7 @@ export default function SignupPage() {
             );
             break;
         }
-        return;
       }
-
-      if (data.user) {
-        setUserEmail(values.email);
-        setEmailSent(true);
-      }
-    } catch (err) {
-      console.error("Signup error:", err);
-      setGeneralError("サインアップ中にエラーが発生しました");
     } finally {
       setIsLoading(false);
     }

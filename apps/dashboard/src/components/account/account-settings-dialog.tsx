@@ -16,7 +16,7 @@ import { DiscordSettingRow } from "@/components/account/discord-setting-row";
 import { AccountDeleteRow } from "@/components/account/account-delete-row";
 import { ProfileSettingRow } from "@/components/account/profile-setting-row";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth-provider";
 
 interface AccountSettingsDialogProps {
   children: React.ReactNode;
@@ -93,11 +93,7 @@ export function AccountSettingsDialog({
 
   const { data, refetch } = useQuery({
     queryKey: ["supabaseUserIdentities"],
-    queryFn: async () => {
-      const { data, error } = await supabase.auth.getUserIdentities();
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    queryFn: () => auth.getIdentities(),
   });
 
   return (
@@ -150,7 +146,7 @@ export function AccountSettingsDialog({
               <h3 className="font-bold">ログイン設定</h3>
 
               <div className="rounded-lg border p-4 space-y-4">
-                {data?.identities.some(
+                {data?.some(
                   (identity) => identity.provider === "email"
                 ) && (
                   <>
@@ -160,11 +156,11 @@ export function AccountSettingsDialog({
                 )}
 
                 <DiscordSettingRow
-                  identity={data?.identities.find(
+                  identity={data?.find(
                     (identity) => identity.provider === "discord"
                   )}
                   onSuccess={refetch}
-                  disabled={data?.identities.length === 1}
+                  disabled={data?.length === 1}
                 />
               </div>
 

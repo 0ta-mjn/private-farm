@@ -25,9 +25,10 @@ import {
 import { EyeIcon, EyeOffIcon, AlertCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import DiscordSvg from "@/assets/discord-symbol.svg";
 import { client } from "@/rpc/client";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z.object({
@@ -60,17 +61,9 @@ export default function LoginPage() {
     setGeneralError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "discord",
-        options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-        },
+      await auth.redirectOAuthSigninUrl("discord", {
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       });
-
-      if (error) {
-        setGeneralError("Discord認証中にエラーが発生しました");
-        console.error("Discord auth error:", error);
-      }
     } catch (err) {
       console.error("Discord signup error:", err);
       setGeneralError("Discord認証中にエラーが発生しました");
@@ -85,52 +78,18 @@ export default function LoginPage() {
     setGeneralError(null);
 
     try {
-      // Supabase Auth にログインリクエスト
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
+      // Auth Provider にログインリクエスト
+      const data = await auth.signIn({
+        provider: "email",
+        input: {
+          email: values.email,
+          password: values.password,
+        },
       });
 
-      if (error) {
-        // エラーコードによる分岐処理
-        switch (error.code) {
-          case "invalid_credentials":
-            setGeneralError(
-              "メールアドレスまたはパスワードが正しくありません。"
-            );
-            break;
-          case "email_not_confirmed":
-            setGeneralError(
-              "メールアドレスが確認されていません。確認メールをご確認いただくか、再度ご登録ください。"
-            );
-            break;
-          case "too_many_requests":
-            setGeneralError(
-              "ログイン試行回数が多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          case "signin_disabled":
-            setGeneralError(
-              "サインインが無効になっています。管理者にお問い合わせください。"
-            );
-            break;
-          case "over_request_rate_limit":
-            setGeneralError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          default:
-            setGeneralError(
-              error.message || "ログイン中にエラーが発生しました"
-            );
-            break;
-        }
-        return;
-      }
-
-      if (data.user) {
+      if (data?.user) {
         try {
-          // で初期設定状態を確認
+          // 初期設定状態を確認
           const setupStatus = await client.user.setup.$get();
 
           if (setupStatus.isCompleted) {
@@ -148,9 +107,40 @@ export default function LoginPage() {
           );
         }
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      setGeneralError("ログイン中にエラーが発生しました");
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof AuthError) {
+        // エラーコードによる分岐処理
+        switch (error.code) {
+          case "invalid_credentials":
+            setGeneralError(
+              "メールアドレスまたはパスワードが正しくありません。"
+            );
+            break;
+          case "email_not_verified":
+            setGeneralError(
+              "メールアドレスが確認されていません。確認メールをご確認いただくか、再度ご登録ください。"
+            );
+            break;
+          case "account_locked":
+            setGeneralError(
+              "ログイン試行回数が多すぎます。しばらく時間をおいてから再度お試しください。"
+            );
+            break;
+          case "account_disabled":
+            setGeneralError(
+              "サインインが無効になっています。管理者にお問い合わせください。"
+            );
+            break;
+          default:
+            setGeneralError(
+              error.message || "ログイン中にエラーが発生しました"
+            );
+            break;
+        }
+      } else {
+        setGeneralError("ログイン中にエラーが発生しました");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -82,11 +82,7 @@ export default function SetupPage() {
     if (setupStatus && user) {
       form.reset((v) => ({
         ...v,
-        userName:
-          v.userName ||
-          setupStatus?.user?.name ||
-          user?.user_metadata["display_name"] ||
-          "",
+        userName: v.userName || setupStatus?.user?.name || user?.name || "",
       }));
     }
   }, [user, form, setupStatus]); // フォーム送信処理

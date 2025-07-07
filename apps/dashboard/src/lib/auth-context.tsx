@@ -8,20 +8,20 @@ import React, {
   ReactNode,
   useMemo,
 } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "./supabase";
 import { useRouter } from "next/navigation";
+import { auth } from "./auth-provider";
+import { AuthSession, AuthUser } from "@repo/auth-client";
 
 // ユーザーコンテキスト
 interface UserContextType {
-  user: User | null;
+  user: AuthUser | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // セッションコンテキスト
 interface SessionContextType {
-  session: Session | null;
+  session: AuthSession | null;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -49,48 +49,40 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 初期セッションを取得
     const getInitialSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error) {
-        console.error("Error getting session:", error);
-      } else {
+      try {
+        const session = await auth.getSession();
         setSession(session);
         setUser(session?.user ?? null);
+      } catch (error) {
+        console.error("Error getting session:", error);
       }
-
       setLoading(false);
     };
 
     getInitialSession();
 
     // 認証状態の変更をリスニング
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const unsubscribe = auth.onAuthStateChange((session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     // クリーンアップ
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const router = useRouter();
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await auth.signOut();
       setUser(null);
       setSession(null);
       router.push("/login");

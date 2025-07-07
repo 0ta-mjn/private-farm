@@ -3,13 +3,13 @@
 import { Button } from "@/shadcn/button";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
 import DiscordSymbol from "@/assets/discord-symbol.svg";
-import { UserIdentity } from "@supabase/supabase-js";
+import { AuthUserIdentity } from "@repo/auth-client";
+import { auth } from "@/lib/auth-provider";
 
 interface DiscordSettingRowProps {
   onSuccess?: () => void | Promise<unknown>;
-  identity?: UserIdentity | null;
+  identity?: AuthUserIdentity | null;
   disabled?: boolean;
 }
 
@@ -20,11 +20,9 @@ export function DiscordSettingRow({
 }: DiscordSettingRowProps) {
   const linkMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.auth.linkIdentity({
-        provider: "discord",
-        options: { redirectTo: window.location.href },
+      await auth.linkOAuthProvider("discord", {
+        redirectUrl: window.location.href,
       });
-      if (error) throw new Error(error.message);
     },
     onError: (error) => {
       console.error("Discord link error:", error);
@@ -35,9 +33,8 @@ export function DiscordSettingRow({
   });
 
   const unlinkMutation = useMutation({
-    mutationFn: async (identity: UserIdentity) => {
-      const { error } = await supabase.auth.unlinkIdentity(identity);
-      if (error) throw new Error(error.message);
+    mutationFn: async () => {
+      await auth.unlinkOAuthProvider("discord");
     },
     onError: (error) => {
       console.error("Discord unlink error:", error);
@@ -53,7 +50,7 @@ export function DiscordSettingRow({
 
   const handleDiscordUnlink = () => {
     if (identity) {
-      unlinkMutation.mutate(identity);
+      unlinkMutation.mutate();
     }
   };
 
@@ -68,7 +65,7 @@ export function DiscordSettingRow({
         </div>
         <p className="text-sm text-muted-foreground">
           {identity
-            ? `連携済み: ${identity.identity_data?.full_name}`
+            ? `連携済み: ${identity.name}`
             : "連携することで、Discordアカウントでログインできます。"}
         </p>
       </div>
