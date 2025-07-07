@@ -9,7 +9,6 @@ import {
   SetupSchema,
   UserProfileUpdateSchema,
 } from "@repo/core";
-import { deleteSupabaseUser } from "@repo/supabase";
 import { z } from "zod";
 import { Hono } from "hono";
 import { AuthenticatedEnv } from "../env";
@@ -24,7 +23,18 @@ const userRoute = new Hono<AuthenticatedEnv>()
   .get("/me", async (c) => {
     try {
       const user = await getUserById(c.var.db, c.var.userId);
-      return c.json(user);
+      const authUser = await c.var.auth.getUser(c.var.userId);
+      if (!user || !authUser) {
+        throw new HTTPException(404, {
+          message: "ユーザーが見つかりません",
+        });
+      }
+
+      return c.json({
+        ...user,
+        email: authUser.email,
+        isEmailVerified: authUser.isEmailVerified,
+      });
     } catch {
       throw new HTTPException(500, {
         message: "ユーザー情報の取得に失敗しました",
@@ -164,9 +174,9 @@ const userRoute = new Hono<AuthenticatedEnv>()
 
       // Supabaseからユーザーを削除
       try {
-        await deleteSupabaseUser(c.var.supabase, c.var.userId);
+        await c.var.auth.deleteUser(c.var.userId);
       } catch (supabaseError) {
-        console.error("Supabase user deletion failed:", supabaseError);
+        console.error("user deletion failed:", supabaseError);
         // Supabaseの削除が失敗してもデータベースの削除は成功しているため、
         // ログのみ記録してエラーは継続しない
       }

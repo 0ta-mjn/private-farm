@@ -1,13 +1,12 @@
 import { Database } from "@repo/db/client";
 import { DiscordRegistrationKeys } from "@repo/discord";
-import { Session, Supabase } from "@repo/supabase";
 import { BlankEnv } from "hono/types";
+import { AuthProvider } from "@repo/auth-admin";
 
 export type HonoEnv = BlankEnv & {
   Variables: {
     db: Database;
-    supabase: Supabase;
-    session: Session | undefined;
+    auth: AuthProvider;
     userId: string | undefined;
     discordKeys: DiscordRegistrationKeys;
   };
@@ -16,8 +15,7 @@ export type HonoEnv = BlankEnv & {
 export type AuthenticatedEnv = HonoEnv & {
   Variables: {
     db: Database;
-    supabase: Supabase;
-    session: Session;
+    auth: AuthProvider;
     userId: string;
   };
 };

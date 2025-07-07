@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@esbuild-plugins/tsconfig-paths": "catalog:",
+    "@repo/auth-admin": "workspace:*",
     "@repo/core": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/discord": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
-    "@repo/supabase": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "dotenv-cli": "catalog:",
