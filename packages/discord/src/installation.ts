@@ -57,7 +57,7 @@ export async function registerDiscordChannel(
   });
 
   if (!tokRes.ok) {
-    const res = await tokRes.json();
+    const res: any = await tokRes.json();
     throw createDiscordErrorFromResponse(res, tokRes.status);
   }
 

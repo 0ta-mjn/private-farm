@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { dbClient } from "@repo/db/client";
 import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
-import { sendViaWebhook, type WebhookPayload } from "./webhook";
+import { sendViaWebhook } from "./webhook";
 import { encrypt } from "./utils";
 import { randomUUID } from "crypto";
 import {
@@ -17,6 +17,7 @@ import {
   DiscordRateLimitError,
   DiscordChannelNotFoundError,
 } from "./errors";
+import { WebhookPayload } from "./types";
 
 const db = dbClient();
 

@@ -3,10 +3,6 @@ import { Hono } from "hono";
 import { DummyAuthProvider } from "@repo/auth-admin";
 import { authMiddleware } from "./auth";
 import { HonoEnv } from "../env";
-import {
-  AUTH_ACCESS_TOKEN_COOKIE,
-  AUTH_REFRESH_TOKEN_COOKIE,
-} from "@repo/config";
 
 const authProvider = new DummyAuthProvider({});
 
@@ -40,7 +36,7 @@ describe("authMiddleware", () => {
     it("should allow access with valid token", async () => {
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=test-token`,
+          Authorization: `Bearer test-token`,
         },
       });
 
@@ -65,7 +61,7 @@ describe("authMiddleware", () => {
 
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=custom-token`,
+          Authorization: `Bearer custom-token`,
         },
       });
 
@@ -85,7 +81,7 @@ describe("authMiddleware", () => {
     it("should return 401 when access token cookie is empty", async () => {
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=`,
+          Authorization: `Bearer `,
         },
       });
 
@@ -97,7 +93,7 @@ describe("authMiddleware", () => {
     it("should return 401 when token is invalid", async () => {
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=invalid-token`,
+          Authorization: `Bearer invalid-token`,
         },
       });
 
@@ -107,7 +103,7 @@ describe("authMiddleware", () => {
     it("should allow access with valid token in cookie", async () => {
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=test-token`,
+          Authorization: `Bearer test-token`,
         },
       });
 
@@ -121,7 +117,7 @@ describe("authMiddleware", () => {
     it("should return 401 when token is invalid", async () => {
       const res = await app.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=invalid-token`,
+          Authorization: `Bearer invalid-token`,
         },
       });
 
@@ -144,7 +140,7 @@ describe("authMiddleware", () => {
 
       const res = await failingApp.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=test-token`,
+          Authorization: `Bearer test-token`,
         },
       });
 
@@ -170,7 +166,7 @@ describe("authMiddleware", () => {
 
       const res = await errorApp.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=test-token`,
+          Authorization: `Bearer test-token`,
         },
       });
 
@@ -195,123 +191,7 @@ describe("authMiddleware", () => {
 
       const res = await httpExceptionApp.request("/protected/test", {
         headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=test-token`,
-        },
-      });
-
-      expect(res.status).toBe(401);
-    });
-  });
-
-  describe("token refresh", () => {
-    it("should refresh token when access token is expired but refresh token is valid", async () => {
-      // 期限切れのアクセストークンを持つユーザーを作成
-      const testUser = {
-        id: "test-user-refresh",
-        email: "refresh@example.com",
-        name: "Refresh User",
-        isEmailVerified: true,
-      };
-
-      // 期限切れのトークンを手動で追加（過去の日時で期限設定）
-      const expiredAccessToken = "expired-access-token";
-      const validRefreshToken = "valid-refresh-token";
-
-      // カスタムプロバイダーを作成してトークンを直接操作
-      const refreshTestProvider = new DummyAuthProvider();
-      refreshTestProvider.clear();
-      refreshTestProvider.addUser(testUser);
-
-      // 期限切れのアクセストークンを追加（内部のMapに直接アクセス）
-      refreshTestProvider["accessTokens"].set(expiredAccessToken, {
-        user: testUser,
-        expiresAt: Date.now() - 1000, // 1秒前に期限切れ
-        type: "access",
-      });
-
-      // 有効なリフレッシュトークンを追加
-      refreshTestProvider["refreshTokens"].set(validRefreshToken, {
-        user: testUser,
-        expiresAt: Date.now() + 86400000 * 7, // 7日後
-        type: "refresh",
-      });
-
-      const refreshApp = new Hono<HonoEnv>()
-        .use("*", async (c, next) => {
-          c.set("auth", refreshTestProvider);
-          await next();
-        })
-        .use("/protected/*", authMiddleware)
-        .get("/protected/test", (c) => {
-          const userId = c.get("userId");
-          return c.json({ message: "success", userId });
-        });
-
-      const res = await refreshApp.request("/protected/test", {
-        headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=${expiredAccessToken}; ${AUTH_REFRESH_TOKEN_COOKIE}=${validRefreshToken}`,
-        },
-      });
-
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.userId).toBe("test-user-refresh");
-
-      // 新しいトークンがCookieに設定されているかチェック
-      const cookies = res.headers.get("Set-Cookie");
-      expect(cookies).toContain(AUTH_ACCESS_TOKEN_COOKIE);
-      expect(cookies).toContain(AUTH_REFRESH_TOKEN_COOKIE);
-    });
-
-    it("should return 401 when both access and refresh tokens are invalid", async () => {
-      const res = await app.request("/protected/test", {
-        headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=invalid-access; ${AUTH_REFRESH_TOKEN_COOKIE}=invalid-refresh`,
-        },
-      });
-
-      expect(res.status).toBe(401);
-    });
-
-    it("should return 401 when refresh token is expired", async () => {
-      const testUser = {
-        id: "test-user-expired-refresh",
-        email: "expired-refresh@example.com",
-        name: "Expired Refresh User",
-        isEmailVerified: true,
-      };
-
-      const expiredRefreshProvider = new DummyAuthProvider();
-      expiredRefreshProvider.clear();
-      expiredRefreshProvider.addUser(testUser);
-
-      // 期限切れのアクセストークンと期限切れのリフレッシュトークンを追加
-      expiredRefreshProvider["accessTokens"].set("expired-access", {
-        user: testUser,
-        expiresAt: Date.now() - 1000,
-        type: "access",
-      });
-
-      expiredRefreshProvider["refreshTokens"].set("expired-refresh", {
-        user: testUser,
-        expiresAt: Date.now() - 1000, // 期限切れ
-        type: "refresh",
-      });
-
-      const expiredApp = new Hono<HonoEnv>()
-        .use("*", async (c, next) => {
-          c.set("auth", expiredRefreshProvider);
-          await next();
-        })
-        .use("/protected/*", authMiddleware)
-        .get("/protected/test", (c) => {
-          const userId = c.get("userId");
-          return c.json({ message: "success", userId });
-        });
-
-      const res = await expiredApp.request("/protected/test", {
-        headers: {
-          Cookie: `${AUTH_ACCESS_TOKEN_COOKIE}=expired-access; ${AUTH_REFRESH_TOKEN_COOKIE}=expired-refresh`,
+          Authorization: `Bearer test-token`,
         },
       });
 
