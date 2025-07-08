@@ -2,30 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useTRPC } from "@/trpc/client";
 import { useOrganization } from "@/contexts/organization-context";
 import { Button } from "@/shadcn/button";
 import { useThingDrawerActions } from "@/contexts/thing-drawer-context";
 import { ThingAccordionItem } from "@/components/thing/thing-accordion";
 import { useState } from "react";
 import { DeleteThingDialog } from "@/components/thing/delete-thing-dialog";
+import { things as thingsFactory } from "@/rpc/factory";
 
 export default function ThingsPage() {
-  const trpc = useTRPC();
   const { currentOrganizationId } = useOrganization();
 
   const actions = useThingDrawerActions();
   const [deletingThingId, setDeletingThingId] = useState<string | null>(null);
 
   // 区画一覧の取得
-  const { data: things, isLoading: isLoadingFields } = useQuery(
-    trpc.thing.list.queryOptions(
-      { organizationId: currentOrganizationId || "" },
-      {
-        enabled: !!currentOrganizationId,
-      }
-    )
-  );
+  const { data: things, isLoading: isLoadingFields } = useQuery({
+    ...thingsFactory.list(currentOrganizationId || ""),
+    enabled: !!currentOrganizationId,
+  });
 
   if (isLoadingFields || !currentOrganizationId) {
     return (

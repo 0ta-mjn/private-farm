@@ -57,7 +57,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: "pnpm --filter api start:testing",
+      command: "pnpm --filter @repo/api start:testing",
       port: 8000,
       reuseExistingServer: !process.env.CI,
     },

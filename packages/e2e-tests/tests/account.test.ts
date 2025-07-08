@@ -48,7 +48,7 @@ test.describe("Account Setting Test", () => {
     await page.click('[data-testid="sidebar-account-settings-button"]');
 
     // Click on account settings tab
-    await page.click('[data-slot="tabs-trigger"]:has-text("アカウント")', {
+    await page.click('[data-slot="tabs-trigger"]:has-text("ログイン")', {
       timeout: 5000,
     });
 

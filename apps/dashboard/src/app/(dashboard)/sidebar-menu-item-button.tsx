@@ -50,7 +50,7 @@ export function SidebarMenuItemButton({
         asChild
         isActive={isActive}
         disabled={item.disabled}
-        tooltip={item.disabled ? item.badge : undefined}
+        tooltip={item.label}
         onClick={() => {
           setOpenMobile(false);
         }}
@@ -70,7 +70,7 @@ export function SidebarMenuItemButton({
         setOpenMobile(false);
       }}
       disabled={item.disabled}
-      tooltip={item.disabled ? item.badge : undefined}
+      tooltip={item.label}
       isActive={isActive}
     >
       {content}

@@ -25,8 +25,10 @@ import {
 import { EyeIcon, EyeOffIcon, AlertCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { trpcClient } from "@/trpc/client";
+import DiscordSvg from "@/assets/discord-symbol.svg";
+import { client } from "@/rpc/client";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z.object({
@@ -53,59 +55,42 @@ export default function LoginPage() {
     },
   });
 
+  // Discord認証処理
+  const handleDiscordSignup = async () => {
+    setIsLoading(true);
+    setGeneralError(null);
+
+    try {
+      await auth.redirectOAuthSigninUrl("discord", {
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      });
+    } catch (err) {
+      console.error("Discord signup error:", err);
+      setGeneralError("Discord認証中にエラーが発生しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // フォーム送信処理
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setGeneralError(null);
 
     try {
-      // Supabase Auth にログインリクエスト
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
+      // Auth Provider にログインリクエスト
+      const data = await auth.signIn({
+        provider: "email",
+        input: {
+          email: values.email,
+          password: values.password,
+        },
       });
 
-      if (error) {
-        // エラーコードによる分岐処理
-        switch (error.code) {
-          case "invalid_credentials":
-            setGeneralError(
-              "メールアドレスまたはパスワードが正しくありません。"
-            );
-            break;
-          case "email_not_confirmed":
-            setGeneralError(
-              "メールアドレスが確認されていません。確認メールをご確認いただくか、再度ご登録ください。"
-            );
-            break;
-          case "too_many_requests":
-            setGeneralError(
-              "ログイン試行回数が多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          case "signin_disabled":
-            setGeneralError(
-              "サインインが無効になっています。管理者にお問い合わせください。"
-            );
-            break;
-          case "over_request_rate_limit":
-            setGeneralError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          default:
-            setGeneralError(
-              error.message || "ログイン中にエラーが発生しました"
-            );
-            break;
-        }
-        return;
-      }
-
-      if (data.user) {
+      if (data?.user) {
         try {
-          // tRPCで初期設定状態を確認
-          const setupStatus = await trpcClient.user.setupCheck.query();
+          // 初期設定状態を確認
+          const setupStatus = await client.user.setup.$get();
 
           if (setupStatus.isCompleted) {
             // 初期設定完了済みの場合はダッシュボードへ
@@ -122,9 +107,40 @@ export default function LoginPage() {
           );
         }
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      setGeneralError("ログイン中にエラーが発生しました");
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof AuthError) {
+        // エラーコードによる分岐処理
+        switch (error.code) {
+          case "invalid_credentials":
+            setGeneralError(
+              "メールアドレスまたはパスワードが正しくありません。"
+            );
+            break;
+          case "email_not_verified":
+            setGeneralError(
+              "メールアドレスが確認されていません。確認メールをご確認いただくか、再度ご登録ください。"
+            );
+            break;
+          case "account_locked":
+            setGeneralError(
+              "ログイン試行回数が多すぎます。しばらく時間をおいてから再度お試しください。"
+            );
+            break;
+          case "account_disabled":
+            setGeneralError(
+              "サインインが無効になっています。管理者にお問い合わせください。"
+            );
+            break;
+          default:
+            setGeneralError(
+              error.message || "ログイン中にエラーが発生しました"
+            );
+            break;
+        }
+      } else {
+        setGeneralError("ログイン中にエラーが発生しました");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +153,31 @@ export default function LoginPage() {
         <CardDescription>Private Farm にログインしてください。</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Discordサインアップボタン */}
+        <div className="space-y-4 mb-6">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full flex items-center justify-center gap-3 bg-discord-bg text-white hover:bg-discord-bg/90 hover:text-white"
+            onClick={handleDiscordSignup}
+            disabled={isLoading}
+          >
+            <DiscordSvg className="w-5 h-5" />
+            {isLoading ? "認証中..." : "Discordでログイン"}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                または
+              </span>
+            </div>
+          </div>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* メールアドレス */}

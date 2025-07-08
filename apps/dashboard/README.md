@@ -3,10 +3,10 @@
 このレポジトリのゴールは小規模個人農家向けのIoT基盤システムを構築することです。
 
 このレポジトリではturborepoを使用して、モノレポ形式で開発を行います。
-パッケージマネージャはpnpmを使用し、Node.jsのバージョンは20.xを想定しています。
+パッケージマネージャはpnpmを使用し、Node.jsのバージョンは22.xを想定しています。
 
 フロントエンドはNext.jsを使用し、UIはshadcn/uiをベースにしたコンポーネントライブラリを使用します。
-バックエンドはtRPCを使用してFastifyでAPIを提供します。
+バックエンドはHonoを使用してAPIを提供します。
 
 認証はsupabaseを使用する。
 
@@ -17,7 +17,7 @@
 - **@/**: `src/` ディレクトリのエイリアス
 - **@/shadcn**: shadcn/ui コンポーネント用の専用ディレクトリ
 - **@/lib**: ユーティリティ関数やライブラリ設定
-- **@/trpc**: tRPC クライアント設定
+- **@/rpc**: Hono RPC クライアント設定
 - **@/components**: 汎用コンポーネント
 
 ### Next.js 設定
@@ -40,58 +40,49 @@
 - **パッケージマネージャー**: pnpm (Workspace 機能使用)
 - **Monorepo**: Turborepo でパッケージ管理
 - **カタログ機能**: 共通依存関係のバージョン統一
-- **tRPC設定**: "@repo/api" パッケージを使用して、tRPC クライアントとサーバーの設定を統一
+- **API設定**: Hono RPC クライアントとファクトリを使用してAPIエンドポイントの設定を統一
 
 ## 基本的な使用パターン
 
-### tRPC使用方法
+### Hono RPC使用方法
 
-- `@trpc/tanstack-react-query` を使用して、tRPC クライアントを React コンポーネント内で使用します。
+- `@/rpc/client` と `@/rpc/factory` を使用して、Hono RPC クライアントを React コンポーネント内で使用します。
 
 ```tsx
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users } from "@/rpc/factory";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 ...
 
-// コンポーネント内でのtRPC使用
-const trpc = useTRPC();
-
 // Query（データ取得）
-const queryResponse = useQuery(
-  trpc.user.getUser.queryOptions()
-);
+const { data: userData, isLoading } = useQuery({
+  ...users.getUser(),
+  enabled: !!userId, // 条件付きクエリ実行
+});
 
 // Mutation（データ更新）
-const setupMutation = useMutation(
-  trpc.user.setup.mutationOptions({
-    onSuccess: (data) => {
-      // 成功時の処理
-    },
-    onError: (error) => {
-      // エラー時の処理
-    },
-  })
-);
+const queryClient = useQueryClient();
+const setupMutation = useMutation({
+  mutationFn: (data) => client.api.users.setup.$post({ form: data }),
+  onSuccess: (data) => {
+    // 成功時の処理
+    // キャッシュ無効化
+    queryClient.invalidateQueries({ queryKey: users.setupCheck.queryKey });
+  },
+  onError: (error) => {
+    // ClientError を使用したエラーハンドリング
+    if (error instanceof ClientError && error.status === 401) {
+      // 認証エラーの処理
+    }
+  },
+});
 
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  // Create QueryOptions which can be passed to query hooks
-  const myQueryOptions = trpc.user.someRPC.query.queryOptions({ /** inputs */ }, {
-    /** useQuery options */
-  })
-  const myQuery = useQuery(myQueryOptions)
-  // or:
-  // useSuspenseQuery(myQueryOptions)
-  // useInfiniteQuery(myQueryOptions)
-  // Create MutationOptions which can be passed to useMutation
-  const myMutationOptions = trpc.user.someRPC.mutation.mutationOptions()
-  const myMutation = useMutation(myMutationOptions)
-  // Create a QueryKey which can be used to manipulated many methods
-  // on TanStack's QueryClient in a type-safe manner
-  const myQueryKey = trpc.user.someRPC.query.queryKey()
-  const invalidateMyQueryKey = () => {
-    queryClient.invalidateQueries({ queryKey: myQueryKey })
-  }
+// ファクトリを使用したQueryKey取得
+const userQueryKey = users.getUser.queryKey;
+const invalidateUserQuery = () => {
+  queryClient.invalidateQueries({ queryKey: userQueryKey });
+};
 
 ```
 
@@ -104,7 +95,9 @@ const setupMutation = useMutation(
 import { Button } from "@/shadcn/button";
 const MyComponent = () => {
   return (
-    <Button onClick={() => console.log("Clicked!")}>
+    <Button onClick={() => {
+      // ボタンがクリックされたときの処理
+    }}>
       クリック
     </Button>
   );
@@ -121,9 +114,9 @@ import { supabase } from "@/lib/supabase";
 const signUp = async (email: string, password: string) => {
   const { user, error } = await supabase.auth.signUp({ email, password });
   if (error) {
-    console.error("Sign up error:", error);
+    // エラーハンドリング
   } else {
-    console.log("User signed up:", user);
+    // ユーザー登録成功時の処理
   }
 };
 ```
@@ -177,7 +170,6 @@ const MyForm = () => {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("Form submitted:", data);
     // ここでAPI呼び出しなどの処理を行う
   };
 
@@ -219,3 +211,15 @@ const Button = ({ className, variant, ...props }) => {
 
 - コンポーネントテスト: `vitest`, `@testing-library/react` を使用
 - e2eテスト: `playwright` を使用
+
+## デプロイメント
+
+### Cloudflare Workers
+
+[OpenNext](https://opennext.js.org/cloudflare) を使用して、Cloudflare Workers 上にデプロイします。
+
+1. `../../infra/cloudflare/dashboard/wrangler.toml` を確認し、
+   - `NEXT_INC_CACHE_R2_BUCKET` のバケット名を確認
+1. `pnpm cf:preview` でローカルプレビュー
+1. `pnpm wrangler r2 bucket create <bucket_name>` でR2バケットを作成
+1. `pnpm cf:deploy` でデプロイ

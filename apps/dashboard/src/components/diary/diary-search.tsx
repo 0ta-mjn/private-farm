@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
-import { useOrganization } from "@/contexts/organization-context";
 import {
   Command,
   CommandInput,
@@ -19,47 +17,49 @@ import { Skeleton } from "@/shadcn/skeleton";
 import { CalendarIcon, MapPinIcon } from "lucide-react";
 import { getWeatherDisplay } from "@/constants/agricultural-constants";
 import { cn } from "@/lib/utils";
-import { RouterOutputs } from "@repo/api";
 import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
+import { ThingFilter, ThingFilterValue } from "@/components/thing/thing-filter";
+import { WorkTypeFilter } from "@/components/diary/work-type-filter";
+import { diaries as diaryFactory } from "@/rpc/factory";
+import { client } from "@/rpc/client";
+
+type DiaryResponse = Awaited<
+  ReturnType<(typeof client)["diary"]["search"][":organizationId"]["$get"]>
+>["diaries"][0];
 
 interface DiarySearchProps {
-  onDiarySelect?: (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => void;
+  onDiarySelect?: (diary: DiaryResponse) => void;
   currentUserId: string;
+  organizationId: string;
   className?: string;
 }
 
 interface DiarySearchListProps {
   searchQuery: string;
   currentUserId: string;
-  onDiarySelect: (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => void;
+  onDiarySelect: (diary: DiaryResponse) => void;
+  organizationId: string;
+  workType?: string | null;
+  thingId?: string | null;
 }
 
 function DiarySearchList({
   searchQuery,
   currentUserId,
   onDiarySelect,
+  organizationId,
+  workType,
+  thingId,
 }: DiarySearchListProps) {
-  const trpc = useTRPC();
-  const { currentOrganizationId } = useOrganization();
-
   // 検索結果を取得
   const diariesQuery = useQuery(
-    trpc.diary.search.queryOptions(
-      {
-        organizationId: currentOrganizationId || "",
-        offset: 0,
-        limit: 20, // インライン表示なので20件まで
-        search: searchQuery || undefined,
-      },
-      {
-        enabled: !!currentOrganizationId,
-        staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-      }
-    )
+    diaryFactory
+      .list(organizationId, {
+        limit: "20", // インライン表示なので20件まで
+        workTypes: workType ? [workType] : undefined,
+        thingIds: thingId ? [thingId] : undefined,
+      })
+      ._ctx.search(searchQuery || "")
   );
 
   const diaries = diariesQuery.data?.diaries || [];
@@ -67,36 +67,34 @@ function DiarySearchList({
   // ローディング中はスケルトンを表示
   if (diariesQuery.isLoading) {
     return (
-      <CommandList>
-        <CommandGroup heading="検索中...">
-          <div className="flex flex-col items-start gap-2 p-3">
-            <div className="w-full">
-              {/* ヘッダースケルトン */}
-              <div className="flex items-center gap-2 mb-1">
-                <Skeleton className="h-3 w-3 rounded" />
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-5 w-12 rounded-md" />
-                <Skeleton className="h-5 w-16 rounded-md" />
-              </div>
-
-              {/* タイトルスケルトン */}
-              <Skeleton className="h-4 w-3/4 mb-1" />
-
-              {/* 内容スケルトン */}
-              <Skeleton className="h-3 w-full mb-2" />
-              <Skeleton className="h-3 w-2/3" />
+      <CommandGroup heading="検索中...">
+        <div className="flex flex-col items-start gap-2 p-3">
+          <div className="w-full">
+            {/* ヘッダースケルトン */}
+            <div className="flex items-center gap-2 mb-1">
+              <Skeleton className="h-3 w-3 rounded" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-5 w-12 rounded-md" />
+              <Skeleton className="h-5 w-16 rounded-md" />
             </div>
+
+            {/* タイトルスケルトン */}
+            <Skeleton className="h-4 w-3/4 mb-1" />
+
+            {/* 内容スケルトン */}
+            <Skeleton className="h-3 w-full mb-2" />
+            <Skeleton className="h-3 w-2/3" />
           </div>
-        </CommandGroup>
-      </CommandList>
+        </div>
+      </CommandGroup>
     );
   }
 
   return (
-    <CommandList>
+    <>
       <CommandEmpty>該当する日誌が見つかりません</CommandEmpty>
       {diaries.length > 0 && (
-        <CommandGroup heading="検索結果">
+        <CommandGroup>
           {diaries.map((diary) => {
             const weatherDisplay = getWeatherDisplay(diary.weather);
 
@@ -119,10 +117,10 @@ function DiarySearchList({
                       </span>
 
                       {weatherDisplay && (
-                        <Badge variant="outline" className="text-xs h-5">
-                          {weatherDisplay.label}
+                        <div className="text-xs h-5">
+                          {weatherDisplay.icon || weatherDisplay.label}
                           {diary.temperature && ` ${diary.temperature}°C`}
-                        </Badge>
+                        </div>
                       )}
 
                       <DiaryWorkTypeChip workType={diary.workType} />
@@ -162,27 +160,33 @@ function DiarySearchList({
           })}
         </CommandGroup>
       )}
-    </CommandList>
+    </>
   );
 }
 
 export function DiarySearch({
   onDiarySelect,
   currentUserId,
+  organizationId,
   className,
 }: DiarySearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [workTypeFilter, setWorkTypeFilter] = useState<string | null>(null);
+  const [thingFilter, setThingFilter] = useState<ThingFilterValue | null>(null);
+
   const [isOpen, setIsOpen] = useState(false);
-  const commandRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const insideRefSet = useRef<Set<HTMLElement>>(new Set());
 
   // 外部クリックで閉じる
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        commandRef.current &&
-        !commandRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as HTMLElement;
+      // クリックされた要素がCommand内にあるかチェック
+      const isInsideCommand = Array.from(insideRefSet.current).some((ref) =>
+        ref.contains(target)
+      );
+      if (!isInsideCommand) {
         setIsOpen(false);
       }
     };
@@ -191,9 +195,7 @@ export function DiarySearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleDiarySelect = (
-    diary: RouterOutputs["diary"]["search"]["diaries"][number]
-  ) => {
+  const handleDiarySelect = (diary: DiaryResponse) => {
     onDiarySelect?.(diary);
     setIsOpen(false);
     setSearchQuery(""); // 選択後にクリア
@@ -202,8 +204,12 @@ export function DiarySearch({
 
   return (
     <div
-      ref={commandRef}
-      className={cn("relative w-full max-w-2xl", className)}
+      ref={(commandRef) => {
+        if (commandRef) {
+          insideRefSet.current.add(commandRef);
+        }
+      }}
+      className={cn("relative md:min-w-sm lg:min-w-md", className)}
     >
       <Command className="border focus:shadow-sm">
         <CommandInput
@@ -218,13 +224,42 @@ export function DiarySearch({
 
         {/* 検索結果のドロップダウン */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 z-50 bg-background shadow-lg max-h-96 overflow-hidden">
-            <DiarySearchList
-              searchQuery={searchQuery}
-              currentUserId={currentUserId}
-              onDiarySelect={handleDiarySelect}
-            />
-          </div>
+          <CommandList>
+            <div className="absolute top-full left-0 right-0 z-50 bg-background shadow-lg max-h-96 space-y-2 overflow-hidden p-2">
+              <div className="w-full flex items-center gap-2">
+                <ThingFilter
+                  organizationId={organizationId}
+                  value={thingFilter}
+                  onChange={setThingFilter}
+                  size="sm"
+                  contentRef={(e) => {
+                    if (e) {
+                      insideRefSet.current.add(e);
+                    }
+                  }}
+                />
+                <WorkTypeFilter
+                  value={workTypeFilter}
+                  onChange={setWorkTypeFilter}
+                  size="sm"
+                  contentRef={(e) => {
+                    if (e) {
+                      insideRefSet.current.add(e);
+                    }
+                  }}
+                />
+              </div>
+
+              <DiarySearchList
+                organizationId={organizationId}
+                searchQuery={searchQuery}
+                currentUserId={currentUserId}
+                workType={workTypeFilter}
+                thingId={thingFilter?.id || null}
+                onDiarySelect={handleDiarySelect}
+              />
+            </div>
+          </CommandList>
         )}
       </Command>
     </div>

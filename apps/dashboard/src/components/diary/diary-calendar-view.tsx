@@ -15,12 +15,16 @@ import { ja } from "date-fns/locale";
 import { Button } from "@/shadcn/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { RouterOutputs } from "@repo/api";
 import { DiaryWorkTypeChip } from "@/components/diary/diary-work-type-chip";
+import { client } from "@/rpc/client";
 
-// tRPCの型定義を利用 - 月の日誌サマリーの配列型
+// の型定義を利用 - 期間の日誌サマリーの配列型
 type DiaryMonthSummaryData = Pick<
-  RouterOutputs["diary"]["byMonth"][number],
+  Awaited<
+    ReturnType<
+      (typeof client)["diary"]["by-date-range"][":organizationId"]["$get"]
+    >
+  >[number],
   "id" | "date" | "workType"
 >;
 
@@ -67,44 +71,6 @@ export function generateCalendarDays(currentMonth: Date) {
   return eachDayOfInterval({ start: startDate, end: endDate });
 }
 
-export function getDayClassNames(
-  date: Date,
-  selectedDate: Date | null,
-  currentMonth: Date
-) {
-  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
-  const isTodayDate = isToday(date);
-  const isInCurrentMonth = isSameMonth(date, currentMonth);
-
-  return cn(
-    "min-h-[5rem] md:min-h-[7.5rem] p-1 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
-    isTodayDate && "bg-primary/20 border-primary",
-    isSelected && "bg-accent/20 border-accent",
-    !isInCurrentMonth && "hidden md:block opacity-40"
-  );
-}
-
-export function getDateTextClassNames(
-  date: Date,
-  selectedDate: Date | null,
-  currentMonth: Date
-) {
-  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
-  const isTodayDate = isToday(date);
-  const isSunday = getDay(date) === 0; // 日曜日
-  const isSaturday = getDay(date) === 6; // 土曜日
-  const isInCurrentMonth = isSameMonth(date, currentMonth);
-
-  return cn(
-    "text-sm font-medium text-center",
-    isSunday && "text-red-500",
-    isSaturday && "text-blue-500",
-    !isInCurrentMonth && "text-muted-foreground",
-    isTodayDate && "text-primary font-bold",
-    isSelected && "text-accent font-bold"
-  );
-}
-
 export function DiaryCalendarView({
   currentMonth,
   selectedDate,
@@ -130,17 +96,19 @@ export function DiaryCalendarView({
     onMonthChange("next");
   };
 
+  const title = format(currentMonth, "yyyy年 M月", { locale: ja });
+
   return (
     <div className="w-full flex flex-col gap-4" data-testid="diary-calendar">
       <div className="flex items-center justify-between">
         <h2
-          className="text-lg font-semibold"
+          className="text-lg font-semibold hidden md:block"
           data-testid="diary-calendar-title"
         >
-          {format(currentMonth, "yyyy年 M月", { locale: ja })}
+          {title}
         </h2>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full md:w-fit items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -151,6 +119,14 @@ export function DiaryCalendarView({
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
+
+          <h2
+            className="text-lg text-center font-semibold flex-1 md:hidden"
+            data-testid="diary-calendar-title-mobile"
+          >
+            {title}
+          </h2>
+
           <Button
             variant="outline"
             size="sm"
@@ -196,14 +172,24 @@ export function DiaryCalendarView({
           {calendarDays.map((date, index) => {
             const dateKey = format(date, "yyyy-MM-dd");
             const dayDiaries = diariesByDate[dateKey] || [];
+            const isSelected = selectedDate
+              ? isSameDay(date, selectedDate)
+              : false;
+            const isTodayDate = isToday(date);
             const isInCurrentMonth = isSameMonth(date, currentMonth);
+            const day = getDay(date);
 
             return (
               <button
                 role="button"
                 tabIndex={0}
                 key={index}
-                className={getDayClassNames(date, selectedDate, currentMonth)}
+                className={cn(
+                  "min-h-[3.5rem] md:min-h-[7.5rem] p-1 space-y-1 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50",
+                  isTodayDate && "bg-primary/20 border-primary",
+                  isSelected && "bg-accent/20 border-accent",
+                  !isInCurrentMonth && "hidden md:block opacity-40"
+                )}
                 onClick={() => onDateSelect(date)}
                 data-testid={`diary-calendar-day-${dateKey}`}
                 data-date={dateKey}
@@ -219,10 +205,13 @@ export function DiaryCalendarView({
               >
                 {/* 日付 */}
                 <div
-                  className={getDateTextClassNames(
-                    date,
-                    selectedDate,
-                    currentMonth
+                  className={cn(
+                    "text-sm font-medium text-center",
+                    day === 0 && "text-red-500",
+                    day === 6 && "text-blue-500",
+                    !isInCurrentMonth && "text-muted-foreground",
+                    isTodayDate && "text-primary font-bold",
+                    isSelected && "text-accent font-bold"
                   )}
                   data-testid={`diary-calendar-date-${dateKey}`}
                 >
@@ -232,7 +221,7 @@ export function DiaryCalendarView({
                 {/* 作業種別バッジ */}
                 {dayDiaries.length > 0 && (
                   <div
-                    className="space-y-1"
+                    className="flex items-center justify-center gap-1 flex-wrap"
                     data-testid={`diary-calendar-diaries-${dateKey}`}
                   >
                     {dayDiaries
@@ -242,7 +231,7 @@ export function DiaryCalendarView({
                           key={diary.id}
                           workType={diary.workType}
                           data-testid={`diary-calendar-diary-badge-${dateKey}-${diaryIndex}`}
-                          className="w-full"
+                          className="max-w-full md:w-full"
                         />
                       ))}
                     {dayDiaries.length > MAX_VISIBLE_DIARIES_PER_DAY && (

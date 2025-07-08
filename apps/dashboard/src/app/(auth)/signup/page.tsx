@@ -31,7 +31,9 @@ import {
   CheckCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import DiscordSvg from "@/assets/discord-symbol.svg";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z
@@ -81,6 +83,23 @@ export default function SignupPage() {
     },
   });
 
+  // Discord認証処理
+  const handleDiscordSignup = async () => {
+    setIsLoading(true);
+    setGeneralError(null);
+
+    try {
+      await auth.redirectOAuthSigninUrl("discord", {
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      });
+    } catch (err) {
+      console.error("Discord signup error:", err);
+      setGeneralError("Discord認証中にエラーが発生しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // フォーム送信処理
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -88,26 +107,29 @@ export default function SignupPage() {
 
     try {
       // Supabase Auth にユーザー登録リクエスト
-      const { data, error } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+      const data = await auth.signUp({
+        provider: "email",
+        input: {
+          email: values.email,
+          password: values.password,
+          redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
         },
       });
 
-      if (error) {
+      if (data) {
+        setUserEmail(values.email);
+        setEmailSent(true);
+      }else {
+        console.warn("Signup response did not contain accessToken", data);
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      if (error instanceof AuthError) {
         // エラーコードによる分岐処理
         switch (error.code) {
-          case "email_exists":
           case "user_already_exists":
             setGeneralError(
               "このメールアドレスは既に登録されています。ログインしてください。"
-            );
-            break;
-          case "validation_failed":
-            setGeneralError(
-              "入力内容に問題があります。もう一度確認してください。"
             );
             break;
           case "weak_password":
@@ -115,23 +137,10 @@ export default function SignupPage() {
               "パスワードが脆弱です。より強力なパスワードを設定してください。"
             );
             break;
-          case "signup_disabled":
-            setGeneralError(
-              "サインアップが無効になっています。管理者にお問い合わせください。"
-            );
-            break;
-          case "over_request_rate_limit":
-            setGeneralError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
-            );
-            break;
-          case "over_email_send_rate_limit":
+          case "rate_limit_exceeded":
             setGeneralError(
               "メール送信の制限に達しました。しばらく時間をおいてから再度お試しください。"
             );
-            break;
-          case "captcha_failed":
-            setGeneralError("認証に失敗しました。再度お試しください。");
             break;
           default:
             setGeneralError(
@@ -139,16 +148,7 @@ export default function SignupPage() {
             );
             break;
         }
-        return;
       }
-
-      if (data.user) {
-        setUserEmail(values.email);
-        setEmailSent(true);
-      }
-    } catch (err) {
-      console.error("Signup error:", err);
-      setGeneralError("サインアップ中にエラーが発生しました");
     } finally {
       setIsLoading(false);
     }
@@ -197,6 +197,31 @@ export default function SignupPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Discordサインアップボタン */}
+        <div className="space-y-4 mb-6">
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full flex items-center justify-center gap-3 bg-discord-bg text-white hover:bg-discord-bg/90 hover:text-white"
+            onClick={handleDiscordSignup}
+            disabled={isLoading}
+          >
+            <DiscordSvg className="w-5 h-5" />
+            {isLoading ? "認証中..." : "Discordでサインアップ"}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                または
+              </span>
+            </div>
+          </div>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* メールアドレス */}

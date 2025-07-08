@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useAuthLoading } from "./auth-context";
-import { useTRPC } from "@/trpc/client";
+import { users } from "@/rpc/factory";
+import { ClientError } from "@/rpc/client";
 import { useQuery } from "@tanstack/react-query";
 
 /**
@@ -43,27 +44,43 @@ export function useRequireAuthAndSetup(
   const user = useUser();
   const loading = useAuthLoading();
   const router = useRouter();
-  const trpc = useTRPC();
 
   // 初期設定状態の確認
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
-    trpc.user.setupCheck.queryOptions(undefined, {
-      enabled: !!user && !loading, // ユーザーが認証済みの場合のみ実行
-    })
-  );
+  const {
+    data: setupStatus,
+    isLoading: isCheckingSetup,
+    error,
+  } = useQuery({
+    ...users.setupCheck(),
+    enabled: !!user && !loading, // ユーザーが認証済みの場合のみ実行
+    retry: (_, e: ClientError) => {
+      switch (e.status) {
+        case 401:
+          // 認証エラーの場合はリトライしない
+          return false;
+        default:
+          // その他のエラーはリトライする
+          return true;
+      }
+    },
+  });
 
   useEffect(() => {
     // ローディング中は何もしない
     if (loading || isCheckingSetup) return;
 
-    // ユーザーが認証されていない場合はログインページにリダイレクト
-    if (!user) {
+    // ユーザーが認証されていない場合またはAPIエラーの場合はログインページにリダイレクト
+    if (!user || (error instanceof ClientError && error.status === 401)) {
+      console.warn(
+        "Redirecting to login page due to unauthenticated user or API error"
+      );
       router.replace(loginRedirectTo);
       return;
     }
 
     // 初期設定が完了していない場合はセットアップページにリダイレクト
     if (setupStatus && !setupStatus.isCompleted) {
+      console.warn("Redirecting to setup page due to incomplete setup");
       router.replace(setupRedirectTo);
       return;
     }
@@ -75,6 +92,7 @@ export function useRequireAuthAndSetup(
     router,
     loginRedirectTo,
     setupRedirectTo,
+    error,
   ]);
 
   return {
@@ -99,6 +117,7 @@ export function useRedirectIfAuthenticated(redirectTo: string = "/dashboard") {
 
     // ユーザーが認証済みの場合はダッシュボードにリダイレクト
     if (user) {
+      console.warn("Redirecting to dashboard due to authenticated user");
       router.replace(redirectTo);
     }
   }, [user, loading, router, redirectTo]);

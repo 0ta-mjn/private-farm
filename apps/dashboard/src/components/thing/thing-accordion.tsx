@@ -3,10 +3,12 @@
 import { Button } from "@/shadcn/button";
 import { Card, CardContent } from "@/shadcn/card";
 import { Delete, Edit, MapPin, Ruler } from "lucide-react";
-import { RouterOutputs } from "@repo/api";
 import { ThingTypeChip } from "@/components/thing/thing-type-chip";
+import { client } from "@/rpc/client";
 
-type ThingItem = RouterOutputs["thing"]["list"][number];
+type ThingItem = Awaited<
+  ReturnType<(typeof client.thing.list)[":organizationId"]["$get"]>
+>[number];
 
 interface ThingAccordionItemProps {
   thing: ThingItem;

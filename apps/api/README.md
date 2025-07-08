@@ -1,11 +1,11 @@
-# tRPC API サーバー
+# Hono API サーバー
 
 このレポジトリのゴールは小規模個人農家向けのIoT基盤システムを構築することです。
 
 このレポジトリではturborepoを使用して、モノレポ形式で開発を行います。
-パッケージマネージャはpnpmを使用し、Node.jsのバージョンは20.xを想定しています。
+パッケージマネージャはpnpmを使用し、Node.jsのバージョンは22.xを想定しています。
 
-バックエンドはtRPCを使用してFastifyでAPIを提供します。
+バックエンドはHonoを使用してAPIを提供します。
 フロントエンドはNext.jsを使用します。
 
 認証はsupabaseを使用し、DBはDrizzle ORMを使用したPostgreSQLとします。
@@ -13,11 +13,9 @@
 ## APIの構成
 
 - **APIパッケージ**: `apps/api`
-  - Fastifyを使用したサーバー実装
-  - 基本的なロジックは書かず、Fastifyに依存するミドルウェアやプラグインとデプロイ設定のみを記述
-- **APIパッケージ**: `packages/api`
-  - tRPCクライアントとサーバーの設定を含む
-  - routerの定義とエンドポイントの実装を行う
+  - Honoを使用したサーバー実装
+  - ルーティング、ミドルウェア、認証、バリデーション、エラーハンドリングを実装
+  - 基本的なビジネスロジックは`packages/core`に委譲
 - **APIサーバー**: `packages/core`
   - APIサーバーのビジネスロジックを実装
   - `src/services`にビジネスロジックとそのテストを配置
@@ -28,30 +26,43 @@
 
 関数型プログラミングのスタイルを取り入れ、TDDを意識して実装を進めます。
 
-1. `packages/api/src/router/`内に各エンドポイントのrouterを定義
+1. `apps/api/src/routes/`内に各エンドポイントのルートを定義
 
     ```ts
-    import type { TRPCRouterRecord } from "@trpc/server";
-    import { TRPCError } from "@trpc/server";
-    import { protectedProcedure } from "../trpc";
+    import { Hono } from "hono";
+    import { zValidator } from "@hono/zod-validator";
+    import { HTTPException } from "hono/http-exception";
+    import { AuthenticatedEnv } from "../env";
+    import { OrganizationMembershipMiddleware } from "../middleware/organization";
     import { SetupSchema, setupUserAndOrganization } from "@repo/core";
 
-    export const userRouter = {
-      setup: protectedProcedure
-        .input(SetupSchema)
-        .mutation(async ({ ctx, input }) => {
-          // 実際の処理
+    const userRoute = new Hono<AuthenticatedEnv>()
+      .post(
+        "/setup/:organizationId",
+        zValidator("param", z.object({ organizationId: z.string() })),
+        zValidator("form", SetupSchema),
+        OrganizationMembershipMiddleware({ role: "admin" }),
+        async (c) => {
+          const { organizationId } = c.req.valid("param");
+          const input = c.req.valid("form");
+
           try {
-            return setupUserAndOrganization(
-              ctx.db,
-              ctx.user.id,
+            const result = await setupUserAndOrganization(
+              c.var.db,
+              c.var.userId,
               input
             );
+            return c.json(result);
           } catch (error) {
             // エラーハンドリング
+            throw new HTTPException(500, {
+              message: "Setup failed",
+            });
           }
-        }),
-    } satisfies TRPCRouterRecord;
+        }
+      );
+
+    export { userRoute };
     ```
 
 2. `packages/core/src/services`にビジネスロジック用の関数を配置

@@ -1,4 +1,4 @@
-# Private Farm IoT システム
+# SatoPod IoT システム
 
 小規模個人農家向けのIoT基盤システムです。農業の効率化・省力化と生産性向上を目指します。
 
@@ -13,37 +13,211 @@
 
 ## 技術スタック
 
+### 開発・ビルドツール
+
 - **モノレポ管理**: Turborepo
-- **パッケージマネージャ**: pnpm
-- **フロントエンド**: Next.js 15 (App Router) + React 19
-- **UI**: shadcn/ui + Tailwind CSS v4.0
-- **バックエンド**: tRPC + Fastify
-- **データベース**: PostgreSQL + Drizzle ORM
-- **認証**: Supabase Auth
+- **パッケージマネージャ**: pnpm (workspace対応)
 - **開発環境**: Turbopack
-- **テスト**: Vitest
 - **型安全性**: TypeScript
+- **コード品質**: ESLint + Prettier
+
+### フロントエンド
+
+- **フレームワーク**: Next.js 15 (App Router) + React 19
+- **UI フレームワーク**: shadcn
+- **スタイリング**: Tailwind CSS v4
+- **状態管理**: Tanstack Query
+- **フォーム**: React Hook Form
+- **バリデーション**: Zod
+- **日付処理**: date-fns + React Day Picker
+- **アイコン**: Lucide React
+- **通知**: Sonner
+- **テーマ**: next-themes
+- **テスト**: Vitest + Testing Library
+
+### バックエンド
+
+- **API フレームワーク**: Hono
+- **バリデーション**: @hono/zod-validator + Zod
+- **データベース**: PostgreSQL
+- **ORM**: Drizzle ORM + drizzle-zod
+- **スキーマ管理**: Drizzle Kit[text](docs/adr/trpc_vs_hono.md)
+- **認証**: Supabase Auth + @supabase/supabase-js
+- **デプロイ**: Cloudflare Workers (Wrangler)
+
+### テスト・品質保証
+
+- **単体テスト**: Vitest
+- **UI テスト**: Testing Library (React)
+- **E2E テスト**: Playwright
+- **リント**: ESLint (TypeScript ESLint, React, Turbo)
+- **フォーマット**: Prettier
 
 ## プロジェクト構成
 
-### Apps and Packages
+### Apps（アプリケーション）
 
-- `apps/dashboard`: Next.js製のフロントエンドダッシュボード
-- `apps/api`: Fastify製のAPIサーバー
-- `packages/api`: tRPCルーターとエンドポイント定義
-- `packages/core`: ビジネスロジック実装
-- `packages/db`: Drizzle ORMによるデータベース設定
-- `packages/config`: 設定ファイルとエラー定義
-- `packages/supabase`: Supabase設定
-- `packages/eslint-config`: ESLint設定
-- `packages/tsconfig`: TypeScript設定
-- `emulator`: Supabaseローカル開発環境
+#### `apps/dashboard` - フロントエンドダッシュボード
+
+- **フレームワーク**: Next.js 15 (App Router) + React 19
+- **UI**: shadcn/ui + Radix UI + Tailwind CSS v4.0
+- **スタイリング**: class-variance-authority, clsx, tailwind-merge
+- **フォーム**: React Hook Form + Zod
+- **日付**: date-fns, React Day Picker
+- **アイコン**: Lucide React
+- **通知**: Sonner
+- **テーマ**: next-themes
+- **テスト**: Vitest + Testing Library
+
+**主要ディレクトリ**:
+
+```text
+src/
+├── app/          # Next.js App Router
+├── assets/       # 静的アセット
+├── components/   # UIコンポーネント
+├── constants/    # 定数定義
+├── contexts/     # React Context
+├── hooks/        # カスタムフック
+├── lib/         # ユーティリティ
+├── rpc/         # API呼び出し層
+└── shadcn/      # shadcn/ui コンポーネント
+```
+
+#### `apps/api` - APIサーバー
+
+- **フレームワーク**: Hono
+- **バリデーション**: @hono/zod-validator + Zod
+- **デプロイ**: Cloudflare Workers (Wrangler)
+- **ビルド**: tsup
+
+**主要ディレクトリ**:
+
+```text
+src/
+├── app.ts          # Honoアプリケーション
+├── auth.ts         # 認証関連
+├── index.ts        # エントリーポイント
+├── middleware/     # ミドルウェア
+└── routes/         # APIルート
+```
+
+#### `apps/reviewer` - Discord通知システム
+
+- **フレームワーク**: Cloudflare Workers
+- **Discord API**: discord-api-types
+- **バリデーション**: Zod
+- **デプロイ**: Cloudflare Workers (Wrangler)
+- **ビルド**: tsup
+- **機能**: 農場状態変化・異常検知の Discord 通知
+
+**主要ディレクトリ**:
+
+```text
+src/
+└── daily/          # デイリー通知関連
+```
+
+### Packages（共有パッケージ）
+
+#### `packages/core` - ビジネスロジック
+
+- **機能**: サービス層の実装、エラー定義
+- **依存関係**: @repo/config, @repo/db, @repo/discord
+- **テスト**: Vitest
+
+**構成**:
+
+```text
+src/
+├── services/     # ビジネスロジック
+├── errors.ts     # エラー定義
+└── index.ts      # エントリーポイント
+```
+
+#### `packages/db` - データベース層
+
+- **ORM**: Drizzle ORM
+- **データベース**: PostgreSQL (postgres ライブラリ)
+- **スキーマ管理**: Drizzle Kit
+- **バリデーション**: drizzle-zod + Zod
+
+**構成**:
+
+```text
+src/
+├── client.ts     # データベースクライアント
+├── schema.ts     # スキーマ定義
+├── utils.ts      # ユーティリティ
+└── index.ts      # エントリーポイント
+```
+
+#### `packages/config` - 設定管理
+
+- **機能**: 環境変数、設定の型定義
+- **バリデーション**: Zod
+
+#### `packages/auth-admin` - 管理者向け認証
+
+- **SDK**: @supabase/supabase-js
+- **バリデーション**: Zod
+- **機能**: 管理者権限での認証、ユーザー管理
+
+#### `packages/auth-client` - クライアント向け認証
+
+- **SDK**: @supabase/supabase-js
+- **バリデーション**: Zod
+- **機能**: フロントエンド向け認証、セッション管理
+
+#### `packages/discord` - Discord統合
+
+- **API**: discord-api-types
+- **依存関係**: @repo/config, @repo/db
+- **機能**: Discord API統合、エラーハンドリング
+
+#### `packages/e2e-tests` - E2Eテスト
+
+- **フレームワーク**: Playwright
+- **依存関係**: @repo/api, @repo/dashboard
+
+### パッケージ間の依存関係
+
+```text
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   dashboard     │───▶│      api        │    │    reviewer     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  auth-client    │    │      core       │    │    discord      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     config      │◀───│       db        │◀───│  auth-admin     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Infrastructure（インフラストラクチャ）
+
+#### `infra/cloudflare` - Cloudflare設定
+
+- **Workers**: APIサーバー、Discord通知システム
+- **Wrangler**: デプロイ設定
+- **D1**: エッジデータベース
+- **R2**: オブジェクトストレージ
+
+#### `infra/supabase` - Supabase設定
+
+- **CLI**: supabase CLI設定
+- **機能**: 認証、データベース、ローカル開発環境
+- **エミュレータ**: ローカル開発用
 
 ### 開発環境セットアップ
 
 #### 必要な環境
 
-- Node.js 20.x
+- Node.js 22.x
 - pnpm
 - Docker (Supabaseエミュレータ用)
 
@@ -65,13 +239,7 @@
 1. Supabaseエミュレータの起動
 
    ```bash
-   pnpm emulator:start
-   ```
-
-1. データベースマイグレーション
-
-   ```bash
-   pnpm db:push
+   pnpm setup:testing
    ```
 
 1. 開発サーバーの起動
@@ -92,41 +260,25 @@
 #### データベース
 
 - `pnpm db:push`: データベーススキーマをプッシュ
-- `pnpm db:studio`: Drizzle Studioを起動
-- `pnpm db:push:testing`: テスト環境にスキーマをプッシュ
+- `pnpm db:generate`: スキーマ生成
+- `pnpm db:migrate`: マイグレーション実行
+- `pnpm db:migrate:testing`: テスト環境にマイグレーション実行
+- `pnpm db:migration:new`: 新しい空のマイグレーションを作成
 
 #### テスト
 
-- `pnpm test`: テスト実行
-- `pnpm test:ci`: CI環境でのテスト実行（エミュレータ起動含む）
+- `pnpm test`: テスト実行（セットアップ含む）
+- `pnpm test:ci`: CI環境でのテスト実行
+- `pnpm e2e`: E2Eテスト実行（セットアップ含む）
+- `pnpm e2e:ci`: CI環境でのE2Eテスト実行
+- `pnpm setup:playwright`: Playwright ブラウザーのインストール
 
 #### エミュレータ
 
 - `pnpm emulator:start`: Supabaseエミュレータを起動
 - `pnpm emulator:stop`: Supabaseエミュレータを停止
-
-## 開発ガイドライン
-
-### アーキテクチャ
-
-プロジェクトは関数型プログラミングのスタイルを取り入れ、TDD（テスト駆動開発）を意識した実装を行います。
-
-1. **tRPCルーター**: `packages/api/src/router/`にエンドポイントを定義
-2. **ビジネスロジック**: `packages/core/src/services`に実装
-3. **テスト**: ビジネスロジックと同じ階層にテストファイルを配置
-
-### フロントエンド
-
-- **認証**: 認証状態は複数の独立したContextに分離
-- **フォームバリデーション**: react-hook-form + Zod
-- **スタイリング**: Tailwind CSS + `cn`関数による条件付きクラス結合
-- **tRPC**: `@trpc/tanstack-react-query`によるデータフェッチング
-
-### バックエンド
-
-- **API実装**: tRPCプロシージャとしてエンドポイントを定義
-- **エラーハンドリング**: カスタムエラークラスによる型安全なエラー処理
-- **データベース**: Drizzle ORMによる型安全なクエリ
+- `pnpm emulator:stopd`: Supabaseエミュレータを停止（バックアップなし）
+- `pnpm setup:testing`: テスト環境セットアップ（エミュレータ起動+マイグレーション）
 
 ## データモデル
 
@@ -147,6 +299,7 @@
 - ✅ ユーザー登録・ログイン機能
 - ✅ Organization作成機能
 - ✅ 農業日誌の基本機能
+- ✅ デイリー通知
 
 ### Phase 2: データ取得パイプライン実装
 

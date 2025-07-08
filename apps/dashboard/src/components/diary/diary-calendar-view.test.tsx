@@ -6,8 +6,6 @@ import {
   DiaryCalendarView,
   groupDiariesByDate,
   generateCalendarDays,
-  getDayClassNames,
-  getDateTextClassNames,
 } from "./diary-calendar-view";
 import { WorkTypeKey } from "@repo/config";
 
@@ -408,65 +406,6 @@ describe("ユーティリティ関数", () => {
       const leapResult = generateCalendarDays(feb2024);
       const februaryDates = leapResult.filter((date) => date.getMonth() === 1);
       expect(februaryDates).toHaveLength(29); // うるう年なので29日
-    });
-  });
-
-  describe("スタイル関数", () => {
-    test("getDayClassNames・getDateTextClassNamesが正しく動作すること", () => {
-      const today = new Date();
-      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const testDate = new Date("2025-06-15");
-      const selectedDate = new Date("2025-06-15");
-
-      // 今日のクラス
-      const todayClasses = getDayClassNames(today, null, currentMonth);
-      expect(todayClasses).toContain("bg-primary/20");
-      expect(todayClasses).toContain("border-primary");
-
-      const todayTextClasses = getDateTextClassNames(today, null, currentMonth);
-      expect(todayTextClasses).toContain("text-primary");
-      expect(todayTextClasses).toContain("font-bold");
-
-      // 選択日のクラス
-      const selectedClasses = getDayClassNames(
-        testDate,
-        selectedDate,
-        new Date("2025-06-01")
-      );
-      expect(selectedClasses).toContain("bg-accent/20");
-      expect(selectedClasses).toContain("border-accent");
-
-      const selectedTextClasses = getDateTextClassNames(
-        testDate,
-        selectedDate,
-        new Date("2025-06-01")
-      );
-      expect(selectedTextClasses).toContain("text-accent");
-      expect(selectedTextClasses).toContain("font-bold");
-
-      // 当月外のクラス
-      const prevMonthDate = new Date("2025-05-31");
-      const prevMonthClasses = getDayClassNames(
-        prevMonthDate,
-        null,
-        new Date("2025-06-01")
-      );
-      expect(prevMonthClasses).toContain("opacity-40");
-
-      const prevMonthTextClasses = getDateTextClassNames(
-        prevMonthDate,
-        null,
-        new Date("2025-06-01")
-      );
-      expect(prevMonthTextClasses).toContain("text-muted-foreground");
-
-      // null値でもエラーにならないこと
-      expect(() =>
-        getDayClassNames(testDate, null, currentMonth)
-      ).not.toThrow();
-      expect(() =>
-        getDateTextClassNames(testDate, null, currentMonth)
-      ).not.toThrow();
     });
   });
 });

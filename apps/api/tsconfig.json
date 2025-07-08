@@ -8,9 +8,6 @@
       ],
       "@repo/db/*": [
         "../../packages/db/src/*"
-      ],
-      "@repo/supabase": [
-        "../../packages/supabase/src"
       ]
     }
   },

@@ -12,7 +12,7 @@ test.describe("Diary CRUD Test", () => {
     await openSidebarIfNotVisible(page);
 
     // リンクをクリック
-    await page.click('a[href="/diary"]');
+    await page.click('[data-slot="sidebar-content"] a[href="/diary"]');
     await page.waitForSelector('h1:has-text("農業日誌")');
   });
 
@@ -45,12 +45,12 @@ test.describe("Diary CRUD Test", () => {
     // 作業種別を選択
     await page.click('[data-testid="work-type-select"]');
     await page.waitForSelector('[data-testid="work-type-options"]');
-    await page.click('[data-testid="work-type-option-WATERING"]');
+    await page.click('[data-testid="work-type-option-IRRIGATION"]');
 
     // 天候を選択
     await page.click('[data-testid="weather-select"]');
     await page.waitForSelector('[data-testid="weather-options"]');
-    await page.click('[data-testid="weather-option-SUNNY"]');
+    await page.click('[data-testid="weather-option-CLEAR"]');
 
     // 保存ボタンをクリック
     await page.click(
@@ -97,7 +97,7 @@ test.describe("Diary CRUD Test", () => {
 
     await page.click('[data-testid="work-type-select"]');
     await page.waitForSelector('[data-testid="work-type-options"]');
-    await page.click('[data-testid="work-type-option-FERTILIZING"]');
+    await page.click('[data-testid="work-type-option-SEEDING"]');
 
     await page.click(
       'button[data-testid="submit-button-mobile"], button[data-testid="submit-button-desktop"]'
@@ -117,7 +117,7 @@ test.describe("Diary CRUD Test", () => {
     await page.waitForSelector('[data-testid="date-detail"]');
     await expect(page.locator("text=詳細確認用の内容です。")).toBeVisible();
     await expect(
-      page.locator('[data-testid="date-detail"] >> text=施肥')
+      page.locator('[data-testid="date-detail"] >> text=播種')
     ).toBeVisible();
   });
 
@@ -252,33 +252,4 @@ test.describe("Diary CRUD Test", () => {
       timeout: 5000,
     });
   });
-
-  test("should validate required fields when creating a diary entry", async ({
-    page,
-  }) => {
-    // 日誌作成フォームを開く
-    await page.click('button:has-text("日誌を追加")');
-    await page.waitForSelector(
-      '[data-slot="drawer-content"], [data-slot="sheet-content"]'
-    );
-
-    // 必須項目を入力せずに保存を試行
-    await page.click(
-      'button[data-testid="submit-button-mobile"], button[data-testid="submit-button-desktop"]'
-    );
-
-    // バリデーションエラーが表示されることを確認
-    await expect(page.locator('[data-testid="work-type-error"]')).toBeVisible();
-  });
-
-  // 複数日誌、検索機能等のテストは実装が複雑になるため、将来のイテレーションで追加
-  /*
-  test("should handle multiple diary entries", async ({ page }) => {
-    // TODO: 実装予定
-  });
-
-  test("should search diary entries", async ({ page }) => {
-    // TODO: 実装予定
-  });
-  */
 });

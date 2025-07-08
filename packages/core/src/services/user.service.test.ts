@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, expect, beforeAll } from "vitest";
+import { describe, it, beforeEach, expect } from "vitest";
 import { dbClient } from "@repo/db/client";
 import { eq, and, or } from "@repo/db";
 import {
@@ -57,6 +57,7 @@ describe("UserService (関数型)", () => {
         organizationName: "New Organization",
       });
       expect(res).toBeDefined();
+      if (!res) throw new Error("Setup failed, result is undefined");
       expect(res.user).toBeDefined();
       expect(res.user.id).toBe("new-user-id");
       expect(res.organization).toBeDefined();
@@ -80,6 +81,7 @@ describe("UserService (関数型)", () => {
         organizationName: "New Organization",
       });
       expect(res).toBeDefined();
+      if (!res) throw new Error("Setup failed, result is undefined");
       expect(res.user.id).toBe("existing-user-id");
       expect(res.user.name).toBe("Edited User");
       expect(res.organization).toBeDefined();
@@ -94,6 +96,7 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(false);
       expect(result.hasUser).toBe(false);
       expect(result.hasOrganization).toBe(false);
+      expect(result.user).toBeNull();
     });
 
     it("ユーザーは存在するが組織に所属していない場合、未完了状態を返す", async () => {
@@ -112,13 +115,15 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(false);
       expect(result.hasUser).toBe(true);
       expect(result.hasOrganization).toBe(false);
+      expect(result.user?.id).toBe(testUserId);
+      expect(result.user?.name).toBe("Test User");
     });
 
     it("ユーザーが組織に所属している場合、完了状態を返す", async () => {
       const testUserId = "test-user-with-org";
 
       // setupUserAndOrganizationでユーザーと組織を作成
-      const setupResult = await setupUserAndOrganization(db, testUserId, {
+      await setupUserAndOrganization(db, testUserId, {
         userName: "Test User",
         organizationName: "Test Organization",
       });
@@ -128,6 +133,8 @@ describe("UserService (関数型)", () => {
       expect(result.isCompleted).toBe(true);
       expect(result.hasUser).toBe(true);
       expect(result.hasOrganization).toBe(true);
+      expect(result.user?.id).toBe(testUserId);
+      expect(result.user?.name).toBe("Test User");
     });
   });
 
@@ -140,6 +147,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       const organizationId = setupResult.organization.id;
 
@@ -207,7 +215,7 @@ describe("UserService (関数型)", () => {
       const userId2 = "user-2";
 
       // 2つのユーザーと組織を作成
-      const setupResult1 = await setupUserAndOrganization(db, userId1, {
+      await setupUserAndOrganization(db, userId1, {
         userName: "User 1",
         organizationName: "Organization 1",
       });
@@ -216,6 +224,7 @@ describe("UserService (関数型)", () => {
         userName: "User 2",
         organizationName: "Organization 2",
       });
+      if (!setupResult2) throw new Error("Setup failed, result is undefined");
 
       // user-1 が organization-2 の latestViewedAt を更新しようとする（権限なし）
       const result = await updateOrganizationLatestViewedAt(
@@ -236,6 +245,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       const sidebarData = await getUserSidebarData(db, testUserId);
 
@@ -260,14 +270,14 @@ describe("UserService (関数型)", () => {
       const testUserId = "test-user-id";
 
       // 最初の組織を作成
-      const setupResult1 = await setupUserAndOrganization(db, testUserId, {
+      await setupUserAndOrganization(db, testUserId, {
         userName: "Test User",
         organizationName: "First Organization",
       });
 
       // 2番目の組織を作成
       const secondOrgId = "test-org-2";
-      const org2Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: secondOrgId,
@@ -424,6 +434,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User",
         organizationName: "Test Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       // 削除前に組織が存在することを確認
       const orgBefore = await db
@@ -476,6 +487,7 @@ describe("UserService (関数型)", () => {
         userName: "Test User 1",
         organizationName: "Shared Organization",
       });
+      if (!setupResult) throw new Error("Setup failed, result is undefined");
 
       // 2人目のユーザーを作成
       await db.insert(usersTable).values({
@@ -526,7 +538,7 @@ describe("UserService (関数型)", () => {
       });
 
       // 2つの組織を作成してユーザーを唯一のメンバーにする
-      const org1Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: "org-1",
@@ -534,7 +546,7 @@ describe("UserService (関数型)", () => {
         })
         .returning();
 
-      const org2Result = await db
+      await db
         .insert(organizationsTable)
         .values({
           id: "org-2",

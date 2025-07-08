@@ -25,7 +25,8 @@ import {
 import { Input } from "@/shadcn/input";
 import { Textarea } from "@/shadcn/textarea";
 import { Button } from "@/shadcn/button";
-import { useTRPC } from "@/trpc/client";
+import { client } from "@/rpc/client";
+import { users, organizations } from "@/rpc/factory";
 import { toast } from "sonner";
 import { useOrganization } from "@/contexts/organization-context";
 
@@ -53,7 +54,6 @@ export function CreateOrganizationDialog({
   children,
 }: CreateOrganizationDialogProps) {
   const [open, setOpen] = useState(false);
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { setCurrentOrganization } = useOrganization();
 
@@ -65,45 +65,43 @@ export function CreateOrganizationDialog({
     },
   });
 
-  // instructions.mdの正しいパターンに従ったtRPC mutation
-  const createOrganizationMutation = useMutation(
-    trpc.organization.create.mutationOptions({
-      onSuccess: (newOrganization) => {
-        toast.success("組織が正常に作成されました", {
-          description: `「${newOrganization.organization.name}」が作成され、あなたが管理者として設定されました。`,
-        });
+  // Hono mutation
+  const createOrganizationMutation = useMutation({
+    mutationFn: async (data: CreateOrganizationFormValues) =>
+      client.organization.create.$post({
+        json: data,
+      }),
+    onSuccess: (newOrganization) => {
+      toast.success("組織が正常に作成されました", {
+        description: `「${newOrganization.organization.name}」が作成され、あなたが管理者として設定されました。`,
+      });
 
-        // 新しく作成された組織を現在の組織として設定
-        setCurrentOrganization(newOrganization.organization.id);
+      // 新しく作成された組織を現在の組織として設定
+      setCurrentOrganization(newOrganization.organization.id);
 
-        // サイドバーデータのキャッシュを無効化して最新データを取得
-        queryClient.invalidateQueries({
-          queryKey: trpc.user.sidebarData.queryKey(),
-        });
+      // サイドバーデータのキャッシュを無効化して最新データを取得
+      queryClient.invalidateQueries(users.sidebarData());
 
-        // 組織一覧のキャッシュも無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.organization.list.queryKey(),
-        });
+      // 組織一覧のキャッシュも無効化
+      queryClient.invalidateQueries(organizations.list());
 
-        // フォームをリセット
-        form.reset();
+      // フォームをリセット
+      form.reset();
 
-        // ダイアログを閉じる
-        setOpen(false);
-      },
-      onError: (error) => {
-        console.error("Organization creation error:", error);
+      // ダイアログを閉じる
+      setOpen(false);
+    },
+    onError: (error) => {
+      console.error("Organization creation error:", error);
 
-        const errorMessage =
-          error?.message || "組織の作成中にエラーが発生しました";
+      const errorMessage =
+        error?.message || "組織の作成中にエラーが発生しました";
 
-        toast.error("組織の作成に失敗しました", {
-          description: errorMessage,
-        });
-      },
-    })
-  );
+      toast.error("組織の作成に失敗しました", {
+        description: errorMessage,
+      });
+    },
+  });
 
   const onSubmit = (data: CreateOrganizationFormValues) => {
     createOrganizationMutation.mutate(data);

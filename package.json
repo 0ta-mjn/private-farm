@@ -8,11 +8,14 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "turbo -F @repo/db push",
     "typecheck": "turbo run typecheck",
-    "db:push:testing": "pnpm --filter @repo/db push:testing",
+    "db:generate": "pnpm --filter @repo/db generate",
+    "db:migrate": "pnpm --filter @repo/db migrate",
+    "db:migrate:testing": "pnpm --filter @repo/db migrate:testing",
+    "db:migration:new": "pnpm --filter @repo/db generate:new",
     "emulator:start": "pnpm --filter @repo/supabase run setup",
     "emulator:stop": "pnpm --filter @repo/supabase run stop",
     "emulator:stopd": "pnpm --filter @repo/supabase run stopd",
-    "setup:testing": "pnpm emulator:start && pnpm db:push:testing",
+    "setup:testing": "pnpm emulator:start && pnpm db:migrate:testing",
     "setup:playwright": "pnpm --filter @repo/e2e-tests run install-browsers",
     "test": "pnpm setup:testing && turbo run test --concurrency=1",
     "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1",
@@ -25,5 +28,5 @@
     "turbo": "^2.5.4",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@10.12.1+sha512.f0dda8580f0ee9481c5c79a1d927b9164f2c478e90992ad268bbb2465a736984391d6333d2c327913578b2804af33474ca554ba29c04a8b13060a717675ae3ac"
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }

@@ -23,11 +23,15 @@ import {
   subMonths,
   parse,
   isValid,
+  startOfMonth,
+  endOfMonth,
 } from "date-fns";
 import { DiaryDateDetail } from "@/components/diary/diary-date-detail";
 import { DiaryCalendarView } from "@/components/diary/diary-calendar-view";
-import { useTRPC } from "@/trpc/client";
 import { useMediaQuery } from "@/hooks/use-mobile";
+import { diaries as diaryFactory } from "@/rpc/factory";
+import { ThingFilter, ThingFilterValue } from "@/components/thing/thing-filter";
+import { WorkTypeFilter } from "@/components/diary/work-type-filter";
 
 function DiaryPageContent() {
   const actions = useDiaryDrawerActions();
@@ -35,29 +39,29 @@ function DiaryPageContent() {
   const { currentOrganizationId } = useOrganization();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const trpc = useTRPC();
 
   // 状態管理
   const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [workTypeFilter, setWorkTypeFilter] = useState<string | null>(null);
+  const [thingFilter, setThingFilter] = useState<ThingFilterValue | null>(null);
 
   // 月のサマリーデータを取得（カレンダー表示用）
-  const monthSummaryQuery = useQuery(
-    trpc.diary.byMonth.queryOptions(
-      {
-        organizationId: currentOrganizationId || "",
-        year: currentMonth.getFullYear(),
-        month: currentMonth.getMonth() + 1,
-      },
-      {
-        enabled: !!currentOrganizationId,
-        staleTime: 5 * 60 * 1000, // 5分間キャッシュ
-      }
-    )
-  );
+  const monthSummaryQuery = useQuery({
+    ...diaryFactory.byDateRange(currentOrganizationId || "", {
+      startDate: format(startOfMonth(currentMonth), "yyyy-MM-dd"),
+      endDate: format(endOfMonth(currentMonth), "yyyy-MM-dd"),
+    }),
+    enabled: !!currentOrganizationId,
+  });
 
-  // データはそのまま使用（変換不要）
-  const diaries = monthSummaryQuery.data || [];
+  const diaries =
+    monthSummaryQuery.data
+      ?.filter((v) => !workTypeFilter || v.workType === workTypeFilter)
+      .filter(
+        (v) =>
+          !thingFilter || v.fields.some((field) => field.id === thingFilter.id)
+      ) || [];
 
   // URLパラメータを更新するヘルパー関数
   const updateUrlParams = useCallback(
@@ -185,10 +189,30 @@ function DiaryPageContent() {
   return (
     <div className="container mx-auto pb-6">
       {/* ヘッダー */}
-      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <DiarySearch onDiarySelect={handleDiaryClick} currentUserId={userId} />
+      <div className="flex flex-col gap-4 mb-6 md:flex-row md:justify-between">
+        <div className="flex items-center flex-1 flex-wrap gap-2">
+          <DiarySearch
+            onDiarySelect={handleDiaryClick}
+            currentUserId={userId}
+            organizationId={currentOrganizationId}
+            className="flex-1"
+          />
 
-        <h1 className="sr-only">農業日誌</h1>
+          <h1 className="sr-only">農業日誌</h1>
+
+          <div className="flex w-full items-center gap-2 md:w-fit">
+            <ThingFilter
+              organizationId={currentOrganizationId}
+              value={thingFilter}
+              onChange={setThingFilter}
+            />
+
+            <WorkTypeFilter
+              value={workTypeFilter}
+              onChange={setWorkTypeFilter}
+            />
+          </div>
+        </div>
 
         <Button onClick={actions.openCreate}>
           <PlusIcon className="h-4 w-4 mr-2" />

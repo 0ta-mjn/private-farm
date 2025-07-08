@@ -1,36 +1,46 @@
 {
-  "name": "api",
+  "name": "@repo/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
   "scripts": {
     "build": "tsc --noEmit && tsup",
-    "dev": "dotenv -e .env -- tsup --watch --onSuccess \"node dist/server.cjs\"",
+    "dev": "wrangler dev --port 8000 src/app.ts --config ../../infra/cloudflare/api/wrangler.toml",
     "start": "dotenv -e .env node dist/server.cjs",
-    "start:testing": "pnpm build && dotenv -e .env.testing tsx src/server.ts",
+    "start:testing": "wrangler dev --port 8000 src/app.ts --config ../../infra/cloudflare/api/wrangler.toml --env testing",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
+    "test": "dotenv -e .env.testing -- vitest",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@fastify/cors": "^11.0.1",
-    "@trpc/server": "catalog:",
-    "fastify": "catalog:",
+    "hono": "catalog:",
+    "@hono/zod-validator": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@esbuild-plugins/tsconfig-paths": "^0.1.2",
-    "@repo/api": "workspace:*",
+    "@esbuild-plugins/tsconfig-paths": "catalog:",
+    "@repo/auth-admin": "workspace:*",
+    "@repo/core": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/discord": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
-    "@repo/supabase": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@types/node": "^20",
-    "dotenv-cli": "^8.0.0",
+    "@types/node": "catalog:",
+    "dotenv-cli": "catalog:",
     "eslint": "catalog:",
-    "tsup": "^8.5.0",
+    "tsup": "catalog:",
     "tsx": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   }
 }
