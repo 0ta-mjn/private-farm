@@ -49,6 +49,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "apps/api"
           command: "deploy src/daily/index.ts --config ../../infra/cloudflare/api/wrangler.toml"
+          packageManager: "pnpm"
 
   deploy-reviewer:
     name: Deploy Reviewer Scheduler
@@ -67,6 +68,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "apps/reviewer"
           command: "deploy src/app.ts --config ../../infra/cloudflare/reviewer/wrangler.toml --env daily"
+          packageManager: "pnpm"
 
   deploy-dashboard:
     name: Deploy Dashboard
