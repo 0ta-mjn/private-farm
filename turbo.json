@@ -16,6 +16,10 @@
         "DATABASE_URL",
         "API_PORT",
         "DASHBOARD_PORT",
+        "DISCORD_ENCRYPTION_KEY",
+        "DISCORD_CLIENT_ID",
+        "DISCORD_CLIENT_SECRET",
+        "DISCORD_BOT_TOKEN",
         "CI"
       ],
       "cache": true
@@ -28,6 +32,10 @@
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "NEXT_PUBLIC_API_URL",
+        "DISCORD_ENCRYPTION_KEY",
+        "DISCORD_CLIENT_ID",
+        "DISCORD_CLIENT_SECRET",
+        "DISCORD_BOT_TOKEN",
         "CI"
       ]
     },
@@ -46,6 +54,10 @@
         "DASHBOARD_PORT",
         "SUPABASE_ANON_KEY",
         "SUPABASE_INBUCKET_URL",
+        "DISCORD_ENCRYPTION_KEY",
+        "DISCORD_CLIENT_ID",
+        "DISCORD_CLIENT_SECRET",
+        "DISCORD_BOT_TOKEN",
         "CI"
       ],
       "cache": false
@@ -90,5 +102,5 @@
       "persistent": true
     }
   },
-  "globalPassThroughEnv": ["NODE_ENV"]
+  "globalPassThroughEnv": ["NODE_ENV", "PORT", "CI"]
 }

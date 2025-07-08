@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTRPC } from "@/trpc/client";
-import { useOrganization } from "@/contexts/organization-context";
+import { client } from "@/rpc/client";
+import { things } from "@/rpc/factory";
 import {
   useThingDrawerState,
   useThingDrawerActions,
@@ -10,92 +10,119 @@ import {
 import { ThingFormDrawer, type ThingFormData } from "./thing-form-drawer";
 import { toast } from "sonner";
 
-export function ThingDrawerContainer() {
-  // コンテキストとtRPCクライアント
+interface ThingDrawerContainerProps {
+  organizationId: string;
+}
+
+export function ThingDrawerContainer({
+  organizationId: currentOrganizationId,
+}: ThingDrawerContainerProps) {
+  // コンテキストとクライアント
   const state = useThingDrawerState();
   const actions = useThingDrawerActions();
-  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { currentOrganizationId } = useOrganization();
 
   const open = state.createOpen || state.editOpen;
   const isEdit = state.editOpen;
   const thingId = state.editId;
 
   // 区画の詳細データを取得（編集モードの場合）
-  const { data: thingData, isLoading: isLoadingThing } = useQuery(
-    trpc.thing.detail.queryOptions(
-      {
-        thingId: thingId || "",
-        organizationId: currentOrganizationId || "",
-      },
-      {
-        enabled: isEdit && !!thingId && !!currentOrganizationId,
-      }
-    )
-  );
+  const { data: thingData, isLoading: isLoadingThing } = useQuery({
+    ...things.detail(currentOrganizationId || "", thingId || ""),
+    enabled: isEdit && !!thingId && !!currentOrganizationId,
+  });
 
   // 作成 mutation
-  const createThingMutation = useMutation(
-    trpc.thing.create.mutationOptions({
-      onSuccess: (newThing, { organizationId }) => {
-        toast.success("区画が正常に作成されました", {
-          description: `「${newThing.name}」が作成されました。`,
-        });
+  const createThingMutation = useMutation({
+    mutationFn: async (params: {
+      organizationId: string;
+      name: string;
+      type: string;
+      description: string;
+      location: string;
+      area: number | null;
+    }) =>
+      client.thing.create[":organizationId"].$post({
+        param: { organizationId: params.organizationId },
+        json: {
+          organizationId: params.organizationId,
+          name: params.name,
+          type: params.type,
+          description: params.description,
+          location: params.location,
+          area: params.area,
+        },
+      }),
+    onSuccess: (newThing, { organizationId }) => {
+      toast.success("区画が正常に作成されました", {
+        description: `「${newThing.name}」が作成されました。`,
+      });
 
-        // 区画一覧のキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.thing.list.queryKey({
-            organizationId,
-          }),
-        });
+      // 区画一覧のキャッシュを無効化
+      queryClient.invalidateQueries({
+        queryKey: things.list(organizationId).queryKey,
+      });
 
-        actions.closeAll();
-      },
-      onError: (error) => {
-        console.error("Failed to create thing:", error);
-        const errorMessage =
-          error?.message || "区画の作成中にエラーが発生しました";
-        toast.error("区画の作成に失敗しました", {
-          description: errorMessage,
-        });
-      },
-    })
-  );
+      actions.closeAll();
+    },
+    onError: (error: Error) => {
+      console.error("Failed to create thing:", error);
+      const errorMessage =
+        error?.message || "区画の作成中にエラーが発生しました";
+      toast.error("区画の作成に失敗しました", {
+        description: errorMessage,
+      });
+    },
+  });
 
   // 更新 mutation
-  const updateThingMutation = useMutation(
-    trpc.thing.update.mutationOptions({
-      onSuccess: (updatedThing, { thingId, organizationId }) => {
-        toast.success("区画が正常に更新されました", {
-          description: `「${updatedThing.name}」が更新されました。`,
-        });
+  const updateThingMutation = useMutation({
+    mutationFn: async (params: {
+      thingId: string;
+      organizationId: string;
+      name: string;
+      type: string;
+      description: string;
+      location: string;
+      area: number | null;
+    }) =>
+      client.thing.update[":organizationId"][":thingId"].$put({
+        param: {
+          organizationId: params.organizationId,
+          thingId: params.thingId,
+        },
+        json: {
+          name: params.name,
+          type: params.type,
+          description: params.description,
+          location: params.location,
+          area: params.area,
+        },
+      }),
+    onSuccess: (updatedThing, { thingId, organizationId }) => {
+      toast.success("区画が正常に更新されました", {
+        description: `「${updatedThing.name}」が更新されました。`,
+      });
 
-        // 区画一覧と詳細のキャッシュを無効化
-        queryClient.invalidateQueries({
-          queryKey: trpc.thing.list.queryKey({
-            organizationId,
-          }),
-        });
-        queryClient.invalidateQueries({
-          queryKey: trpc.thing.detail.queryKey({
-            thingId: thingId,
-            organizationId,
-          }),
-        });
+      // 区画一覧と詳細のキャッシュを無効化
+      queryClient.invalidateQueries({
+        queryKey: things.list(organizationId).queryKey,
+      });
+      queryClient.invalidateQueries({
+        queryKey: things.detail(organizationId, thingId).queryKey,
+      });
 
-        actions.closeAll();
-      },
-      onError: (error) => {
-        console.error("Failed to update thing:", error);
-        const errorMessage =
-          error?.message || "区画の更新中にエラーが発生しました";
-        toast.error("区画の更新に失敗しました", {
-          description: errorMessage,
-        });
-      },
-    })
-  );
+      actions.closeAll();
+    },
+    onError: (error: Error) => {
+      console.error("Failed to update thing:", error);
+      const errorMessage =
+        error?.message || "区画の更新中にエラーが発生しました";
+      toast.error("区画の更新に失敗しました", {
+        description: errorMessage,
+      });
+    },
+  });
 
   // 初期データの準備
   const initialData: ThingFormData | undefined =
@@ -131,8 +158,6 @@ export function ThingDrawerContainer() {
 
       if (isEdit && thingId) {
         // 更新処理
-        console.log("Updating thing with ID:", thingId);
-        console.log("Form data:", formData);
         updateThingMutation.mutate({
           thingId,
           ...formData,

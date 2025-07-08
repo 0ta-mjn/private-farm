@@ -3,6 +3,7 @@
   "include": [
     "src",
     "*.ts",
+    "../core/src/errors.ts",
   ],
   "exclude": [
     "node_modules"

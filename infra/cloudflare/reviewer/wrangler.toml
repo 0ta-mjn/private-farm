@@ -1,0 +1,12 @@
+name = "satopod-reviewer"
+compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2025-06-17"
+
+
+[env.daily]
+name = "satopod-reviewer-daily"
+main = "src/daily/index.ts"
+triggers.crons = [
+  # Runs daily at midnight Asia/Tokyo time
+  "0 19 * * *",
+]

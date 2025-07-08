@@ -3,19 +3,30 @@
 import { Button } from "@/shadcn/button";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
+import { users } from "@/rpc/factory";
+import { ClientError } from "@/rpc/client";
+import { Card, CardContent } from "@/shadcn/card";
+import { CheckCircleIcon } from "lucide-react";
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
-  const trpc = useTRPC();
 
   // セットアップ状態をチェック（ログイン済みの場合のみ）
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery(
-    trpc.user.setupCheck.queryOptions(undefined, {
-      enabled: !!user, // ログイン済みの場合のみクエリを実行
-    })
-  );
+  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
+    ...users.setupCheck(),
+    enabled: !!user, // ログイン済みの場合のみクエリを実行
+    retry: (_, e: ClientError) => {
+      switch (e.status) {
+        case 401:
+          // 認証エラーの場合はリトライしない
+          return false;
+        default:
+          // その他のエラーはリトライする
+          return true;
+      }
+    },
+  });
 
   const isLoading = authLoading || isCheckingSetup;
   const isAuthenticated = !!user;
@@ -54,15 +65,33 @@ export default function HomePage() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col container mx-auto items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <div className="text-2xl font-bold text-center">
         プライベートファームダッシュボード
       </div>
-      <div className="text-center text-muted-foreground">
-        このダッシュボードは、プライベートファームの管理と運営を支援するために設計されています。
-        <br />
-        詳細な機能は近日公開予定です。
-      </div>
+
+      <Card className="bg-muted/50 w-full border-none shadow-none">
+        <CardContent className="p-8 space-y-8">
+          <p className="text-muted-foreground">
+            このダッシュボードは、個人農家向けの農作業の管理と農場の運営を支援するために設計されています。
+            <br />
+            現在はプロトタイプ段階であり、日誌記入機能のみが利用可能です。
+          </p>
+
+          <div className="flex items-start gap-3">
+            <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-medium text-sm">開発中機能</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• センサー・デバイス管理機能</li>
+                <li>• センサーリアルタイムダッシュボード</li>
+                <li>• 履歴データ表示機能</li>
+                <li>• 異常データアラート機能</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {renderButtons()}
     </div>

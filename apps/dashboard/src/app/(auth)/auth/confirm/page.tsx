@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from "@/shadcn/card";
 import { Button } from "@/shadcn/button";
-import { CheckCircleIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { AlertCircleIcon } from "lucide-react";
+import { client } from "@/rpc/client";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 export default function AuthConfirmPage() {
   const router = useRouter();
@@ -20,24 +22,69 @@ export default function AuthConfirmPage() {
   );
   const [message, setMessage] = useState("");
 
+  const params = useSearchParams();
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session?.user.confirmed_at) {
-        // 成功時の処理
-        setStatus("success");
-        setMessage("アカウントの確認が完了しました。");
-        router.push("/setup");
-      } else {
+    const code = params.get("code");
+    if (!code) {
+      setStatus("error");
+      setMessage("認証コードが見つかりません。もう一度お試しください。");
+      return;
+    }
+
+    const handler = async () => {
+      try {
+        const data = await auth.verifyCode({
+          type: "verify-email",
+          code,
+        });
+
+        if (data?.user) {
+          // 成功時の処理
+          setStatus("success");
+          setMessage("アカウントの確認が完了しました。");
+          
+          // 初期設定状態を確認
+          const setupStatus = await client.user.setup.$get();
+
+          if (setupStatus.isCompleted) {
+            // 初期設定完了済みの場合はダッシュボードへ
+            router.push("/dashboard");
+          } else {
+            // 初期設定未完了の場合はセットアップページへ
+            router.push("/setup");
+          }
+        }
+      } catch (error) {
+        console.error("認証処理中にエラー:", error);
         // 認証に失敗した場合
         setStatus("error");
-        setMessage("認証に失敗しました。もう一度お試しください。");
+        if (error instanceof AuthError) {
+          switch (error?.code) {
+            case "invalid_credentials":
+            case "invalid_token":
+            case "invalid_request":
+              setMessage("無効な認証情報です。もう一度お試しください。");
+              break;
+            case "token_expired":
+              setMessage(
+                "セッションが期限切れです。再度ログインしてください。"
+              );
+              break;
+            default:
+              setMessage("認証に失敗しました。もう一度お試しください。");
+          }
+        } else {
+          setMessage("認証に失敗しました。もう一度お試しください。");
+        }
       }
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
     };
-  }, [router]);
+
+    handler().catch((error) => {
+      console.error("認証エラー:", error);
+      setStatus("error");
+      setMessage("認証中にエラーが発生しました。もう一度お試しください。");
+    });
+  }, [params, router]);
 
   const handleRetry = () => {
     router.push("/signup");
@@ -47,65 +94,32 @@ export default function AuthConfirmPage() {
     router.push("/login");
   };
 
+  if (status === "success" || status == "loading") return null; // 成功時は何も表示しない
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4">
-          {status === "loading" && (
-            <div className="bg-blue-100">
-              <Loader2Icon className="h-6 w-6 text-blue-600 animate-spin" />
-            </div>
-          )}
-          {status === "success" && (
-            <div className="bg-green-100">
-              <CheckCircleIcon className="h-6 w-6 text-green-600" />
-            </div>
-          )}
-          {status === "error" && (
-            <div className="bg-red-100">
-              <AlertCircleIcon className="h-6 w-6 text-red-600" />
-            </div>
-          )}
+          <div className="bg-red-100">
+            <AlertCircleIcon className="h-6 w-6 text-red-600" />
+          </div>
         </div>
 
         <CardTitle className="text-2xl">
-          {status === "loading" && "認証を確認中..."}
-          {status === "success" && "認証完了"}
           {status === "error" && "認証エラー"}
         </CardTitle>
 
-        <CardDescription>
-          {status === "loading" &&
-            "アカウントの確認を行っています。しばらくお待ちください。"}
-          {status === "success" && "初期設定画面に移動します..."}
-          {status === "error" && message}
-        </CardDescription>
+        <CardDescription>{status === "error" && message}</CardDescription>
       </CardHeader>
 
-      {status !== "loading" && (
-        <CardContent className="space-y-3">
-          {status === "success" && (
-            <Button onClick={() => router.push("/setup")} className="w-full">
-              初期設定に進む
-            </Button>
-          )}
-
-          {status === "error" && (
-            <>
-              <Button onClick={handleRetry} className="w-full">
-                サインアップをやり直す
-              </Button>
-              <Button
-                onClick={handleGoToLogin}
-                variant="outline"
-                className="w-full"
-              >
-                ログイン画面に戻る
-              </Button>
-            </>
-          )}
-        </CardContent>
-      )}
+      <CardContent className="space-y-3">
+        <Button onClick={handleRetry} className="w-full">
+          サインアップをやり直す
+        </Button>
+        <Button onClick={handleGoToLogin} variant="outline" className="w-full">
+          ログイン画面に戻る
+        </Button>
+      </CardContent>
     </Card>
   );
 }

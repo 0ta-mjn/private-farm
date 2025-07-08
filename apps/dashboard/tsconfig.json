@@ -14,10 +14,12 @@
     "baseUrl": ".",
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
     "next-env.d.ts",
-    "next.config.js",
+    "next.config.ts",
+    "open-next.config.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

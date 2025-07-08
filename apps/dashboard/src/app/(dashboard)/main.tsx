@@ -9,6 +9,7 @@ import { DiaryDrawerProvider } from "@/contexts/diary-drawer-context";
 import { ThingDrawerProvider } from "@/contexts/thing-drawer-context";
 import { DiaryDrawerContainer } from "@/components/diary/diary-drawer-container";
 import { ThingDrawerContainer } from "@/components/thing/thing-drawer-container";
+import { useOrganization } from "@/contexts/organization-context";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -33,11 +34,26 @@ export default function DashboardMain({ children }: DashboardLayoutProps) {
                 {children}
               </main>
             </SidebarInset>
-            <DiaryDrawerContainer />
-            <ThingDrawerContainer />
+
+            <OrganizationFloating />
           </SidebarProvider>
         </ThingDrawerProvider>
       </DiaryDrawerProvider>
     </OrganizationProvider>
   );
 }
+
+const OrganizationFloating = () => {
+  const { currentOrganizationId } = useOrganization();
+
+  if (!currentOrganizationId) {
+    return null;
+  }
+
+  return (
+    <>
+      <DiaryDrawerContainer organizationId={currentOrganizationId} />
+      <ThingDrawerContainer organizationId={currentOrganizationId} />
+    </>
+  );
+};

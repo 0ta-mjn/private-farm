@@ -24,7 +24,8 @@ import {
 } from "@/shadcn/form";
 import { AlertCircleIcon, CheckCircleIcon, MailIcon } from "lucide-react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z.object({
@@ -55,25 +56,28 @@ export default function ResetPasswordPage() {
     setGeneralError(null);
 
     try {
-      // Supabase Auth でパスワードリセットリクエスト
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        values.email,
-        {
-          redirectTo: `${window.location.origin}/auth/reset-password`,
-        }
-      );
+      // Auth Provider でパスワードリセットリクエスト
+      await auth.sendResetPassword({
+        email: values.email,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+      });
 
-      if (error) {
+      // 成功時の処理
+      setSentEmail(values.email);
+      setIsEmailSent(true);
+    } catch (error) {
+      console.error("Password reset error:", error);
+      if (error instanceof AuthError) {
         // エラーコードによる分岐処理
         switch (error.code) {
-          case "over_request_rate_limit":
+          case "user_not_found":
             setGeneralError(
-              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
+              "このメールアドレスは登録されていません。"
             );
             break;
-          case "email_rate_limit_exceeded":
+          case "rate_limit_exceeded":
             setGeneralError(
-              "メール送信の上限に達しました。しばらく時間をおいてから再度お試しください。"
+              "リクエストが多すぎます。しばらく時間をおいてから再度お試しください。"
             );
             break;
           default:
@@ -82,15 +86,9 @@ export default function ResetPasswordPage() {
             );
             break;
         }
-        return;
+      } else {
+        setGeneralError("パスワードリセット中にエラーが発生しました");
       }
-
-      // 成功時の処理
-      setSentEmail(values.email);
-      setIsEmailSent(true);
-    } catch (err) {
-      console.error("Password reset error:", err);
-      setGeneralError("パスワードリセット中にエラーが発生しました");
     } finally {
       setIsLoading(false);
     }

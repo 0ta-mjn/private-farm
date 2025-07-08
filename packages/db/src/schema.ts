@@ -18,9 +18,13 @@ import {
   real,
   index,
   unique,
+  primaryKey,
+  uniqueIndex,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
+import { DiscordNotificationSettings } from "@repo/config";
 
 // ============================================================================
 // CORE TABLES
@@ -52,6 +56,28 @@ export const usersTable = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+/**
+ * ユーザー外部アカウント連携テーブル
+ *
+ * ユーザーの外部サービス（Discord、GitHub等）との連携情報を管理する。
+ * 一人のユーザーが複数の外部サービスと連携できる。
+ */
+export const userExternalAccountsTable = pgTable(
+  "user_external_accounts",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    provider: varchar("provider", { length: 32 }).notNull(), // 'discord', 'github', ...
+    providerUserId: varchar("provider_user_id", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.provider, t.providerUserId] }),
+    uniq: uniqueIndex("user_provider_unique").on(t.userId, t.provider),
+  })
+);
 
 // ============================================================================
 // RELATIONSHIP TABLES (Many-to-Many)
@@ -133,6 +159,7 @@ export const diariesTable = pgTable(
     workType: varchar("work_type", { length: 100 }), // 作業種別（播種、施肥、収穫、防除等）
     weather: varchar("weather", { length: 50 }), // 作業日の天気（晴れ、曇り、雨等）
     temperature: real("temperature"), // 作業日の気温（℃）
+    duration: real("duration"), // 作業時間（時間単位、例：1.5時間）
 
     // 関係性フィールド
     userId: varchar("user_id", { length: 255 }).references(
@@ -191,6 +218,56 @@ export const diaryThingsTable = pgTable(
 );
 
 // ============================================================================
+// DISCORD INTEGRATION TABLES
+// ============================================================================
+
+/**
+ * Discord チャンネルテーブル
+ *
+ * 組織とDiscord通知先チャンネルの関係を管理する。
+ * Discord Botのインストールによる通知連携機能。
+ * 一つの組織が複数のDiscordチャンネルに通知を送信できる。
+ */
+export const discordChannelsTable = pgTable(
+  "discord_channels",
+  {
+    id: varchar("id", { length: 255 }).primaryKey(), // UUID形式のチャンネル識別子
+    organizationId: varchar("organization_id", { length: 255 })
+      .references(() => organizationsTable.id, { onDelete: "cascade" })
+      .notNull(), // 直接組織と紐付け
+    channelId: text("channel_id").notNull(), // Discord Channel ID
+    name: text("channel_name").notNull(), // Discord Channel 名
+    guildId: text("guild_id").notNull(), // Discord Guild (Server) ID
+    guildName: text("guild_name").notNull().default(""), // Discord Guild 名
+    webhookId: text("webhook_id"), // Webhook ID（オプション）
+    webhookTokenEnc: text("webhook_token_enc"), // 暗号化されたWebhookトークン（オプション）
+    mentionRoleId: text("mention_role_id"), // メンション対象のRole ID（オプション）
+    notificationSettings: jsonb("notification_settings")
+      .$type<DiscordNotificationSettings>()
+      .default({})
+      .notNull(), // 通知設定（JSONB）
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    // 同一組織が同一チャンネルに重複して登録されることを防ぐ
+    uniqueOrgChannel: unique("unique_org_channel").on(
+      table.organizationId,
+      table.channelId
+    ),
+    organizationIdx: index("discord_channels_organization_idx").on(
+      table.organizationId
+    ),
+    guildIdx: index("discord_channels_guild_idx").on(table.guildId),
+    channelIdx: index("discord_channels_channel_idx").on(table.channelId),
+  })
+);
+
+// ============================================================================
 // RELATIONS CONFIGURATION
 // ============================================================================
 
@@ -201,6 +278,7 @@ export const diaryThingsTable = pgTable(
  * - 複数のメンバー（organizationMembers経由）
  * - 複数のほ場（things）
  * - 複数の日誌（diaries）
+ * - 複数のDiscordチャンネル（discordChannels）
  */
 export const organizationsRelations = relations(
   organizationsTable,
@@ -208,6 +286,7 @@ export const organizationsRelations = relations(
     organizationMembers: many(organizationMembersTable), // 組織→メンバー関係
     things: many(thingsTable), // 組織→ほ場関係
     diaries: many(diariesTable), // 組織→日誌関係
+    discordChannels: many(discordChannelsTable), // 組織→Discordチャンネル関係
   })
 );
 
@@ -217,10 +296,12 @@ export const organizationsRelations = relations(
  * 一人のユーザーは以下を持つ：
  * - 複数の組織メンバーシップ（organizationMembers経由）
  * - 複数の日誌（diaries）
+ * - 複数の外部アカウント連携（userExternalAccounts）
  */
 export const usersRelations = relations(usersTable, ({ many }) => ({
   organizationMembers: many(organizationMembersTable), // ユーザー→組織メンバーシップ関係
   diaries: many(diariesTable), // ユーザー→日誌関係
+  userExternalAccounts: many(userExternalAccountsTable), // ユーザー→外部アカウント関係
 }));
 
 /**
@@ -297,6 +378,38 @@ export const diaryThingsRelations = relations(diaryThingsTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * ユーザー外部アカウント連携テーブルのリレーション定義
+ *
+ * 各外部アカウント連携レコードは以下を参照：
+ * - 一人のユーザー
+ */
+export const userExternalAccountsRelations = relations(
+  userExternalAccountsTable,
+  ({ one }) => ({
+    user: one(usersTable, {
+      fields: [userExternalAccountsTable.userId],
+      references: [usersTable.id],
+    }),
+  })
+);
+
+/**
+ * Discord チャンネルテーブルのリレーション定義
+ *
+ * 各チャンネルレコードは以下を参照：
+ * - 一つの組織（organization）
+ */
+export const discordChannelsRelations = relations(
+  discordChannelsTable,
+  ({ one }) => ({
+    organization: one(organizationsTable, {
+      fields: [discordChannelsTable.organizationId],
+      references: [organizationsTable.id],
+    }),
+  })
+);
+
 // ============================================================================
 // ENUM CONFIGURATION
 // ============================================================================
@@ -305,43 +418,3 @@ export const diaryThingsRelations = relations(diaryThingsTable, ({ one }) => ({
  * memberのroleを定義するためのZodスキーマ
  */
 export const MemberRoleSchema = z.enum(["admin"]);
-
-// ============================================================================
-// SCHEMA SUMMARY
-// ============================================================================
-
-/**
- * IoT農業システム Phase 1 スキーマサマリ
- *
- * テーブル数: 6
- * 1. organizations - 組織管理
- * 2. users - ユーザー管理
- * 3. organizationMembers - ユーザー↔組織 多対多関係
- * 4. things - ほ場管理
- * 5. diaries - 農作業日誌
- * 6. diaryThings - 日誌↔ほ場 多対多関係
- *
- * 主要な関係性:
- * - User ↔ Organization: Many-to-Many (organizationMembers経由)
- * - Diary ↔ Organization: Many-to-One
- * - Diary ↔ User: Many-to-One
- * - Diary ↔ Thing: Many-to-Many (diaryThings経由)
- * - Thing ↔ Organization: Many-to-One
- *
- * Phase 1 対応機能:
- * ✅ ユーザー登録・ログイン機能
- * ✅ Organization作成機能（招待なし）
- * ✅ 農業日誌の入力機能（日付、内容、タグ）
- * ✅ 農業日誌のリスト表示・詳細表示画面
- *
- * パフォーマンス最適化:
- * - 日付順表示用インデックス
- * - ユーザー別/組織別表示用複合インデックス
- * - 作業種別フィルタリング用インデックス
- * - unique制約による整合性保証
- *
- * 将来拡張への備え:
- * - センサーデータ連携（Phase 2）
- * - 写真添付機能拡張（Phase 5）
- * - 検索・フィルタリング機能拡張（Phase 5）
- */
