@@ -6,6 +6,9 @@ on:
     paths-ignore:
       - ".github/workflows/**"
       - "*.md"
+      - "*ignore"
+      - "*.yaml"
+      - "*.yml"
       - "docs/**"
 
 # 同じPRまたはブランチで複数のunit testが実行されないようにする

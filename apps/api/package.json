@@ -18,6 +18,7 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "test": "dotenv -e .env.testing -- vitest",
+    "cf:deploy": "wrangler deploy src/app.ts --config ../../infra/cloudflare/api/wrangler.toml --keep-vars",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
