@@ -112,7 +112,13 @@ jobs:
 
       - name: Build & Deploy Worker
         working-directory: "apps/dashboard"
-        run: pnpm cf:deploy
+        run:  pnpm opennextjs-cloudflare deploy -- \
+              --define "process.env.NEXT_PUBLIC_API_URL='${{ secrets.DASHBOARD_API_URL }}'" \
+              --define "process.env.NEXT_PUBLIC_SITE_URL='${{ secrets.DASHBOARD_SITE_URL }}'" \
+              --define "process.env.NEXT_PUBLIC_SUPABASE_URL='${{ secrets.SUPABASE_URL }}'" \
+              --define "process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY='${{ secrets.SUPABASE_ANON_KEY }}'" \
+              --keep-vars \
+              --config ../../infra/cloudflare/dashboard/wrangler.toml
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
