@@ -9,7 +9,7 @@ test.describe("Thing CRUD Test", () => {
 
     // ページに移動
     await openSidebarIfNotVisible(page);
-    await page.click('[href="/things"]');
+    await page.click('[data-slot="sidebar-content"] [href="/things"]');
     await page.waitForSelector('h1:has-text("区画・センサー管理")');
   });
 

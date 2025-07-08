@@ -12,7 +12,7 @@ test.describe("Diary CRUD Test", () => {
     await openSidebarIfNotVisible(page);
 
     // リンクをクリック
-    await page.click('a[href="/diary"]');
+    await page.click('[data-slot="sidebar-content"] a[href="/diary"]');
     await page.waitForSelector('h1:has-text("農業日誌")');
   });
 
