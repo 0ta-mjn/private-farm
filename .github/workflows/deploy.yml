@@ -110,6 +110,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Save Environment Variables
+        run: |
+          cat <<EOF > apps/dashboard/.env
+          NEXT_PUBLIC_API_URL=${{ secrets.DASHBOARD_API_URL }}
+          NEXT_PUBLIC_SITE_URL=${{ secrets.DASHBOARD_SITE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          EOF
+
       - name: Build & Deploy Worker
         working-directory: "apps/dashboard"
         run: pnpm cf:deploy
