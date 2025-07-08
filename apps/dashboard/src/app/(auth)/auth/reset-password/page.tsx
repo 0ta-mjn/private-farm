@@ -31,7 +31,8 @@ import {
   EyeOffIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 // フォームバリデーションスキーマ
 const formSchema = z
@@ -81,24 +82,37 @@ export default function AuthResetPasswordPage() {
 
     // 認証コードを使ってサインイン
     const handler = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (data?.user) {
-        // 成功時の処理
-        setStatus("form");
-      } else {
+      try {
+        const data = await auth.verifyCode({
+          type: "reset-password",
+          code,
+        });
+
+        if (data?.user) {
+          // 成功時の処理
+          setStatus("form");
+        }
+      } catch (error) {
+        console.error("認証処理中にエラー:", error);
         // 認証に失敗した場合
         setStatus("error");
-        switch (error?.code) {
-          case "auth/invalid-credentials":
-            setGeneralError("無効な認証情報です。もう一度お試しください。");
-            break;
-          case "auth/session-expired":
-            setGeneralError(
-              "セッションが期限切れです。再度ログインしてください。"
-            );
-            break;
-          default:
-            setGeneralError("認証に失敗しました。もう一度お試しください。");
+        if (error instanceof AuthError) {
+          switch (error?.code) {
+            case "invalid_credentials":
+            case "invalid_token":
+            case "invalid_request":
+              setGeneralError("無効な認証情報です。もう一度お試しください。");
+              break;
+            case "token_expired":
+              setGeneralError(
+                "セッションが期限切れです。再度ログインしてください。"
+              );
+              break;
+            default:
+              setGeneralError("認証に失敗しました。もう一度お試しください。");
+          }
+        } else {
+          setGeneralError("認証に失敗しました。もう一度お試しください。");
         }
       }
     };
@@ -118,26 +132,32 @@ export default function AuthResetPasswordPage() {
 
     try {
       // パスワードを更新
-      const { error } = await supabase.auth.updateUser({
+      await auth.resetPassword({
         password: values.password,
       });
 
-      if (error) {
-        // エラーコードによる分岐処理
+      // 成功時の処理
+      setStatus("success");
+
+      // 3秒後にログイン画面に遷移
+      router.push("/login");
+    } catch (error) {
+      console.error("Password update error:", error);
+      if (error instanceof AuthError) {
         switch (error.code) {
           case "weak_password":
             setGeneralError(
               "パスワードが脆弱です。より強力なパスワードを設定してください。"
             );
             break;
-          case "session_not_found":
+          case "unauthorized":
             setGeneralError(
               "セッションが見つかりません。リンクの有効期限が切れている可能性があります。"
             );
             break;
-          case "same_password":
+          case "invalid_token":
             setGeneralError(
-              "新しいパスワードは現在のパスワードと同じです。異なるパスワードを設定してください。"
+              "無効なトークンです。新しいリセットリンクを要求してください。"
             );
             break;
           default:
@@ -146,14 +166,9 @@ export default function AuthResetPasswordPage() {
             );
             break;
         }
-        return;
+      } else {
+        setGeneralError("パスワード更新中にエラーが発生しました");
       }
-
-      // 3秒後にログイン画面に遷移
-      router.push("/login");
-    } catch (err) {
-      console.error("Password update error:", err);
-      setGeneralError("パスワード更新中にエラーが発生しました");
     } finally {
       setIsLoading(false);
     }

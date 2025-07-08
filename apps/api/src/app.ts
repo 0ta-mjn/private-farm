@@ -1,5 +1,4 @@
 import { dbClient } from "@repo/db/client";
-import { supaClient } from "@repo/supabase";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { timingMiddleware } from "./middleware/util";
@@ -12,20 +11,18 @@ import { userRoute } from "./routes/user";
 import { thingRoute } from "./routes/thing";
 import { diaryRoute } from "./routes/diary";
 import { discordRoute } from "./routes/discord";
+import { getAuth } from "./auth";
+import { except } from "hono/combine";
 
 const app = new Hono<HonoEnv>()
   .use((c, next) => {
     const {
-      SUPABASE_KEY,
-      SUPABASE_URL,
       DATABASE_URL,
       DISCORD_CLIENT_ID,
       DISCORD_CLIENT_SECRET,
       DISCORD_BOT_TOKEN,
       DISCORD_ENCRYPTION_KEY,
     } = env<{
-      SUPABASE_URL: string | undefined;
-      SUPABASE_KEY: string | undefined;
       DATABASE_URL: string | undefined;
       DISCORD_CLIENT_ID: string | undefined;
       DISCORD_CLIENT_SECRET: string | undefined;
@@ -33,11 +30,6 @@ const app = new Hono<HonoEnv>()
       DISCORD_ENCRYPTION_KEY: string | undefined;
       ACCEPT_ORIGINS: string | undefined;
     }>(c);
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
-      throw new HTTPException(500, {
-        message: "Supabase URL or key is not set in environment variables.",
-      });
-    }
     if (!DATABASE_URL) {
       throw new HTTPException(500, {
         message: "Database URL is not set in environment variables.",
@@ -54,9 +46,8 @@ const app = new Hono<HonoEnv>()
       });
     }
     const db = dbClient(DATABASE_URL);
-    const supabase = supaClient(SUPABASE_URL, SUPABASE_KEY);
     c.set("db", db);
-    c.set("supabase", supabase);
+    c.set("auth", getAuth(c));
     c.set("discordKeys", {
       discordClientId: DISCORD_CLIENT_ID,
       discordClientSecret: DISCORD_CLIENT_SECRET,
@@ -99,9 +90,9 @@ const app = new Hono<HonoEnv>()
       credentials: true,
     })
   )
-  .use(timingMiddleware, authMiddleware)
-  .route("/organization", organizationRoute)
+  .use(timingMiddleware, except("/auth/*", authMiddleware))
   .route("/user", userRoute)
+  .route("/organization", organizationRoute)
   .route("/thing", thingRoute)
   .route("/diary", diaryRoute)
   .route("/discord", discordRoute)

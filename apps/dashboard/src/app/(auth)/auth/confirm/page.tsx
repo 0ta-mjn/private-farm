@@ -11,7 +11,9 @@ import {
 } from "@/shadcn/card";
 import { Button } from "@/shadcn/button";
 import { AlertCircleIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { client } from "@/rpc/client";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 export default function AuthConfirmPage() {
   const router = useRouter();
@@ -30,24 +32,49 @@ export default function AuthConfirmPage() {
     }
 
     const handler = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (data?.user) {
-        // 成功時の処理
-        setStatus("success");
-        setMessage("アカウントの確認が完了しました。");
-        router.push("/setup");
-      } else {
+      try {
+        const data = await auth.verifyCode({
+          type: "verify-email",
+          code,
+        });
+
+        if (data?.user) {
+          // 成功時の処理
+          setStatus("success");
+          setMessage("アカウントの確認が完了しました。");
+          
+          // 初期設定状態を確認
+          const setupStatus = await client.user.setup.$get();
+
+          if (setupStatus.isCompleted) {
+            // 初期設定完了済みの場合はダッシュボードへ
+            router.push("/dashboard");
+          } else {
+            // 初期設定未完了の場合はセットアップページへ
+            router.push("/setup");
+          }
+        }
+      } catch (error) {
+        console.error("認証処理中にエラー:", error);
         // 認証に失敗した場合
         setStatus("error");
-        switch (error?.code) {
-          case "auth/invalid-credentials":
-            setMessage("無効な認証情報です。もう一度お試しください。");
-            break;
-          case "auth/session-expired":
-            setMessage("セッションが期限切れです。再度ログインしてください。");
-            break;
-          default:
-            setMessage("認証に失敗しました。もう一度お試しください。");
+        if (error instanceof AuthError) {
+          switch (error?.code) {
+            case "invalid_credentials":
+            case "invalid_token":
+            case "invalid_request":
+              setMessage("無効な認証情報です。もう一度お試しください。");
+              break;
+            case "token_expired":
+              setMessage(
+                "セッションが期限切れです。再度ログインしてください。"
+              );
+              break;
+            default:
+              setMessage("認証に失敗しました。もう一度お試しください。");
+          }
+        } else {
+          setMessage("認証に失敗しました。もう一度お試しください。");
         }
       }
     };

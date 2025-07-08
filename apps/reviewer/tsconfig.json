@@ -8,7 +8,10 @@
       ],
       "@repo/db/*": [
         "../../packages/db/src/*"
-      ]
+      ],
+      "@repo/discord/*": [
+        "../../packages/discord/src/*"
+      ],
     }
   },
   "include": [

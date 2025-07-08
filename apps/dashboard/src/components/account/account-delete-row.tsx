@@ -3,7 +3,6 @@
 import { Button } from "@/shadcn/button";
 import { Trash2Icon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { client } from "@/rpc/client";
 import {
@@ -18,17 +17,18 @@ import {
 } from "@/shadcn/alert-dialog";
 import { AlertTriangleIcon } from "lucide-react";
 import { useState } from "react";
+import { useAuthActions } from "@/lib/auth-context";
 
 export function AccountDeleteRow() {
   const router = useRouter();
-
+  const { signOut } = useAuthActions();
   const [open, setOpen] = useState(false);
 
   const mutation = useMutation({
     mutationFn: async () => client.user.account.$delete(),
     onSuccess: () => {
       router.push("/login");
-      supabase.auth.signOut();
+      signOut();
     },
     onError: (error) => {
       console.error("アカウント削除エラー:", error);

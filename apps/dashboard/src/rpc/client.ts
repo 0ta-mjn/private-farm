@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { auth } from "@/lib/auth-provider";
 import type { AppType } from "@repo/api";
 import { ClientResponse, hc } from "hono/client";
-import { supabase } from "@/lib/supabase";
 
 if (!process.env.NEXT_PUBLIC_API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL is not defined");
@@ -10,12 +10,10 @@ if (!process.env.NEXT_PUBLIC_API_URL) {
 const rawClient = hc<AppType>(process.env.NEXT_PUBLIC_API_URL, {
   headers: async () => {
     // Supabaseセッションからトークンを取得
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const session = await auth.getSession();
     return {
-      authorization: session?.access_token
-        ? `Bearer ${session.access_token}`
+      authorization: session?.accessToken
+        ? `Bearer ${session.accessToken}`
         : "",
     };
   },

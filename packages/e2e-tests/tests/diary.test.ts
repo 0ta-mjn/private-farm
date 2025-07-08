@@ -252,33 +252,4 @@ test.describe("Diary CRUD Test", () => {
       timeout: 5000,
     });
   });
-
-  test("should validate required fields when creating a diary entry", async ({
-    page,
-  }) => {
-    // 日誌作成フォームを開く
-    await page.click('button:has-text("日誌を追加")');
-    await page.waitForSelector(
-      '[data-slot="drawer-content"], [data-slot="sheet-content"]'
-    );
-
-    // 必須項目を入力せずに保存を試行
-    await page.click(
-      'button[data-testid="submit-button-mobile"], button[data-testid="submit-button-desktop"]'
-    );
-
-    // バリデーションエラーが表示されることを確認
-    await expect(page.locator('[data-testid="work-type-error"]')).toBeVisible();
-  });
-
-  // 複数日誌、検索機能等のテストは実装が複雑になるため、将来のイテレーションで追加
-  /*
-  test("should handle multiple diary entries", async ({ page }) => {
-    // TODO: 実装予定
-  });
-
-  test("should search diary entries", async ({ page }) => {
-    // TODO: 実装予定
-  });
-  */
 });

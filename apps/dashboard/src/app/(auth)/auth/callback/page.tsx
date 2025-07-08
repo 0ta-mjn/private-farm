@@ -11,8 +11,9 @@ import {
 } from "@/shadcn/card";
 import { Button } from "@/shadcn/button";
 import { AlertCircleIcon } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { client } from "@/rpc/client";
+import { auth } from "@/lib/auth-provider";
+import { AuthError } from "@repo/auth-client";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -53,22 +54,34 @@ export default function AuthCallbackPage() {
 
     // 認証コードを使ってサインイン
     const handler = async () => {
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (data?.user) {
-        // 成功時の処理
-        onSuccess();
-      } else {
+      try {
+        const data = await auth.verifyCode({
+          type: "verify-email",
+          code,
+        });
+
+        if (data?.user) {
+          onSuccess();
+        }
+      } catch (error) {
+        console.error("認証処理中にエラー:", error);
         // 認証に失敗した場合
         setStatus("error");
-        switch (error?.code) {
-          case "auth/invalid-credentials":
-            setMessage("無効な認証情報です。もう一度お試しください。");
-            break;
-          case "auth/session-expired":
-            setMessage("セッションが期限切れです。再度ログインしてください。");
-            break;
-          default:
-            setMessage("認証に失敗しました。もう一度お試しください。");
+        if (error instanceof AuthError) {
+          switch (error?.code) {
+            case "invalid_credentials":
+            case "invalid_token":
+            case "invalid_request":
+              setMessage("無効な認証情報です。もう一度お試しください。");
+              break;
+            case "token_expired":
+              setMessage(
+                "セッションが期限切れです。再度ログインしてください。"
+              );
+              break;
+            default:
+              setMessage("認証に失敗しました。もう一度お試しください。");
+          }
         }
       }
     };
@@ -79,17 +92,6 @@ export default function AuthCallbackPage() {
       setMessage("認証処理中にエラーが発生しました。もう一度お試しください。");
     });
   }, [onSuccess, router, params]);
-
-  useEffect(() => {
-    const handler = async () => {
-      // ページがロードされたときにSupabaseのセッションを確認
-      const session = await supabase.auth.getSession();
-      if (session.data.session?.user) {
-        onSuccess();
-      }
-    };
-    handler();
-  }, [onSuccess]);
 
   const handleRetry = () => {
     router.push("/login");
