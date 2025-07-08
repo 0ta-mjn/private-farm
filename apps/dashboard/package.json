@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "cf:build": "opennextjs-cloudflare build --skipWranglerConfigCheck",
     "cf:preview": "opennextjs-cloudflare preview -- --config ../../infra/cloudflare/dashboard/wrangler.toml --port 3000 --host 127.0.0.1",
-    "cf:deploy": "pnpm cf:build && opennextjs-cloudflare deploy -- --config ../../infra/cloudflare/dashboard/wrangler.toml",
+    "cf:deploy": "pnpm cf:build && opennextjs-cloudflare deploy --　--keep-vars --config ../../infra/cloudflare/dashboard/wrangler.toml",
     "cf:upload": "pnpm cf:build && opennextjs-cloudflare upload -- --config ../../infra/cloudflare/dashboard/wrangler.toml",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts --config ../../infra/cloudflare/dashboard/wrangler.toml"
   },
