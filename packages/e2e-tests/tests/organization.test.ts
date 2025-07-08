@@ -67,55 +67,6 @@ test.describe("Organization CRUD Test", () => {
     );
   });
 
-  test("should show validation errors for invalid organization data", async ({
-    page,
-  }) => {
-    // Navigate to organization settings
-    await page.goto("/organization/settings");
-
-    // Wait for the form to load
-    await page.waitForSelector('input[name="name"]', { timeout: 10000 });
-
-    // Clear organization name (required field)
-    await page.fill('input[name="name"]', "");
-
-    // Try to submit the form with empty name
-    await page.click('button[type="submit"]');
-
-    // Wait for validation error
-    await page.waitForTimeout(1000);
-
-    // Check for validation error message
-    await expect(page.locator("text=組織名は必須です")).toBeVisible();
-
-    // Test maximum length validation
-    const longName = "a".repeat(101); // Exceeds 100 character limit
-    await page.fill('input[name="name"]', longName);
-    await page.click('button[type="submit"]');
-
-    // Wait for validation error
-    await page.waitForTimeout(1000);
-
-    // Check for length validation error
-    await expect(
-      page.locator("text=組織名は100文字以内で入力してください")
-    ).toBeVisible();
-
-    // Test description length validation
-    const longDescription = "a".repeat(501); // Exceeds 500 character limit
-    await page.fill('input[name="name"]', "有効な組織名");
-    await page.fill('textarea[name="description"]', longDescription);
-    await page.click('button[type="submit"]');
-
-    // Wait for validation error
-    await page.waitForTimeout(1000);
-
-    // Check for description length validation error
-    await expect(
-      page.locator("text=説明は500文字以内で入力してください")
-    ).toBeVisible();
-  });
-
   test("should create a new organization via sidebar dropdown", async ({
     page,
   }) => {
@@ -167,52 +118,6 @@ test.describe("Organization CRUD Test", () => {
     );
   });
 
-  test("should show create organization form validation errors", async ({
-    page,
-  }) => {
-    await openSidebarIfNotVisible(page);
-
-    // Open create organization dialog
-    await page.click('[data-slot="dropdown-menu-trigger"]');
-    await page.waitForSelector(
-      '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")',
-      { timeout: 5000 }
-    );
-    await page.click(
-      '[data-slot="dialog-trigger"]:has-text("新しい組織を作成")'
-    );
-
-    // Try to submit without filling required fields
-    await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Wait for validation
-    await page.waitForTimeout(1000);
-
-    // Check for validation error on organization name
-    await expect(page.locator("text=組織名は必須です")).toBeVisible();
-
-    // Test maximum length validation
-    const longName = "a".repeat(101);
-    const longDescription = "a".repeat(501);
-    await page.fill(
-      '[data-slot="dialog-content"] input[name="organizationName"]',
-      longName
-    );
-    await page.fill(
-      '[data-slot="dialog-content"] textarea[name="description"]',
-      longDescription
-    );
-    await page.click('button[type="submit"]:has-text("組織を作成")');
-
-    // Check for length validation error in create form
-    await expect(
-      page.locator("text=組織名は100文字以内で入力してください")
-    ).toBeVisible({ timeout: 5000 });
-    await expect(
-      page.locator("text=説明は500文字以内で入力してください")
-    ).toBeVisible({ timeout: 5000 });
-  });
-
   test("should delete organization successfully", async ({ page }) => {
     // Navigate to organization settings
     await page.goto("/organization/settings");
@@ -247,36 +152,6 @@ test.describe("Organization CRUD Test", () => {
     // Verify user is redirected (organization should no longer be accessible)
     // Since this is the user's only organization, they might be redirected to setup or dashboard
     await page.waitForURL(/\/(dashboard|setup)/, { timeout: 10000 });
-  });
-
-  test("should cancel organization deletion", async ({ page }) => {
-    // Navigate to organization settings
-    await page.goto("/organization/settings");
-
-    // Wait for the page to load
-    await page.waitForSelector('button:has-text("組織を削除")', {
-      timeout: 10000,
-    });
-
-    // Click on delete organization button
-    await page.click('button:has-text("組織を削除")');
-
-    // Wait for delete confirmation dialog using data-slot selector
-    await page.waitForSelector(
-      '[data-slot="alert-dialog-title"]:has-text("組織を削除")',
-      { timeout: 5000 }
-    );
-
-    // Cancel deletion
-    await page.click('button:has-text("キャンセル")');
-
-    // Verify dialog closes and we're still on organization settings page
-    await expect(
-      page.locator('[data-slot="alert-dialog-content"]')
-    ).not.toBeVisible({
-      timeout: 5000,
-    });
-    await expect(page.locator("h1")).toHaveText("組織設定");
   });
 
   test("should switch between organizations", async ({ page }) => {

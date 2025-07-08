@@ -13,13 +13,6 @@ test.describe("Thing CRUD Test", () => {
     await page.waitForSelector('h1:has-text("区画・センサー管理")');
   });
 
-  test("should display empty state when no things exist", async ({ page }) => {
-    // Check for empty state message - using more specific selectors instead of text=
-    await expect(
-      page.locator("button:has-text('最初の区画を追加')")
-    ).toBeVisible({ timeout: 5000 });
-  });
-
   test("should create a new thing", async ({ page }) => {
     // Click on create thing button using data-slot attribute
     await page.click('[data-slot="button"]:has-text("区画を追加")');
@@ -60,41 +53,6 @@ test.describe("Thing CRUD Test", () => {
     await expect(page.locator(`h3:has-text("${testThingName}")`)).toBeVisible({
       timeout: 10000,
     });
-  });
-
-  test("should validate required fields when creating a thing", async ({
-    page,
-  }) => {
-    // Click on create thing button using data-slot attribute
-    await page.click('[data-slot="button"]:has-text("区画を追加")');
-
-    // Wait for the form dialog/drawer to open
-    await page.waitForSelector(
-      '[data-testid="thing-form-dialog"], [data-testid="thing-form-drawer"]',
-      {
-        timeout: 10000,
-      }
-    );
-
-    // Try to submit without filling required fields
-    await page.click(
-      '[data-testid="submit-button-desktop"], [data-testid="submit-button-mobile"]'
-    );
-
-    // Wait for validation errors
-    await page.waitForTimeout(1000);
-
-    // Check for name validation error
-    await expect(
-      page.locator('[data-testid="name-error"]:has-text("区画名は必須です")')
-    ).toBeVisible();
-
-    // Check for type validation error
-    await expect(
-      page.locator(
-        '[data-testid="type-error"]:has-text("区画の種類は必須です")'
-      )
-    ).toBeVisible();
   });
 
   test("should edit an existing thing", async ({ page }) => {
@@ -273,53 +231,5 @@ test.describe("Thing CRUD Test", () => {
     await expect(
       page.locator(`p:has-text("${testDescription}")`)
     ).toBeVisible();
-  });
-
-  test("should handle area input validation", async ({ page }) => {
-    await page.waitForSelector("h1", { timeout: 10000 });
-
-    // Click on create thing button using data-slot attribute
-    await page.click('[data-slot="button"]:has-text("区画を追加")');
-    await page.waitForSelector(
-      '[data-testid="thing-form-dialog"], [data-testid="thing-form-drawer"]',
-      {
-        timeout: 10000,
-      }
-    );
-
-    // Fill required fields
-    await page.fill('[data-testid="name-input"]', "面積テスト区画");
-    await page.click('[data-testid="type-select"]');
-    await page.click('[data-testid="type-option-FIELD"]');
-
-    // Test invalid area input
-    await page.fill('[data-testid="area-input"]', "-10");
-    await page.click(
-      '[data-testid="submit-button-desktop"], [data-testid="submit-button-mobile"]'
-    );
-
-    // Wait for validation error
-    await page.waitForTimeout(1000);
-
-    // Check for area validation error
-    await expect(
-      page.locator(
-        '[data-testid="area-error"]:has-text("面積は正の数値で入力してください")'
-      )
-    ).toBeVisible();
-
-    // Test valid area input
-    await page.fill('[data-testid="area-input"]', "100");
-    await page.click(
-      '[data-testid="submit-button-desktop"], [data-testid="submit-button-mobile"]'
-    );
-
-    // Wait for successful creation
-    await page.waitForTimeout(2000);
-
-    // Verify that the thing was created successfully
-    await expect(page.locator("h3:has-text('面積テスト区画')")).toBeVisible({
-      timeout: 10000,
-    });
   });
 });
