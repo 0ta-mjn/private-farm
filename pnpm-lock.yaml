@@ -299,8 +299,8 @@ importers:
         specifier: ^4.5.1
         version: 4.5.2(vite@7.0.2(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0))
       '@vitest/ui':
-        specifier: 3.2.1
-        version: 3.2.1(vitest@3.2.4)
+        specifier: 3.2.4
+        version: 3.2.4(vitest@3.2.4)
       eslint:
         specifier: 'catalog:'
         version: 9.29.0(jiti@2.4.2)
@@ -324,7 +324,7 @@ importers:
         version: 5.1.4(typescript@5.8.3)(vite@7.0.2(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0))
       vitest:
         specifier: 'catalog:'
-        version: 3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.1)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
+        version: 3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.4)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
       wrangler:
         specifier: 'catalog:'
         version: 4.21.0
@@ -380,6 +380,34 @@ importers:
       wrangler:
         specifier: 'catalog:'
         version: 4.21.0
+
+  infra/supabase/emulator:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: 'catalog:'
+        version: 2.50.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.67
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tools/eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../../../tools/tsconfig
+      eslint:
+        specifier: 'catalog:'
+        version: 9.29.0(jiti@2.4.2)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.5.3
+      supabase:
+        specifier: ^2.26.9
+        version: 2.30.4
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
 
   packages/auth-admin:
     dependencies:
@@ -627,34 +655,6 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.5.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.8.3
-
-  packages/supabase:
-    dependencies:
-      '@supabase/supabase-js':
-        specifier: 'catalog:'
-        version: 2.50.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.67
-    devDependencies:
-      '@repo/eslint-config':
-        specifier: workspace:*
-        version: link:../../tools/eslint-config
-      '@repo/tsconfig':
-        specifier: workspace:*
-        version: link:../../tools/tsconfig
-      eslint:
-        specifier: 'catalog:'
-        version: 9.29.0(jiti@2.4.2)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.5.3
-      supabase:
-        specifier: ^2.26.9
-        version: 2.26.9
       typescript:
         specifier: 'catalog:'
         version: 5.8.3
@@ -4007,9 +4007,6 @@ packages:
       vite:
         optional: true
 
-  '@vitest/pretty-format@3.2.1':
-    resolution: {integrity: sha512-xBh1X2GPlOGBupp6E1RcUQWIxw0w/hRLd3XyBS6H+dMdKTAqHDNsIR2AnJwPA3yYe9DFy3VUKTe3VRTrAiQ01g==}
-
   '@vitest/pretty-format@3.2.4':
     resolution: {integrity: sha512-IVNZik8IVRJRTr9fxlitMKeJeXFFFN0JaB9PHPGQ8NKQbGpfjlTx9zO4RefN8gp7eqjNy8nyK3NZmBzOPeIxtA==}
 
@@ -4022,18 +4019,10 @@ packages:
   '@vitest/spy@3.2.4':
     resolution: {integrity: sha512-vAfasCOe6AIK70iP5UD11Ac4siNUNJ9i/9PZ3NKx07sG6sUxeag1LWdNrMWeKKYBLlzuK+Gn65Yd5nyL6ds+nw==}
 
-  '@vitest/ui@3.2.1':
-    resolution: {integrity: sha512-xT93aOcPn2wn8vvw4T6rZAK9WjGEHdYrEjN3OJ1zcDpl2UInxvcD9fYI10nmPAERNEK6jUVcSCIPAIfNuaRX6Q==}
-    peerDependencies:
-      vitest: 3.2.1
-
   '@vitest/ui@3.2.4':
     resolution: {integrity: sha512-hGISOaP18plkzbWEcP/QvtRW1xDXF2+96HbEX6byqQhAUbiS5oH6/9JwW+QsQCIYON2bI6QZBF+2PvOmrRZ9wA==}
     peerDependencies:
       vitest: 3.2.4
-
-  '@vitest/utils@3.2.1':
-    resolution: {integrity: sha512-KkHlGhePEKZSub5ViknBcN5KEF+u7dSUr9NW8QsVICusUojrgrOnnY3DEWWO877ax2Pyopuk2qHmt+gkNKnBVw==}
 
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
@@ -6275,8 +6264,8 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
-  supabase@2.26.9:
-    resolution: {integrity: sha512-wHl7HtAD2iHMVXL8JZyfSjdI0WYM7EF0ydThp1tSvDANaD2JHCZc8GH1NdzglbwGqdHmjCYeSZ+H28fmucYl7Q==}
+  supabase@2.30.4:
+    resolution: {integrity: sha512-AOCyd2vmBBMTXbnahiCU0reRNxKS4n5CrPciUF2tcTrQ8dLzl1HwcLfe5DrG8E0QRcKHPDdzprmh/2+y4Ta5MA==}
     engines: {npm: '>=8'}
     hasBin: true
 
@@ -10912,10 +10901,6 @@ snapshots:
     optionalDependencies:
       vite: 7.0.2(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
 
-  '@vitest/pretty-format@3.2.1':
-    dependencies:
-      tinyrainbow: 2.0.0
-
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
@@ -10936,17 +10921,6 @@ snapshots:
     dependencies:
       tinyspy: 4.0.3
 
-  '@vitest/ui@3.2.1(vitest@3.2.4)':
-    dependencies:
-      '@vitest/utils': 3.2.1
-      fflate: 0.8.2
-      flatted: 3.3.3
-      pathe: 2.0.3
-      sirv: 3.0.1
-      tinyglobby: 0.2.14
-      tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.1)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
-
   '@vitest/ui@3.2.4(vitest@3.2.4)':
     dependencies:
       '@vitest/utils': 3.2.4
@@ -10957,13 +10931,6 @@ snapshots:
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
       vitest: 3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.4)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
-    optional: true
-
-  '@vitest/utils@3.2.1':
-    dependencies:
-      '@vitest/pretty-format': 3.2.1
-      loupe: 3.1.4
-      tinyrainbow: 2.0.0
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -13411,7 +13378,7 @@ snapshots:
       pirates: 4.0.7
       ts-interface-checker: 0.1.13
 
-  supabase@2.26.9:
+  supabase@2.30.4:
     dependencies:
       bin-links: 5.0.0
       https-proxy-agent: 7.0.6
@@ -13780,50 +13747,6 @@ snapshots:
       terser: 5.16.9
       tsx: 4.19.4
       yaml: 2.8.0
-
-  vitest@3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.1)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0):
-    dependencies:
-      '@types/chai': 5.2.2
-      '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.0.2(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0))
-      '@vitest/pretty-format': 3.2.4
-      '@vitest/runner': 3.2.4
-      '@vitest/snapshot': 3.2.4
-      '@vitest/spy': 3.2.4
-      '@vitest/utils': 3.2.4
-      chai: 5.2.0
-      debug: 4.4.1
-      expect-type: 1.2.2
-      magic-string: 0.30.17
-      pathe: 2.0.3
-      picomatch: 4.0.2
-      std-env: 3.9.0
-      tinybench: 2.9.0
-      tinyexec: 0.3.2
-      tinyglobby: 0.2.14
-      tinypool: 1.1.1
-      tinyrainbow: 2.0.0
-      vite: 7.0.2(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
-      vite-node: 3.2.4(@types/node@22.15.31)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0)
-      why-is-node-running: 2.3.0
-    optionalDependencies:
-      '@types/node': 22.15.31
-      '@vitest/ui': 3.2.1(vitest@3.2.4)
-      happy-dom: 17.6.3
-      jsdom: 26.1.0
-    transitivePeerDependencies:
-      - jiti
-      - less
-      - lightningcss
-      - msw
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - tsx
-      - yaml
 
   vitest@3.2.4(@types/node@22.15.31)(@vitest/ui@3.2.4)(happy-dom@17.6.3)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.16.9)(tsx@4.19.4)(yaml@2.8.0):
     dependencies:

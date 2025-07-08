@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - tools/*
+  - infra/**/*
 
 catalog:
   prettier: ^3.5.3
