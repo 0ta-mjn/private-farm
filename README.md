@@ -55,6 +55,17 @@
 
 ## プロジェクト構成
 
+```text
+satopod-farm/
+├── apps/          # アプリケーション
+├── docs/          # ドキュメント
+├── infra/         # インフラストラクチャ設定
+├── packages/      # 共有パッケージ
+├── scripts/       # スクリプト
+├── tools/         # ツール
+└── turbo.json     # Turborepo設定
+```
+
 ### Apps（アプリケーション）
 
 #### `apps/dashboard` - フロントエンドダッシュボード
