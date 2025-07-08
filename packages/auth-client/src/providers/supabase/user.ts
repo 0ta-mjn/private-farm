@@ -26,9 +26,9 @@ export const SupabaseUserToAuthUser = (user: User): AuthUser => ({
 });
 
 /**
- * SupabaseのUserオブジェクトをAuthUserに変換する関数
- * SupabaseのUserオブジェクトは、user_metadataに名前やフルネームを含むことがあるため、
- * それらを適切にマッピングしてAuthUser形式に変換します。
+ * SupabaseのSessionオブジェクトをAuthSessionに変換する関数
+ * SupabaseのSessionオブジェクトからユーザー情報、アクセストークン、
+ * リフレッシュトークン、有効期限を抽出してAuthSession形式に変換します。
  */
 export const SupabaseSessionToAuthSession = (
   session: Session
