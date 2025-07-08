@@ -25,7 +25,7 @@
       "cache": true
     },
     "test": {
-      "dependsOn": ["lint"],
+      "dependsOn": ["lint", "typecheck"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": [
         "DATABASE_URL",
