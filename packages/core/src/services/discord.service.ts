@@ -1,4 +1,4 @@
-import { Database } from "@repo/db/client";
+import { Database } from "@repo/dashboard-db/client";
 import { z } from "zod";
 import {
   DiscordRegistrationKeys,
@@ -7,7 +7,7 @@ import {
   sendViaWebhook,
   WebhookPayload,
 } from "@repo/discord";
-import { discordChannelsTable } from "@repo/db/schema";
+import { discordChannelsTable } from "@repo/dashboard-db/schema";
 import { and, eq } from "drizzle-orm";
 import { DiscordNotificationSettingsSchema } from "@repo/config";
 

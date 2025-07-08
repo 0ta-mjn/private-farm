@@ -1,11 +1,11 @@
-import { type Database } from "@repo/db/client";
-import { eq, and, desc, count, sum } from "@repo/db";
+import { type Database } from "@repo/dashboard-db/client";
+import { eq, and, desc, count, sum } from "@repo/dashboard-db";
 import {
   diariesTable,
   thingsTable,
   diaryThingsTable,
   usersTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import { WORK_TYPE_OPTIONS, workTypeOptions } from "@repo/config";
 import { EmbedMessage, WebhookPayload } from "@repo/discord";
 

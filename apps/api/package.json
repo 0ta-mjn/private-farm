@@ -30,7 +30,7 @@
     "@esbuild-plugins/tsconfig-paths": "catalog:",
     "@repo/auth-admin": "workspace:*",
     "@repo/core": "workspace:*",
-    "@repo/db": "workspace:*",
+    "@repo/dashboard-db": "workspace:*",
     "@repo/discord": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/eslint-config": "workspace:*",

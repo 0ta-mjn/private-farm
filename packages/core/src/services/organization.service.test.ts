@@ -1,11 +1,11 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { dbClient } from "@repo/db/client";
+import { dbClient } from "@repo/dashboard-db/client";
 import {
   organizationMembersTable,
   organizationsTable,
   usersTable,
   discordChannelsTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import {
   createOrganization,
   getUserOrganizations,

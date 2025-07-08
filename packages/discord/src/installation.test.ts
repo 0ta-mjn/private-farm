@@ -7,8 +7,8 @@ import {
   beforeAll,
   afterAll,
 } from "vitest";
-import { dbClient } from "@repo/db/client";
-import { discordChannelsTable, organizationsTable } from "@repo/db/schema";
+import { dbClient } from "@repo/dashboard-db/client";
+import { discordChannelsTable, organizationsTable } from "@repo/dashboard-db/schema";
 import {
   DiscordRegistrationKeys,
   registerDiscordChannel,

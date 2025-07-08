@@ -1,4 +1,4 @@
-import { Database } from "@repo/db/client";
+import { Database } from "@repo/dashboard-db/client";
 import { DiscordRegistrationKeys } from "@repo/discord";
 import { BlankEnv } from "hono/types";
 import { AuthProvider } from "@repo/auth-admin";

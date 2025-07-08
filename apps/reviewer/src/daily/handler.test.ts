@@ -20,8 +20,8 @@ vi.mock("./daily-review", () => ({
   generateDailyDigestMessage: vi.fn(),
 }));
 
-// @repo/db/clientのモック
-vi.mock("@repo/db/client", () => ({
+// @repo/dashboard-db/clientのモック
+vi.mock("@repo/dashboard-db/client", () => ({
   dbClient: vi.fn(() => ({})), // モックDBオブジェクト
 }));
 
@@ -31,7 +31,7 @@ import {
   sendMessageViaWebhook,
 } from "@repo/core";
 import { getDailyDigestData, generateDailyDigestMessage } from "./daily-review";
-import { Database } from "@repo/db/client";
+import { Database } from "@repo/dashboard-db/client";
 
 const mockGetOrganizationsWithNotification =
   getOrganizationsWithNotification as MockedFunction<

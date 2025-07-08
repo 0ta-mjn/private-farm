@@ -1,10 +1,10 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { dbClient } from "@repo/db/client";
+import { dbClient } from "@repo/dashboard-db/client";
 import {
   organizationMembersTable,
   organizationsTable,
   usersTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import { guardOrganizationMembership } from "./organization";
 
 const db = dbClient();

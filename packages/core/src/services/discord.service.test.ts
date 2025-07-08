@@ -1,11 +1,11 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { dbClient } from "@repo/db/client";
-import { eq } from "@repo/db";
+import { dbClient } from "@repo/dashboard-db/client";
+import { eq } from "@repo/dashboard-db";
 import {
   discordChannelsTable,
   organizationsTable,
   usersTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import {
   getDiscordChannels,
   updateDiscordChannelNotificationSettings,

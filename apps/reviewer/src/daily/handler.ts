@@ -2,7 +2,7 @@ import {
   sendMessageViaWebhook,
   getOrganizationsWithNotification,
 } from "@repo/core";
-import { Database } from "@repo/db/client";
+import { Database } from "@repo/dashboard-db/client";
 import {
   DailyDigestOptions,
   generateDailyDigestMessage,

@@ -1,5 +1,5 @@
 import { getYesterdayDate, dailyReviewHandler } from "./handler";
-import { dbClient } from "@repo/db/client";
+import { dbClient } from "@repo/dashboard-db/client";
 import { getReviewerRuntimeConfig } from "@repo/config";
 
 export default {

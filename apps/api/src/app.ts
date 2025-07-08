@@ -1,4 +1,4 @@
-import { dbClient } from "@repo/db/client";
+import { dbClient } from "@repo/dashboard-db/client";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { timingMiddleware } from "./middleware/util";

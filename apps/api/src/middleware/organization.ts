@@ -1,6 +1,6 @@
-import { eq, and } from "@repo/db";
-import { organizationMembersTable, MemberRoleSchema } from "@repo/db/schema";
-import type { Database } from "@repo/db/client";
+import { eq, and } from "@repo/dashboard-db";
+import { organizationMembersTable, MemberRoleSchema } from "@repo/dashboard-db/schema";
+import type { Database } from "@repo/dashboard-db/client";
 import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
 import { createMiddleware } from "hono/factory";

@@ -19,7 +19,7 @@
 - **APIサーバー**: `packages/core`
   - APIサーバーのビジネスロジックを実装
   - `src/services`にビジネスロジックとそのテストを配置
-- **DBパッケージ**: `packages/db`
+- **DBパッケージ**: `packages/dashboard-db`
   - Drizzle ORMを使用したデータベースの設定とマイグレーションを管理
 
 ## APIの実装手順
@@ -70,8 +70,8 @@
 
     ```ts
     import { z } from "zod";
-    import { eq, withUniqueIdRetry } from "@repo/db";
-    import type { Database } from "@repo/db/client";
+    import { eq, withUniqueIdRetry } from "@repo/dashboard-db";
+    import type { Database } from "@repo/dashboard-db/client";
 
     export const SetupSchema = z.object({
       // バリデーションスキーマ
@@ -100,12 +100,12 @@
 
     ```ts
     import { describe, it, beforeEach, expect } from "vitest";
-    import { dbClient } from "@repo/db/client";
+    import { dbClient } from "@repo/dashboard-db/client";
     import {
       organizationMembersTable,
       organizationsTable,
       usersTable,
-    } from "@repo/db/schema";
+    } from "@repo/dashboard-db/schema";
     import { getUserById, setupUserAndOrganization } from "..";
 
     const db = dbClient();

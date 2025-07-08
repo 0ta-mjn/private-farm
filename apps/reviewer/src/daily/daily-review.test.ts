@@ -1,12 +1,12 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { dbClient } from "@repo/db/client";
+import { dbClient } from "@repo/dashboard-db/client";
 import {
   organizationsTable,
   usersTable,
   diariesTable,
   thingsTable,
   diaryThingsTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import {
   getDailyDigestData,
   generateDailyDigestMessage,

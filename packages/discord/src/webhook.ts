@@ -1,6 +1,6 @@
-import { Database } from "@repo/db/client";
-import { discordChannelsTable } from "@repo/db/schema";
-import { eq } from "@repo/db";
+import { Database } from "@repo/dashboard-db/client";
+import { discordChannelsTable } from "@repo/dashboard-db/schema";
+import { eq } from "@repo/dashboard-db";
 import { decrypt } from "./utils";
 import { DISCORD_WEBHOOK_URL } from "@repo/config";
 import {

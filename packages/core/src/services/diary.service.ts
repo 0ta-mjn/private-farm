@@ -1,14 +1,14 @@
-import { eq, withUniqueIdRetry, and, desc, sql, gte, lte } from "@repo/db";
+import { eq, withUniqueIdRetry, and, desc, sql, gte, lte } from "@repo/dashboard-db";
 import { inArray } from "drizzle-orm";
 import {
   diariesTable,
   diaryThingsTable,
   thingsTable,
   usersTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import { DEFAULT_UUID_CONFIG } from "@repo/config";
 import { UnauthorizedError } from "../errors";
-import type { Database } from "@repo/db/client";
+import type { Database } from "@repo/dashboard-db/client";
 import { z } from "zod";
 
 // Zodスキーマ定義

@@ -1,7 +1,7 @@
-import { eq, withUniqueIdRetry, and } from "@repo/db";
-import { thingsTable } from "@repo/db/schema";
+import { eq, withUniqueIdRetry, and } from "@repo/dashboard-db";
+import { thingsTable } from "@repo/dashboard-db/schema";
 import { DEFAULT_UUID_CONFIG } from "@repo/config";
-import type { Database } from "@repo/db/client";
+import type { Database } from "@repo/dashboard-db/client";
 import { z } from "zod";
 
 // Zodスキーマ定義

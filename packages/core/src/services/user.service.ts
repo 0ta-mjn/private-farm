@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { eq, desc, and, sql, count, inArray } from "@repo/db";
+import { eq, desc, and, sql, count, inArray } from "@repo/dashboard-db";
 import {
   usersTable,
   organizationsTable,
   organizationMembersTable,
-} from "@repo/db/schema";
-import type { Database } from "@repo/db/client";
+} from "@repo/dashboard-db/schema";
+import type { Database } from "@repo/dashboard-db/client";
 import {
   createOrganizationCore,
   deleteOrganization,

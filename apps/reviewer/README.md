@@ -83,7 +83,7 @@ pnpm build --filter=discord-bots
 ## 関連パッケージ
 
 - `@repo/core`: ビジネスロジック
-- `@repo/db`: データベース操作
+- `@repo/dashboard-db`: データベース操作
 - `@repo/eslint-config`: ESLint設定
 - `@repo/tsconfig`: TypeScript設定
 

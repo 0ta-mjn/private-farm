@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { eq } from "@repo/db";
-import { dbClient } from "@repo/db/client";
+import { eq } from "@repo/dashboard-db";
+import { dbClient } from "@repo/dashboard-db/client";
 import {
   organizationMembersTable,
   organizationsTable,
@@ -8,7 +8,7 @@ import {
   diariesTable,
   diaryThingsTable,
   thingsTable,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import {
   createDiary,
   getDiary,

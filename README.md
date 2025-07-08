@@ -134,7 +134,7 @@ src/
 #### `packages/core` - ビジネスロジック
 
 - **機能**: サービス層の実装、エラー定義
-- **依存関係**: @repo/config, @repo/db, @repo/discord
+- **依存関係**: @repo/config, @repo/dashboard-db, @repo/discord
 - **テスト**: Vitest
 
 **構成**:
@@ -146,7 +146,7 @@ src/
 └── index.ts      # エントリーポイント
 ```
 
-#### `packages/db` - データベース層
+#### `packages/dashboard-db` - データベース層
 
 - **ORM**: Drizzle ORM
 - **データベース**: PostgreSQL (postgres ライブラリ)
@@ -183,7 +183,7 @@ src/
 #### `packages/discord` - Discord統合
 
 - **API**: discord-api-types
-- **依存関係**: @repo/config, @repo/db
+- **依存関係**: @repo/config, @repo/dashboard-db
 - **機能**: Discord API統合、エラーハンドリング
 
 #### `packages/e2e-tests` - E2Eテスト

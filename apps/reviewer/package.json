@@ -21,7 +21,7 @@
     "@esbuild-plugins/tsconfig-paths": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/core": "workspace:*",
-    "@repo/db": "workspace:*",
+    "@repo/dashboard-db": "workspace:*",
     "@repo/discord": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",

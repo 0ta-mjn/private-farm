@@ -1,5 +1,5 @@
-import { Database } from "@repo/db/client";
-import { discordChannelsTable } from "@repo/db/schema";
+import { Database } from "@repo/dashboard-db/client";
+import { discordChannelsTable } from "@repo/dashboard-db/schema";
 import { createRandomHex, encrypt } from "./utils";
 import {
   DISCORD_API_URL,

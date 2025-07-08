@@ -7,7 +7,7 @@
  * - 農業日誌の入力機能（日付、内容）
  * - 農業日誌のリスト表示・詳細表示画面
  *
- * @filepath packages/db/src/schema.ts
+ * @filepath packages/dashboard-db/src/schema.ts
  */
 
 import {

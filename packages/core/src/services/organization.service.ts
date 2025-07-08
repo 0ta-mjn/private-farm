@@ -1,17 +1,17 @@
 import { z } from "zod";
-import { eq, withUniqueIdRetry, and } from "@repo/db";
+import { eq, withUniqueIdRetry, and } from "@repo/dashboard-db";
 import {
   organizationsTable,
   organizationMembersTable,
   discordChannelsTable,
   MemberRoleSchema,
-} from "@repo/db/schema";
+} from "@repo/dashboard-db/schema";
 import {
   DEFAULT_UUID_CONFIG,
   type DiscordNotificationSettings,
 } from "@repo/config";
 import { MembershipCreationError } from "../errors";
-import type { Database, Transaction } from "@repo/db/client";
+import type { Database, Transaction } from "@repo/dashboard-db/client";
 
 // バリデーションスキーマ
 export const CreateOrganizationSchema = z.object({
