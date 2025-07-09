@@ -283,6 +283,13 @@ src/
 - `pnpm db:migrate:testing`: テスト環境にマイグレーション実行
 - `pnpm db:migration:new`: 新しい空のマイグレーションを作成
 
+##### D1 DB 作成
+
+```bash
+cd packages/dashboard-db
+pnpm wrangler d1 create dashboard --location apac --config ../../infra/cloudflare/api/wrangler.toml
+```
+
 #### テスト
 
 - `pnpm test`: テスト実行（セットアップ含む）

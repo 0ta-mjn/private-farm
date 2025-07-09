@@ -5,5 +5,5 @@ compatibility_date = "2025-06-17"
 [[d1_databases]]
 binding = "DashboardDB"
 database_name = "dashboard"
-database_id = "satopod-dashboard-d1"
+database_id = "<YOUR_DASHBOARD_D1_DATABASE_ID>"
 migrations_dir = "../../../packages/dashboard-db/migrations/d1"
