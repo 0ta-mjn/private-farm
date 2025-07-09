@@ -15,7 +15,7 @@
     "emulator:stopd": "pnpm --filter @repo/supabase run stopd",
     "setup:testing": "pnpm emulator:start && pnpm db:migrate:testing",
     "setup:playwright": "pnpm --filter @repo/e2e-tests run install-browsers",
-    "test": "pnpm setup:testing && turbo run test --concurrency=1",
+    "test": "pnpm setup:testing && turbo run test",
     "e2e": "pnpm setup:testing && turbo run e2e --concurrency=1",
     "test:ci": "CI=true pnpm test",
     "e2e:ci": "pnpm setup:playwright && CI=true pnpm e2e"
