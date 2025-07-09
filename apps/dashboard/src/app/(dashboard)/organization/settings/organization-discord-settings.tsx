@@ -77,10 +77,14 @@ export function OrganizationDiscordSettings({
       channelId: string;
       notificationSettings: NotificationSettings;
     }) =>
-      client.discord["notification-settings"][":organizationId"].$put({
-        param: { organizationId: params.organizationId },
-        json: {
+      client.discord.channels[":organizationId"][":channelId"][
+        "notification-settings"
+      ].$put({
+        param: {
+          organizationId: params.organizationId,
           channelId: params.channelId,
+        },
+        json: {
           notificationSettings: params.notificationSettings,
         },
       }),
@@ -97,9 +101,9 @@ export function OrganizationDiscordSettings({
   // チャネル削除のミューテーション
   const unlinkChannelMutation = useMutation({
     mutationFn: async (params: { organizationId: string; channelId: string }) =>
-      client.discord.unlink[":organizationId"].$delete({
-        param: { organizationId: params.organizationId },
-        json: {
+      client.discord.channels[":organizationId"][":channelId"].$delete({
+        param: {
+          organizationId: params.organizationId,
           channelId: params.channelId,
         },
       }),
@@ -327,7 +331,7 @@ export function OrganizationDiscordSettings({
                         </Label>
                         <Switch
                           id={`daily-${channel.guildId}-${channel.id}`}
-                          checked={channel.notificationSettings.daily}
+                          checked={channel.notificationSettings?.daily}
                           onCheckedChange={(checked) =>
                             updateNotificationSetting(
                               channel.id,
@@ -347,7 +351,7 @@ export function OrganizationDiscordSettings({
                         </Label>
                         <Switch
                           id={`weekly-${channel.guildId}-${channel.id}`}
-                          checked={channel.notificationSettings.weekly}
+                          checked={channel.notificationSettings?.weekly}
                           onCheckedChange={(checked) =>
                             updateNotificationSetting(
                               channel.id,
@@ -367,7 +371,7 @@ export function OrganizationDiscordSettings({
                         </Label>
                         <Switch
                           id={`monthly-${channel.guildId}-${channel.id}`}
-                          checked={channel.notificationSettings.monthly}
+                          checked={channel.notificationSettings?.monthly}
                           onCheckedChange={(checked) =>
                             updateNotificationSetting(
                               channel.id,

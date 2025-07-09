@@ -19,6 +19,7 @@
     "lint": "eslint",
     "test": "dotenv -e .env.testing -- vitest",
     "cf:deploy": "wrangler deploy src/app.ts --config ../../infra/cloudflare/api/wrangler.toml --keep-vars",
+    "cf:typegen": "wrangler types --config ../../infra/cloudflare/api/wrangler.toml",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -29,8 +30,7 @@
   "devDependencies": {
     "@esbuild-plugins/tsconfig-paths": "catalog:",
     "@repo/auth-admin": "workspace:*",
-    "@repo/core": "workspace:*",
-    "@repo/db": "workspace:*",
+    "@repo/dashboard-db": "workspace:*",
     "@repo/discord": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/eslint-config": "workspace:*",

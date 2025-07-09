@@ -1,6 +1,11 @@
+import { createDashboardDBClient } from "@repo/dashboard-db/client";
 import { getYesterdayDate, dailyReviewHandler } from "./handler";
-import { dbClient } from "@repo/db/client";
 import { getReviewerRuntimeConfig } from "@repo/config";
+
+interface Env {
+  DashboardDB: D1Database;
+  ENCRYPTION_KEY: string;
+}
 
 export default {
   async fetch(): Promise<Response> {
@@ -10,21 +15,21 @@ export default {
   },
   scheduled: async (_, _env) => {
     const env = getReviewerRuntimeConfig({
-      DATABASE_URL: _env.DATABASE_URL,
-      DISCORD_ENCRYPTION_KEY: _env.DISCORD_ENCRYPTION_KEY,
+      ENCRYPTION_KEY: _env.ENCRYPTION_KEY,
     });
-    const db = dbClient(env.DATABASE_URL);
-    const discordEncryptionKey = env.DISCORD_ENCRYPTION_KEY;
+    const db = createDashboardDBClient({
+      type: "d1",
+      params: {
+        encryptionKey: env.ENCRYPTION_KEY,
+        d1: _env.DashboardDB,
+      },
+    });
 
     try {
       const targetDate = getYesterdayDate(new Date());
       console.info(`Starting daily digest processing for date: ${targetDate}`);
 
-      const result = await dailyReviewHandler(
-        db,
-        discordEncryptionKey,
-        targetDate
-      );
+      const result = await dailyReviewHandler(db, targetDate);
 
       console.info(
         `Daily digest processing completed for date: ${targetDate}`,

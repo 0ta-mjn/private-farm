@@ -5,72 +5,64 @@ import {
   vi,
   beforeEach,
   type MockedFunction,
+  beforeAll,
 } from "vitest";
 import { dailyReviewHandler } from "./handler";
+import { createTestDashboardD1DB } from "@repo/dashboard-db/testing";
 
-// @repo/coreのモック
-vi.mock("@repo/core", () => ({
-  getOrganizationsWithNotification: vi.fn(),
-  sendMessageViaWebhook: vi.fn(),
-}));
-
-// ./daily-reviewのモック
-vi.mock("./daily-review", () => ({
-  getDailyDigestData: vi.fn(),
-  generateDailyDigestMessage: vi.fn(),
-}));
-
-// @repo/db/clientのモック
-vi.mock("@repo/db/client", () => ({
-  dbClient: vi.fn(() => ({})), // モックDBオブジェクト
+// @repo/discord/webhookのモック
+vi.mock("@repo/discord", () => ({
+  sendViaWebhook: vi.fn(),
 }));
 
 // モジュールをインポート（モック後）
-import {
-  getOrganizationsWithNotification,
-  sendMessageViaWebhook,
-} from "@repo/core";
-import { getDailyDigestData, generateDailyDigestMessage } from "./daily-review";
-import { Database } from "@repo/db/client";
+import { sendViaWebhook } from "@repo/discord";
 
-const mockGetOrganizationsWithNotification =
-  getOrganizationsWithNotification as MockedFunction<
-    typeof getOrganizationsWithNotification
-  >;
-const mockSendMessageViaWebhook = sendMessageViaWebhook as MockedFunction<
-  typeof sendMessageViaWebhook
+const mockSendViaWebhook = sendViaWebhook as MockedFunction<
+  typeof sendViaWebhook
 >;
-const mockGetDailyDigestData = getDailyDigestData as MockedFunction<
-  typeof getDailyDigestData
->;
-const mockGenerateDailyDigestMessage =
-  generateDailyDigestMessage as MockedFunction<
-    typeof generateDailyDigestMessage
-  >;
 
-const testEncryptionKey = "test-encryption-key";
-const mockDB = {} as Database;
+const db = await createTestDashboardD1DB();
+
 const testDate = new Date("2025-06-24T10:00:00Z").toISOString().split("T")[0]!; // 2025-06-24
+const testUserId = "test-user-id";
 
 describe("Daily Review Handler", () => {
-  beforeEach(() => {
+  let org1Id: string;
+  let org2Id: string;
+  beforeAll(async () => {
+    const { organization: org1 } = await db.user.setup(testUserId, {
+      userName: "Test User",
+      organizationName: "Test Organization 1",
+    });
+    const { organization: org2 } = await db.organization.create(testUserId, {
+      organizationName: "Test Organization 2",
+    });
+    org1Id = org1.id;
+    org2Id = org2.id;
+  });
+
+  beforeEach(async () => {
     // モック関数をリセット
     vi.clearAllMocks();
 
-    // 追加の関数のデフォルトモック
-    mockGetDailyDigestData.mockResolvedValue({
-      date: "2025-06-23",
-      totalEntries: 1,
-      totalDuration: 60,
-      totalFields: 1,
-      workTypeSummary: [],
-      fieldSummary: [],
-      recentEntries: [],
-    });
+    // すべてのチャネルを削除
+    const deleteAllChannels = async (orgId: string) =>
+      db.discord.listByOrganizationId(orgId).then((channels) =>
+        Promise.all(
+          channels.map((channel) =>
+            db.discord.unlink({
+              organizationId: orgId,
+              channelId: channel.id,
+            })
+          )
+        )
+      );
+    await deleteAllChannels(org1Id);
+    await deleteAllChannels(org2Id);
 
-    mockGenerateDailyDigestMessage.mockReturnValue({
-      embeds: [{ title: "Daily Digest", description: "Test message" }],
-    });
+    // デフォルトモック
+    mockSendViaWebhook.mockResolvedValue(undefined);
 
     // console.logをモック（テスト出力を綺麗にするため）
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -78,23 +70,10 @@ describe("Daily Review Handler", () => {
   });
 
   it("should return success when no organizations have daily notification enabled", async () => {
-    // 空の組織リストを返すようにモック
-    mockGetOrganizationsWithNotification.mockResolvedValue([]);
-
-    const result = await dailyReviewHandler(
-      mockDB,
-      testEncryptionKey,
-      testDate
-    );
-
-    // getOrganizationsWithNotificationが正しく呼ばれることを確認
-    expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
-      mockDB,
-      "daily"
-    );
+    const result = await dailyReviewHandler(db, testDate);
 
     // sendDailyDigestは呼ばれないことを確認
-    expect(mockSendMessageViaWebhook).not.toHaveBeenCalled();
+    expect(mockSendViaWebhook).not.toHaveBeenCalled();
 
     // 戻り値の確認
     expect(result).toEqual({
@@ -104,71 +83,30 @@ describe("Daily Review Handler", () => {
   });
 
   it("should process organizations successfully", async () => {
-    const mockOrganizations = [
-      {
-        organizationId: "org-1",
-        organizationName: "Organization 1",
-        channels: [
-          {
-            channelUuid: "channel-1",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-      {
-        organizationId: "org-2",
-        organizationName: "Organization 2",
-        channels: [
-          {
-            channelUuid: "channel-2",
-            channelName: "notifications",
-            notificationSettings: { daily: true, weekly: true, monthly: false },
-          },
-        ],
-      },
-    ];
+    // Discord チャンネルデータを挿入
+    await db.discord.createOrUpdate(org1Id, {
+      guildId: "guild-1",
+      guildName: "Guild 1",
+      channelId: "discord-channel-1",
+      channelName: "general",
+      webhookId: "webhook-1",
+      webhookToken: "encrypted-webhook-token-1",
+      notificationSettings: { daily: true, weekly: false, monthly: false },
+    });
+    await db.discord.createOrUpdate(org2Id, {
+      guildId: "guild-2",
+      guildName: "Guild 2",
+      channelId: "discord-channel-2",
+      channelName: "notifications",
+      webhookId: "webhook-2",
+      webhookToken: "encrypted-webhook-token-2",
+      notificationSettings: { daily: true, weekly: true, monthly: false },
+    });
 
-    const mockSendResult = {
-      success: true,
-      successCount: 1,
-      failureCount: 0,
-      message: "Message sent successfully",
-    };
+    const result = await dailyReviewHandler(db, testDate);
 
-    mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendMessageViaWebhook.mockResolvedValue(mockSendResult);
-
-    const result = await dailyReviewHandler(
-      mockDB,
-      testEncryptionKey,
-      testDate
-    );
-
-    // getOrganizationsWithNotificationが正しく呼ばれることを確認
-    expect(mockGetOrganizationsWithNotification).toHaveBeenCalledWith(
-      mockDB,
-      "daily"
-    );
-
-    // sendMessageViaWebhookが各チャンネルに対して呼ばれることを確認
-    expect(mockSendMessageViaWebhook).toHaveBeenCalledTimes(2);
-    expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
-      mockDB,
-      testEncryptionKey,
-      "channel-1",
-      expect.any(Object) // メッセージオブジェクト
-    );
-    expect(mockSendMessageViaWebhook).toHaveBeenCalledWith(
-      mockDB,
-      testEncryptionKey,
-      "channel-2",
-      expect.any(Object) // メッセージオブジェクト
-    );
+    // sendViaWebhookが各チャンネルに対して呼ばれることを確認
+    expect(mockSendViaWebhook).toHaveBeenCalledTimes(2);
 
     // 戻り値の確認
     expect(result).toEqual({
@@ -179,33 +117,20 @@ describe("Daily Review Handler", () => {
     });
   });
 
-  it("should handle sendMessageViaWebhook throwing exceptions", async () => {
-    const mockOrganizations = [
-      {
-        organizationId: "org-exception",
-        organizationName: "Exception Organization",
-        channels: [
-          {
-            channelUuid: "channel-exception",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-    ];
+  it("should handle sendViaWebhook throwing exceptions", async () => {
+    await db.discord.createOrUpdate(org1Id, {
+      guildId: "guild-exception",
+      guildName: "Guild Exception",
+      channelId: "discord-channel-exception",
+      channelName: "general",
+      webhookId: "webhook-exception",
+      webhookToken: "encrypted-webhook-token-exception",
+      notificationSettings: { daily: true, weekly: false, monthly: false },
+    });
 
-    mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendMessageViaWebhook.mockRejectedValue(new Error("Unexpected error"));
+    mockSendViaWebhook.mockRejectedValue(new Error("Unexpected error"));
 
-    const result = await dailyReviewHandler(
-      mockDB,
-      testEncryptionKey,
-      testDate
-    );
+    const result = await dailyReviewHandler(db, testDate);
 
     // 戻り値の確認
     expect(result).toEqual({
@@ -216,57 +141,24 @@ describe("Daily Review Handler", () => {
     });
   });
 
-  it("should handle getOrganizationsWithNotification throwing exception", async () => {
-    // getOrganizationsWithNotificationが例外をスロー
-    mockGetOrganizationsWithNotification.mockRejectedValue(
-      new Error("Database connection failed")
-    );
-
-    await expect(
-      dailyReviewHandler(mockDB, testEncryptionKey, testDate)
-    ).rejects.toThrow("Database connection failed");
-  });
-
   it("should implement rate limiting between organizations", async () => {
-    const mockOrganizations = [
-      {
-        organizationId: "org-1",
-        organizationName: "Organization 1",
-        channels: [
-          {
-            channelUuid: "channel-1",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-      {
-        organizationId: "org-2",
-        organizationName: "Organization 2",
-        channels: [
-          {
-            channelUuid: "channel-2",
-            channelName: "general",
-            notificationSettings: {
-              daily: true,
-              weekly: false,
-              monthly: false,
-            },
-          },
-        ],
-      },
-    ];
-
-    mockGetOrganizationsWithNotification.mockResolvedValue(mockOrganizations);
-    mockSendMessageViaWebhook.mockResolvedValue({
-      success: true,
-      successCount: 1,
-      failureCount: 0,
-      message: "Success",
+    await db.discord.createOrUpdate(org1Id, {
+      guildId: "rate-guild-1",
+      guildName: "Rate Guild 1",
+      channelId: "rate-discord-channel-1",
+      channelName: "general",
+      webhookId: "rate-webhook-1",
+      webhookToken: "encrypted-webhook-token-1",
+      notificationSettings: { daily: true, weekly: false, monthly: false },
+    });
+    await db.discord.createOrUpdate(org2Id, {
+      guildId: "rate-guild-2",
+      guildName: "Rate Guild 2",
+      channelId: "rate-discord-channel-2",
+      channelName: "general",
+      webhookId: "rate-webhook-2",
+      webhookToken: "encrypted-webhook-token-2",
+      notificationSettings: { daily: true, weekly: false, monthly: false },
     });
 
     // setTimeoutをモック
@@ -274,14 +166,12 @@ describe("Daily Review Handler", () => {
       .spyOn(global, "setTimeout")
       .mockImplementation((callback: () => void) => {
         callback(); // 即座に実行
-        return 1 as unknown as NodeJS.Timeout; // NodeJS.Timeoutの代わり
+        return 1 as unknown as NodeJS.Timeout;
       });
 
-    const result = await dailyReviewHandler(
-      mockDB,
-      testEncryptionKey,
-      testDate
-    );
+    const result = await dailyReviewHandler(db, testDate, {
+      sleepAfterOrg: 1000,
+    });
 
     // 各組織にチャンネルがあるため、組織数分だけsetTimeoutが呼ばれることを確認
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);

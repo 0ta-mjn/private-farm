@@ -41,7 +41,7 @@
 - **バリデーション**: @hono/zod-validator + Zod
 - **データベース**: PostgreSQL
 - **ORM**: Drizzle ORM + drizzle-zod
-- **スキーマ管理**: Drizzle Kit[text](docs/adr/trpc_vs_hono.md)
+- **スキーマ管理**: Drizzle Kit
 - **認証**: Supabase Auth + @supabase/supabase-js
 - **デプロイ**: Cloudflare Workers (Wrangler)
 
@@ -54,6 +54,17 @@
 - **フォーマット**: Prettier
 
 ## プロジェクト構成
+
+```text
+satopod-farm/
+├── apps/          # アプリケーション
+├── docs/          # ドキュメント
+├── infra/         # インフラストラクチャ設定
+├── packages/      # 共有パッケージ
+├── scripts/       # スクリプト
+├── tools/         # ツール
+└── turbo.json     # Turborepo設定
+```
 
 ### Apps（アプリケーション）
 
@@ -97,9 +108,16 @@ src/
 src/
 ├── app.ts          # Honoアプリケーション
 ├── auth.ts         # 認証関連
+├── db.ts           # データベース接続
+├── errors.ts       # エラーハンドリング
 ├── index.ts        # エントリーポイント
 ├── middleware/     # ミドルウェア
 └── routes/         # APIルート
+    ├── diary.ts    # 農作業日誌API
+    ├── discord.ts  # Discord連携API
+    ├── organization.ts # 組織管理API
+    ├── thing.ts    # デバイス管理API
+    └── user.ts     # ユーザー管理API
 ```
 
 #### `apps/reviewer` - Discord通知システム
@@ -120,36 +138,25 @@ src/
 
 ### Packages（共有パッケージ）
 
-#### `packages/core` - ビジネスロジック
-
-- **機能**: サービス層の実装、エラー定義
-- **依存関係**: @repo/config, @repo/db, @repo/discord
-- **テスト**: Vitest
-
-**構成**:
-
-```text
-src/
-├── services/     # ビジネスロジック
-├── errors.ts     # エラー定義
-└── index.ts      # エントリーポイント
-```
-
-#### `packages/db` - データベース層
+#### `packages/dashboard-db` - データベース抽象化層
 
 - **ORM**: Drizzle ORM
 - **データベース**: PostgreSQL (postgres ライブラリ)
 - **スキーマ管理**: Drizzle Kit
 - **バリデーション**: drizzle-zod + Zod
+- **Repository適応戦略**: ADR-003に基づくマルチDB対応
+- **エラー定義**: 統一されたエラータイプシステム
 
 **構成**:
 
 ```text
 src/
-├── client.ts     # データベースクライアント
-├── schema.ts     # スキーマ定義
-├── utils.ts      # ユーティリティ
-└── index.ts      # エントリーポイント
+├── client.ts       # データベースクライアント
+├── adapters/       # DB適応層（Cloudflare D1, PostgreSQL等）
+├── interfaces/     # リポジトリインターフェース定義
+├── errors.ts       # 統一エラー定義
+├── encryption.ts   # データ暗号化ユーティリティ
+└── testing.ts      # テスト用ユーティリティ
 ```
 
 #### `packages/config` - 設定管理
@@ -172,8 +179,19 @@ src/
 #### `packages/discord` - Discord統合
 
 - **API**: discord-api-types
-- **依存関係**: @repo/config, @repo/db
-- **機能**: Discord API統合、エラーハンドリング
+- **依存関係**: @repo/config
+- **機能**: Discord API統合、エラーハンドリング、Webhook管理
+
+**構成**:
+
+```text
+src/
+├── errors.ts       # Discord API エラー定義
+├── webhook.ts      # Webhook 送信機能
+├── registration.ts # Discord 登録機能
+├── types.ts        # 型定義
+└── utils.ts        # ユーティリティ
+```
 
 #### `packages/e2e-tests` - E2Eテスト
 
@@ -189,12 +207,12 @@ src/
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  auth-client    │    │      core       │    │    discord      │
+│  auth-client    │    │  dashboard-db   │    │    discord      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     config      │◀───│       db        │◀───│  auth-admin     │
+│     config      │◀───│  auth-admin     │◀───│      config     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -264,6 +282,13 @@ src/
 - `pnpm db:migrate`: マイグレーション実行
 - `pnpm db:migrate:testing`: テスト環境にマイグレーション実行
 - `pnpm db:migration:new`: 新しい空のマイグレーションを作成
+
+##### D1 DB 作成
+
+```bash
+cd packages/dashboard-db
+pnpm wrangler d1 create dashboard --location apac --config ../../infra/cloudflare/api/wrangler.toml
+```
 
 #### テスト
 

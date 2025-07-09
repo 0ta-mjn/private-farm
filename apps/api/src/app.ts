@@ -1,4 +1,3 @@
-import { dbClient } from "@repo/db/client";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { timingMiddleware } from "./middleware/util";
@@ -13,6 +12,9 @@ import { diaryRoute } from "./routes/diary";
 import { discordRoute } from "./routes/discord";
 import { getAuth } from "./auth";
 import { except } from "hono/combine";
+import { getDashboardDB } from "./db";
+import { DashboardDBError } from "@repo/dashboard-db";
+import { getHttpExceptionFromDashboardDBError } from "./errors";
 
 const app = new Hono<HonoEnv>()
   .use((c, next) => {
@@ -21,13 +23,11 @@ const app = new Hono<HonoEnv>()
       DISCORD_CLIENT_ID,
       DISCORD_CLIENT_SECRET,
       DISCORD_BOT_TOKEN,
-      DISCORD_ENCRYPTION_KEY,
     } = env<{
       DATABASE_URL: string | undefined;
       DISCORD_CLIENT_ID: string | undefined;
       DISCORD_CLIENT_SECRET: string | undefined;
       DISCORD_BOT_TOKEN: string | undefined;
-      DISCORD_ENCRYPTION_KEY: string | undefined;
       ACCEPT_ORIGINS: string | undefined;
     }>(c);
     if (!DATABASE_URL) {
@@ -35,24 +35,17 @@ const app = new Hono<HonoEnv>()
         message: "Database URL is not set in environment variables.",
       });
     }
-    if (
-      !DISCORD_CLIENT_ID ||
-      !DISCORD_CLIENT_SECRET ||
-      !DISCORD_BOT_TOKEN ||
-      !DISCORD_ENCRYPTION_KEY
-    ) {
+    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET || !DISCORD_BOT_TOKEN) {
       throw new HTTPException(500, {
         message: "Discord configuration is not set in environment variables.",
       });
     }
-    const db = dbClient(DATABASE_URL);
-    c.set("db", db);
+    c.set("dashboardDB", getDashboardDB(c));
     c.set("auth", getAuth(c));
     c.set("discordKeys", {
       discordClientId: DISCORD_CLIENT_ID,
       discordClientSecret: DISCORD_CLIENT_SECRET,
       discordBotToken: DISCORD_BOT_TOKEN,
-      encryptionKey: DISCORD_ENCRYPTION_KEY,
     });
     return next();
   })
@@ -97,10 +90,17 @@ const app = new Hono<HonoEnv>()
   .route("/diary", diaryRoute)
   .route("/discord", discordRoute)
   .onError((err, c) => {
-    console.error("Error occurred:", err);
     if (err instanceof HTTPException) {
       return err.getResponse();
     }
+
+    console.error("Error occurred:", err);
+
+    if (err instanceof DashboardDBError) {
+      const exception = getHttpExceptionFromDashboardDBError(err);
+      return exception.getResponse();
+    }
+
     return c.newResponse("Internal Server Error", 500);
   });
 
