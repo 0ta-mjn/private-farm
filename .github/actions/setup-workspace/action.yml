@@ -2,14 +2,17 @@ name: "setup workspace"
 runs:
   using: "composite"
   steps:
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+    - name: Setup pnpm
+      shell: bash
+      uses: pnpm/action-setup@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "pnpm"
+    - name: Setup Node.js
+      shell: bash
+      uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: "pnpm"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
