@@ -2,6 +2,10 @@ name = "satopod-reviewer"
 compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-06-17"
 
+[[d1_databases]]
+binding = "DashboardDB"
+database_name = "dashboard"
+database_id = "satopod-dashboard-d1"
 
 [env.daily]
 name = "satopod-reviewer-daily"

@@ -1,13 +1,6 @@
-import {
-  sendMessageViaWebhook,
-  getOrganizationsWithNotification,
-} from "@repo/core";
-import { Database } from "@repo/dashboard-db/client";
-import {
-  DailyDigestOptions,
-  generateDailyDigestMessage,
-  getDailyDigestData,
-} from "./daily-review";
+import { sendViaWebhook } from "@repo/discord";
+import { DailyDigestOptions, generateDailyDigestMessage } from "./daily-review";
+import { DashboardDB } from "@repo/dashboard-db/interfaces";
 
 /**
  * 前日の日付を YYYY-MM-DD 形式で取得
@@ -24,8 +17,7 @@ export function getYesterdayDate(date: Date): string {
  * Cloud Schedulerなどから毎日05:30 JSTに実行される
  */
 export async function dailyReviewHandler(
-  db: Database,
-  discordEncryptionKey: string,
+  db: DashboardDB,
   targetDate: string,
   {
     sleepAfterOrg = 1000,
@@ -42,10 +34,8 @@ export async function dailyReviewHandler(
   console.log(`Starting daily digest processing for date: ${targetDate}`);
 
   // 日次通知が有効な組織とチャンネル情報を取得
-  const orgsWithDailyNotification = await getOrganizationsWithNotification(
-    db,
-    "daily"
-  );
+  const orgsWithDailyNotification =
+    await db.organization.findAllWithNotification("daily");
 
   if (orgsWithDailyNotification.length === 0) {
     console.log("No organizations with daily notification enabled");
@@ -71,8 +61,7 @@ export async function dailyReviewHandler(
       );
 
       // 日次ダイジェストデータを取得
-      const digestData = await getDailyDigestData(
-        db,
+      const digestData = await db.diary.getDailyDigestData(
         org.organizationId,
         targetDate
       );
@@ -83,12 +72,7 @@ export async function dailyReviewHandler(
       // 各チャンネルに送信
       const sendResults = await Promise.allSettled(
         org.channels.map((channel) =>
-          sendMessageViaWebhook(
-            db,
-            discordEncryptionKey,
-            channel.channelUuid,
-            message
-          ).catch((error) => {
+          sendViaWebhook(channel, message).catch((error) => {
             console.error(
               `Failed to send message to channel ${channel.channelUuid} for org ${org.organizationId}`,
               error

@@ -28,6 +28,7 @@ catalog:
   '@hono/zod-validator': ^0.7.0
   hono: 4.8.2
   wrangler: 4.21.0
+  miniflare: ^4.20250705.0
 
 onlyBuiltDependencies:
   - supabase

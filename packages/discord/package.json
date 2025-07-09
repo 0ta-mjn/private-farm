@@ -15,14 +15,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "dotenv -e .env.testing -- vitest",
-    "test:watch": "dotenv -e .env.testing -- vitest --watch",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
-    "@repo/dashboard-db": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -31,9 +30,7 @@
     "@types/node": "catalog:",
     "discord-api-types": "^0.38.13",
     "dotenv-cli": "catalog:",
-    "drizzle-orm": "catalog:",
     "eslint": "catalog:",
-    "postgres": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

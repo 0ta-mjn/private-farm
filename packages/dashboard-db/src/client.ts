@@ -1,24 +1,19 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { DashboardD1DB, DashboardD1DBParams } from "./adapters/d1/client";
+import { DashboardDBError } from "./errors";
 
-import * as schema from "./schema";
-import postgres from "postgres";
+export type DashboardDBParams = {
+  type: "d1";
+  params: DashboardD1DBParams;
+};
 
-export type Database = ReturnType<typeof dbClient>;
-export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-
-export const dbClient = (url?: string) => {
-  url = url || process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error(
-      "Either DATABASE_URL environment variable or url parameter must be provided"
-    );
+export const createDashboardDBClient = (config: DashboardDBParams) => {
+  switch (config.type) {
+    case "d1":
+      return DashboardD1DB(config.params);
+    default:
+      throw new DashboardDBError(
+        "internal_error",
+        `Unsupported database type: ${config.type}`
+      );
   }
-
-  const client = postgres(url);
-
-  return drizzle({
-    client,
-    schema,
-    casing: "snake_case",
-  });
 };

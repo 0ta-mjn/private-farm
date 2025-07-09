@@ -4,7 +4,7 @@
 declare namespace Cloudflare {
 	interface Env {
 		DATABASE_URL: string;
-		DISCORD_ENCRYPTION_KEY: string;
+		ENCRYPTION_KEY: string;
 	}
 }
 interface Env extends Cloudflare.Env {}
@@ -12,7 +12,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATABASE_URL" | "DISCORD_ENCRYPTION_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATABASE_URL" | "ENCRYPTION_KEY">> {}
 }
 
 // Begin runtime types

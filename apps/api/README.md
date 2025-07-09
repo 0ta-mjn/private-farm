@@ -15,120 +15,34 @@
 - **APIパッケージ**: `apps/api`
   - Honoを使用したサーバー実装
   - ルーティング、ミドルウェア、認証、バリデーション、エラーハンドリングを実装
-  - 基本的なビジネスロジックは`packages/core`に委譲
-- **APIサーバー**: `packages/core`
-  - APIサーバーのビジネスロジックを実装
-  - `src/services`にビジネスロジックとそのテストを配置
+  - ビジネスロジックを各ルートハンドラー内に直接実装
 - **DBパッケージ**: `packages/dashboard-db`
   - Drizzle ORMを使用したデータベースの設定とマイグレーションを管理
+  - リポジトリインターフェースと複数のDB適応戦略を提供
 
-## APIの実装手順
+## ディレクトリ構成
 
-関数型プログラミングのスタイルを取り入れ、TDDを意識して実装を進めます。
+```text
+src/
+├── app.ts          # Hono アプリケーション設定
+├── auth.ts         # 認証ミドルウェア・ユーティリティ
+├── db.ts           # データベース接続設定
+├── errors.ts       # エラーハンドリング
+├── index.ts        # エントリーポイント
+├── middleware/     # 共通ミドルウェア
+│   └── organization.ts  # 組織メンバーシップ確認
+└── routes/         # APIルートハンドラー
+    ├── diary.ts    # 農作業日誌 CRUD
+    ├── discord.ts  # Discord 連携
+    ├── organization.ts # 組織管理
+    ├── thing.ts    # デバイス・観測対象管理
+    └── user.ts     # ユーザー管理
+```
 
-1. `apps/api/src/routes/`内に各エンドポイントのルートを定義
+## 技術的特徴
 
-    ```ts
-    import { Hono } from "hono";
-    import { zValidator } from "@hono/zod-validator";
-    import { HTTPException } from "hono/http-exception";
-    import { AuthenticatedEnv } from "../env";
-    import { OrganizationMembershipMiddleware } from "../middleware/organization";
-    import { SetupSchema, setupUserAndOrganization } from "@repo/core";
-
-    const userRoute = new Hono<AuthenticatedEnv>()
-      .post(
-        "/setup/:organizationId",
-        zValidator("param", z.object({ organizationId: z.string() })),
-        zValidator("form", SetupSchema),
-        OrganizationMembershipMiddleware({ role: "admin" }),
-        async (c) => {
-          const { organizationId } = c.req.valid("param");
-          const input = c.req.valid("form");
-
-          try {
-            const result = await setupUserAndOrganization(
-              c.var.db,
-              c.var.userId,
-              input
-            );
-            return c.json(result);
-          } catch (error) {
-            // エラーハンドリング
-            throw new HTTPException(500, {
-              message: "Setup failed",
-            });
-          }
-        }
-      );
-
-    export { userRoute };
-    ```
-
-2. `packages/core/src/services`にビジネスロジック用の関数を配置
-    - この段階では内部処理はまだ実装しない
-
-    ```ts
-    import { z } from "zod";
-    import { eq, withUniqueIdRetry } from "@repo/dashboard-db";
-    import type { Database } from "@repo/dashboard-db/client";
-
-    export const SetupSchema = z.object({
-      // バリデーションスキーマ
-    });
-
-    export type SetupInput = z.infer<typeof SetupSchema>;
-
-    /**
-     * 適切なコメントを追加してください。
-    */
-    export async function setupUserAndOrganization(
-      db: Database,
-      userId: string,
-      input: SetupInput
-    ) {
-      return db.transaction(async (tx) => {
-        // 実際の処理
-      });
-    }
-    ```
-
-3. ビジネスロジック関数のファイルと同じ階層にテストファイルを配置
-   - テストは`vitest`を使用して実装
-   - テスト実行はローカルのSupabaseエミュレータを使用
-   - レポジトリのトップで`pnpm test:ci`を実行してテストを実行できる
-
-    ```ts
-    import { describe, it, beforeEach, expect } from "vitest";
-    import { dbClient } from "@repo/dashboard-db/client";
-    import {
-      organizationMembersTable,
-      organizationsTable,
-      usersTable,
-    } from "@repo/dashboard-db/schema";
-    import { getUserById, setupUserAndOrganization } from "..";
-
-    const db = dbClient();
-
-    describe("UserService (関数型)", () => {
-      beforeEach(async () => {
-        // テスト用のデータベースをリセット
-        await db.transaction(async (tx) => {
-        });
-      });
-
-      describe("setupUserAndOrganization", () => {
-        it("should create a user and organization", async () => {
-          // 正常ケースのテスト
-        });
-
-        it("should handle errors gracefully", async () => {
-          // エラーケースのテスト
-        });
-
-        // その他にもエッジケースなど考えられるテストケースを追加
-      });
-    });
-    ```
-
-4. 実際のビジネスロジックを実装
+- **Repository Pattern**: `@repo/dashboard-db` のインターフェースを使用
+- **エラーハンドリング**: 統一されたエラー型とHTTP例外への変換
+- **認証**: Supabase Auth を使用したJWT認証
+- **バリデーション**: Zodスキーマによる入力検証
+- **Cloudflare Workers**: サーバーレス環境でのデプロイ対応

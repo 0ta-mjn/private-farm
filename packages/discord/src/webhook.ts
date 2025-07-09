@@ -1,14 +1,6 @@
-import { Database } from "@repo/dashboard-db/client";
-import { discordChannelsTable } from "@repo/dashboard-db/schema";
-import { eq } from "@repo/dashboard-db";
-import { decrypt } from "./utils";
 import { DISCORD_WEBHOOK_URL } from "@repo/config";
-import {
-  DiscordWebhookError,
-  DiscordRateLimitError,
-  DiscordChannelNotFoundError,
-} from "./errors";
 import { WebhookPayload } from "./types";
+import { createDiscordAPIErrorFromCode, DiscordAPIError } from "./errors";
 
 interface Options {
   threadId?: string;
@@ -18,34 +10,17 @@ interface Options {
 }
 
 export async function sendViaWebhook(
-  db: Database,
-  encryptionKey: string,
-  channelUuid: string,
+  channel: { webhookId: string; webhookToken: string },
   payload: WebhookPayload,
   opts: Options = {}
 ) {
-  const channel = await db
-    .select({
-      webhookId: discordChannelsTable.webhookId,
-      webhookTokenEnc: discordChannelsTable.webhookTokenEnc,
-    })
-    .from(discordChannelsTable)
-    .where(eq(discordChannelsTable.id, channelUuid))
-    .limit(1)
-    .then((rows) => rows[0]);
-
-  if (!channel?.webhookTokenEnc) {
-    throw new DiscordChannelNotFoundError(channelUuid);
-  }
-
   const wait = opts.wait ?? true;
   const qp = new URLSearchParams({
     ...(wait && { wait: "true" }),
     ...(opts.threadId && { thread_id: opts.threadId }),
   });
 
-  const webhookToken = await decrypt(channel.webhookTokenEnc, encryptionKey);
-  const url = `${DISCORD_WEBHOOK_URL}/${channel.webhookId}/${webhookToken}?${qp.toString()}`;
+  const url = `${DISCORD_WEBHOOK_URL}/${channel.webhookId}/${channel.webhookToken}?${qp.toString()}`;
 
   const form = opts.files?.length
     ? (() => {
@@ -84,9 +59,10 @@ export async function sendViaWebhook(
         const retryAfterSec = Number(res.headers.get("Retry-After")) || 1;
 
         if (attempt === retries) {
-          throw new DiscordRateLimitError(
-            "Discord rate-limit retry exceeded",
-            retryAfterSec
+          throw new DiscordAPIError(
+            "rate_limit_exceeded",
+            res.status,
+            `Rate limit exceeded. Retry after ${retryAfterSec} seconds`
           );
         }
 
@@ -105,25 +81,24 @@ export async function sendViaWebhook(
           errorData = { message: errorText };
         }
 
-        throw new DiscordWebhookError(
-          errorData.message || `Discord webhook error: ${res.status}`,
+        throw createDiscordAPIErrorFromCode(
           res.status,
-          errorData.code
+          errorData.code,
+          errorData.message || "Unknown Discord API error"
         );
       }
 
       return wait ? await res.json() : undefined; // 204 No-Content なら undefined
     } catch (error) {
-      if (
-        error instanceof DiscordWebhookError ||
-        error instanceof DiscordRateLimitError
-      ) {
+      if (error instanceof DiscordAPIError) {
         throw error; // カスタムエラーはそのまま再スロー
       }
 
       // ネットワークエラーなどの場合
       if (attempt === retries) {
-        throw new DiscordWebhookError(
+        throw new DiscordAPIError(
+          "network_error",
+          undefined,
           `Network error after ${retries + 1} attempts: ${error instanceof Error ? error.message : "Unknown error"}`
         );
       }
