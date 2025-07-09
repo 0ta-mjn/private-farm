@@ -1,26 +1,17 @@
-import {
-  createDiary,
-  getDiary,
-  updateDiary,
-  deleteDiary,
-  getDiariesByDate,
-  getDiariesByDateRange,
-  searchDiaries,
-  CreateDiaryInputSchema,
-  UpdateDiaryInputSchema,
-  GetDiariesByDateInputSchema,
-  GetDiariesByDateRangeInputSchema,
-  SearchDiariesInputSchema,
-  DiaryParamsSchema,
-  UnauthorizedError,
-  ValidationError,
-} from "@repo/core";
 import { OrganizationMembershipMiddleware } from "../middleware/organization";
 import { z } from "zod";
 import { Hono } from "hono";
 import { AuthenticatedEnv } from "../env";
 import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
+import {
+  DiaryParams,
+  CreateDiaryInput,
+  UpdateDiaryInput,
+  GetDiariesByDateInput,
+  GetDiariesByDateRangeInput,
+  SearchDiariesInput,
+} from "@repo/dashboard-db/interfaces";
 
 const diaryRoute = new Hono<AuthenticatedEnv>()
 
@@ -29,38 +20,20 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
    */
   .get(
     "/detail/:organizationId/:diaryId",
-    zValidator("param", DiaryParamsSchema),
+    zValidator("param", DiaryParams),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const input = c.req.valid("param");
 
-      try {
-        const diary = await getDiary(c.var.db, input);
+      const diary = await c.var.dashboardDB.diary.findById(input);
 
-        if (!diary) {
-          throw new HTTPException(404, {
-            message: "日誌が見つからないか、アクセス権限がありません",
-          });
-        }
-
-        return c.json(diary);
-      } catch (error) {
-        console.error("Diary detail error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "日誌の詳細取得に失敗しました",
+      if (!diary) {
+        throw new HTTPException(404, {
+          message: "日誌が見つからないか、アクセス権限がありません",
         });
       }
+
+      return c.json(diary);
     }
   )
 
@@ -70,43 +43,17 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
   .post(
     "/create/:organizationId",
     zValidator("param", z.object({ organizationId: z.string() })),
-    zValidator("json", CreateDiaryInputSchema),
+    zValidator("json", CreateDiaryInput),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const { organizationId } = c.req.valid("param");
       const input = c.req.valid("json");
 
-      try {
-        const diary = await createDiary(
-          c.var.db,
-          c.var.userId,
-          organizationId,
-          input
-        );
-        if (!diary) {
-          throw new HTTPException(500, {
-            message: "日誌の作成に失敗しました",
-          });
-        }
-        return c.json(diary);
-      } catch (error) {
-        console.error("Diary creation error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        // ビジネスエラーをHTTPExceptionに変換
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "日誌の作成中にエラーが発生しました",
-        });
-      }
+      const diary = await c.var.dashboardDB.diary.create(
+        { userId: c.var.userId, organizationId },
+        input
+      );
+      return c.json(diary);
     }
   )
 
@@ -115,49 +62,15 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
    */
   .put(
     "/update/:organizationId/:diaryId",
-    zValidator("param", DiaryParamsSchema),
-    zValidator("json", UpdateDiaryInputSchema),
+    zValidator("param", DiaryParams),
+    zValidator("json", UpdateDiaryInput),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const params = c.req.valid("param");
       const updateData = c.req.valid("json");
 
-      try {
-        const diary = await updateDiary(
-          c.var.db,
-          c.var.userId,
-          params,
-          updateData
-        );
-        if (!diary) {
-          throw new HTTPException(404, {
-            message: "日誌が見つからないか、更新権限がありません",
-          });
-        }
-        return c.json(diary);
-      } catch (error) {
-        console.error("Diary update error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "日誌の更新中にエラーが発生しました",
-        });
-      }
+      const diary = await c.var.dashboardDB.diary.update(params, updateData);
+      return c.json(diary);
     }
   )
 
@@ -166,38 +79,20 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
    */
   .delete(
     "/delete/:organizationId/:diaryId",
-    zValidator("param", DiaryParamsSchema),
+    zValidator("param", DiaryParams),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const input = c.req.valid("param");
 
-      try {
-        const result = await deleteDiary(c.var.db, c.var.userId, input);
+      const result = await c.var.dashboardDB.diary.delete(input);
 
-        if (!result) {
-          throw new HTTPException(404, {
-            message: "日誌が見つからないか、削除権限がありません",
-          });
-        }
-
-        return c.json({ success: true });
-      } catch (error) {
-        console.error("Diary deletion error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "日誌の削除中にエラーが発生しました",
+      if (!result) {
+        throw new HTTPException(404, {
+          message: "日誌が見つからないか、削除権限がありません",
         });
       }
+
+      return c.json({ success: true });
     }
   )
 
@@ -207,38 +102,17 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
   .get(
     "/by-date/:organizationId",
     zValidator("param", z.object({ organizationId: z.string() })),
-    zValidator("query", GetDiariesByDateInputSchema),
+    zValidator("query", GetDiariesByDateInput),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const { organizationId } = c.req.valid("param");
       const input = c.req.valid("query");
 
-      try {
-        const diaries = await getDiariesByDate(c.var.db, organizationId, input);
-        return c.json(diaries);
-      } catch (error) {
-        console.error("Diaries by date error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "指定日の日誌取得に失敗しました",
-        });
-      }
+      const diaries = await c.var.dashboardDB.diary.findByDate(
+        organizationId,
+        input
+      );
+      return c.json(diaries);
     }
   )
 
@@ -248,38 +122,17 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
   .get(
     "/search/:organizationId",
     zValidator("param", z.object({ organizationId: z.string() })),
-    zValidator("query", SearchDiariesInputSchema),
+    zValidator("query", SearchDiariesInput),
     OrganizationMembershipMiddleware(),
     async (c) => {
       const { organizationId } = c.req.valid("param");
       const input = c.req.valid("query");
 
-      try {
-        const results = await searchDiaries(c.var.db, organizationId, input);
-        return c.json(results);
-      } catch (error) {
-        console.error("Diary search error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "日誌検索に失敗しました",
-        });
-      }
+      const results = await c.var.dashboardDB.diary.search(
+        organizationId,
+        input
+      );
+      return c.json(results);
     }
   )
 
@@ -289,35 +142,26 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
   .get(
     "/by-date-range/:organizationId",
     zValidator("param", z.object({ organizationId: z.string() })),
-    zValidator("query", GetDiariesByDateRangeInputSchema, undefined, {
+    zValidator("query", GetDiariesByDateRangeInput, undefined, {
       validationFunction: (schema, input) => {
-        try {
-          const result = schema.safeParse(input);
-          if (!result.success) {
-            return result;
-          }
-
-          // 40日制限をvalidationFunctionで実装
-          const start = new Date(result.data.startDate);
-          const end = new Date(result.data.endDate);
-          const diffTime = Math.abs(end.getTime() - start.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-          if (diffDays > 40) {
-            throw new HTTPException(400, {
-              message: "期間は最大40日までです",
-            });
-          }
-
+        const result = schema.safeParse(input);
+        if (!result.success) {
           return result;
-        } catch (error) {
-          if (error instanceof HTTPException) {
-            throw error;
-          }
+        }
+
+        // 40日制限をvalidationFunctionで実装
+        const start = new Date(result.data.startDate);
+        const end = new Date(result.data.endDate);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 40) {
           throw new HTTPException(400, {
-            message: "日付の形式が正しくありません",
+            message: "期間は最大40日までです",
           });
         }
+
+        return result;
       },
     }),
     OrganizationMembershipMiddleware(),
@@ -325,36 +169,12 @@ const diaryRoute = new Hono<AuthenticatedEnv>()
       const { organizationId } = c.req.valid("param");
       const input = c.req.valid("query");
 
-      try {
-        const diaries = await getDiariesByDateRange(
-          c.var.db,
-          organizationId,
-          input
-        );
-        return c.json(diaries);
-      } catch (error) {
-        console.error("Diaries by date range error:", error);
+      const diaries = await c.var.dashboardDB.diary.findByDateRange(
+        organizationId,
+        input
+      );
 
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof UnauthorizedError) {
-          throw new HTTPException(403, {
-            message: error.message,
-          });
-        }
-
-        if (error instanceof ValidationError) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "指定期間の日誌取得に失敗しました",
-        });
-      }
+      return c.json(diaries);
     }
   );
 

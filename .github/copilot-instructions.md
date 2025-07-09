@@ -36,7 +36,7 @@ This is a TypeScript monorepo for an IoT system targeting small-scale personal f
 ## Key Guidelines
 1. Use TypeScript strict mode and maintain type safety across all packages
 2. Follow React best practices for the Next.js dashboard
-3. Implement proper error handling using the shared error definitions in `@repo/core`
+3. Implement proper error handling using the shared error definitions in `@repo/dashboard-db`, `@repo/discord`, etc...
 4. Use Zod for runtime validation in both frontend and backend
 5. Write unit tests with Vitest and maintain test coverage
 6. Use kebab-case for file names and follow existing naming conventions

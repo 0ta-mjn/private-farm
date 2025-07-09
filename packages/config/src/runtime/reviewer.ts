@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 export const ReviewerRuntimeConfigSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  DISCORD_ENCRYPTION_KEY: z
+  ENCRYPTION_KEY: z
     .string()
     .min(1, "Discord encryption key is required"),
 });

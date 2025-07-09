@@ -3,11 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "paths": {
-      "@repo/core": [
-        "../../packages/core/src"
-      ],
-      "@repo/db/*": [
-        "../../packages/db/src/*"
+      "@repo/dashboard-db/*": [
+        "../../packages/dashboard-db/src/*"
       ],
       "@repo/discord/*": [
         "../../packages/discord/src/*"

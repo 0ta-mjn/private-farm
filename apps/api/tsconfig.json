@@ -6,8 +6,8 @@
       "@repo/api": [
         "../../packages/api/src"
       ],
-      "@repo/db/*": [
-        "../../packages/db/src/*"
+      "@repo/dashboard-db/*": [
+        "../../packages/dashboard-db/src/*"
       ]
     }
   },
