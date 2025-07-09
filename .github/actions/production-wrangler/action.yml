@@ -11,5 +11,6 @@ runs:
       run: |
         sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
         sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+        echo "${DASHBOARD_D1_DATABASE_ID}"
       env:
         DASHBOARD_D1_DATABASE_ID: ${{ inputs.dashboard_database_id }}
