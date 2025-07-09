@@ -1,32 +1,21 @@
 import { OrganizationMembershipMiddleware } from "../middleware/organization";
-import {
-  getDiscordOauthUrl,
-  GetDiscordOauthUrlInputSchema,
-  registerDiscordBot,
-  RegisterDiscordBotInputSchema,
-  getDiscordChannels,
-  updateDiscordChannelNotificationSettings,
-  UpdateNotificationSettingsInputSchema,
-  unlinkDiscordChannel,
-  UnlinkDiscordChannelInputSchema,
-  sendMessageViaWebhook,
-} from "@repo/core";
-import {
-  DiscordError,
-  DiscordAuthError,
-  DiscordBotError,
-  DiscordAPIError,
-  DiscordConfigError,
-  DiscordWebhookError,
-  DiscordRateLimitError,
-  DiscordChannelNotFoundError,
-} from "@repo/discord/errors";
 import { z } from "zod";
 import { DISCORD_BOT_WELCOME_MESSAGE } from "@repo/config";
 import { Hono } from "hono";
 import { AuthenticatedEnv } from "../env";
 import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
+import {
+  DiscordOauthRedirectUrlParams,
+  DiscordRegistrationInput,
+  getDiscordOauthRedirectUrl,
+  registerDiscordChannel,
+  sendViaWebhook,
+} from "@repo/discord";
+import {
+  DiscordChannelParams,
+  UpdateNotificationSettingsInput,
+} from "@repo/dashboard-db/interfaces";
 
 const discordRoute = new Hono<AuthenticatedEnv>()
 
@@ -43,16 +32,9 @@ const discordRoute = new Hono<AuthenticatedEnv>()
     async (c) => {
       const { organizationId } = c.req.valid("param");
 
-      try {
-        const channels = await getDiscordChannels(c.var.db, organizationId);
-        return c.json(channels);
-      } catch (error) {
-        console.error("Discord installations fetch error:", error);
-
-        throw new HTTPException(500, {
-          message: "Discord連携情報の取得中にエラーが発生しました",
-        });
-      }
+      const channels =
+        await c.var.dashboardDB.discord.listByOrganizationId(organizationId);
+      return c.json(channels);
     }
   )
 
@@ -65,13 +47,13 @@ const discordRoute = new Hono<AuthenticatedEnv>()
       "param",
       z.object({ organizationId: z.string().min(1, "組織IDは必須です") })
     ),
-    zValidator("json", GetDiscordOauthUrlInputSchema),
+    zValidator("json", DiscordOauthRedirectUrlParams),
     OrganizationMembershipMiddleware({ role: "admin" }),
     async (c) => {
       const { organizationId } = c.req.valid("param");
       const input = c.req.valid("json");
 
-      const oauthUrl = getDiscordOauthUrl(
+      const oauthUrl = getDiscordOauthRedirectUrl(
         c.var.discordKeys,
         organizationId,
         input
@@ -91,7 +73,7 @@ const discordRoute = new Hono<AuthenticatedEnv>()
     ),
     zValidator(
       "json",
-      RegisterDiscordBotInputSchema.extend({
+      DiscordRegistrationInput.extend({
         state: z.string().min(1, "stateパラメータは必須です"),
       })
     ),
@@ -109,114 +91,53 @@ const discordRoute = new Hono<AuthenticatedEnv>()
         });
       }
 
-      try {
-        // Discordボットを登録
-        const result = await registerDiscordBot(
-          c.var.db,
-          c.var.discordKeys,
-          organizationId,
-          {
-            code: input.code,
-            guildId: input.guildId,
-            redirectUri: input.redirectUri,
-          }
-        );
+      // Discordボットを登録
+      const registorationData = await registerDiscordChannel(
+        c.var.discordKeys,
+        {
+          code: input.code,
+          guildId: input.guildId,
+          redirectUri: input.redirectUri,
+        }
+      );
 
-        // 登録成功後に初期メッセージを送信
+      if (!registorationData.channelId) {
+        throw new HTTPException(400, {
+          message:
+            "Discordチャンネルの登録に失敗しました。チャンネルIDが取得できません。",
+        });
+      }
+
+      const result = await c.var.dashboardDB.discord.createOrUpdate(
+        organizationId,
+        {
+          guildId: registorationData.guildId,
+          guildName: registorationData.guildName,
+          channelId: registorationData.channelId,
+          channelName: registorationData.channelName,
+          webhookId: registorationData.webhookId,
+          webhookToken: registorationData.webhookToken,
+          notificationSettings: { daily: true, weekly: true, monthly: true },
+        }
+      );
+
+      // 登録成功後に初期メッセージを送信
+      if (registorationData.webhookId && registorationData.webhookToken) {
         try {
-          await sendMessageViaWebhook(
-            c.var.db,
-            c.var.discordKeys.encryptionKey,
-            result.channelUuid,
+          await sendViaWebhook(
             {
-              content: DISCORD_BOT_WELCOME_MESSAGE,
-            }
+              webhookId: registorationData.webhookId,
+              webhookToken: registorationData.webhookToken,
+            },
+            { content: DISCORD_BOT_WELCOME_MESSAGE }
           );
         } catch (webhookError) {
           // Webhookエラーは記録するがボット登録は成功として扱う
           console.error("Initial webhook message failed:", webhookError);
         }
-
-        return c.json(result);
-      } catch (error) {
-        console.error("Discord error:", error);
-
-        if (error instanceof DiscordConfigError) {
-          throw new HTTPException(500, {
-            message: "Discord設定エラー: サーバー側の設定を確認してください",
-          });
-        }
-
-        if (error instanceof DiscordAuthError) {
-          throw new HTTPException(401, {
-            message: "Discord認証エラー: 認証情報が無効または期限切れです",
-          });
-        }
-
-        if (error instanceof DiscordBotError) {
-          throw new HTTPException(400, {
-            message: "Discordボットエラー: ボットがサーバーに参加していません",
-          });
-        }
-
-        if (error instanceof DiscordChannelNotFoundError) {
-          throw new HTTPException(404, {
-            message: "指定されたDiscordチャンネルが見つかりません",
-          });
-        }
-
-        if (error instanceof DiscordRateLimitError) {
-          throw new HTTPException(429, {
-            message: `Discordレート制限に達しました。${error.retryAfter ? `${error.retryAfter}秒後` : "しばらく"}にお試しください`,
-          });
-        }
-
-        if (error instanceof DiscordWebhookError) {
-          if (error.statusCode === 404) {
-            throw new HTTPException(404, {
-              message:
-                "Discordウェブフックが見つかりません。再度連携を行ってください",
-            });
-          }
-          throw new HTTPException(400, {
-            message: `Discordウェブフックエラー: ${error.message}`,
-          });
-        }
-
-        if (error instanceof DiscordAPIError) {
-          if (error.statusCode === 403) {
-            throw new HTTPException(403, {
-              message:
-                "Discord APIへのアクセスが拒否されました。権限を確認してください",
-            });
-          }
-          if (error.statusCode === 404) {
-            throw new HTTPException(404, {
-              message: "Discordリソースが見つかりません",
-            });
-          }
-          throw new HTTPException(400, {
-            message: `Discord APIエラー: ${error.message}`,
-          });
-        }
-
-        if (error instanceof DiscordError) {
-          throw new HTTPException(400, {
-            message: `Discordエラー: ${error.message}`,
-          });
-        }
-
-        // その他のエラー
-        if (error instanceof Error) {
-          throw new HTTPException(500, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "Discord連携中に予期しないエラーが発生しました",
-        });
       }
+
+      return c.json(result);
     }
   )
 
@@ -224,51 +145,20 @@ const discordRoute = new Hono<AuthenticatedEnv>()
    * Update notification settings (requires authentication and admin role)
    */
   .put(
-    "/notification-settings/:organizationId",
-    zValidator(
-      "param",
-      z.object({ organizationId: z.string().min(1, "組織IDは必須です") })
-    ),
-    zValidator("json", UpdateNotificationSettingsInputSchema),
+    "/channels/:organizationId/:channelId/notification-settings",
+    zValidator("param", DiscordChannelParams),
+    zValidator("json", UpdateNotificationSettingsInput),
     OrganizationMembershipMiddleware({ role: "admin" }),
     async (c) => {
-      const { organizationId } = c.req.valid("param");
+      const param = c.req.valid("param");
       const input = c.req.valid("json");
 
-      try {
-        const result = await updateDiscordChannelNotificationSettings(
-          c.var.db,
-          organizationId,
-          {
-            channelId: input.channelId,
-            notificationSettings: input.notificationSettings,
-          }
-        );
+      const result = await c.var.dashboardDB.discord.updateNotificationSettings(
+        param,
+        input
+      );
 
-        if (!result) {
-          throw new HTTPException(404, {
-            message: "指定されたDiscordチャネルが見つかりません",
-          });
-        }
-
-        return c.json(result);
-      } catch (error) {
-        console.error("Discord notification settings update error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof Error) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "Discord通知設定の更新中にエラーが発生しました",
-        });
-      }
+      return c.json(result);
     }
   )
 
@@ -276,48 +166,21 @@ const discordRoute = new Hono<AuthenticatedEnv>()
    * Unlink Discord channel (requires authentication and admin role)
    */
   .delete(
-    "/unlink/:organizationId",
-    zValidator(
-      "param",
-      z.object({ organizationId: z.string().min(1, "組織IDは必須です") })
-    ),
-    zValidator("json", UnlinkDiscordChannelInputSchema),
+    "/channels/:organizationId/:channelId",
+    zValidator("param", DiscordChannelParams),
     OrganizationMembershipMiddleware({ role: "admin" }),
     async (c) => {
-      const { organizationId } = c.req.valid("param");
-      const input = c.req.valid("json");
+      const param = c.req.valid("param");
 
-      try {
-        const result = await unlinkDiscordChannel(
-          c.var.db,
-          organizationId,
-          input.channelId
-        );
+      const result = await c.var.dashboardDB.discord.unlink(param);
 
-        if (!result) {
-          throw new HTTPException(404, {
-            message: "指定されたDiscordチャネルが見つかりません",
-          });
-        }
-
-        return c.json({ success: true });
-      } catch (error) {
-        console.error("Discord channel unlink error:", error);
-
-        if (error instanceof HTTPException) {
-          throw error;
-        }
-
-        if (error instanceof Error) {
-          throw new HTTPException(400, {
-            message: error.message,
-          });
-        }
-
-        throw new HTTPException(500, {
-          message: "Discordチャネルのリンク解除中にエラーが発生しました",
+      if (!result) {
+        throw new HTTPException(404, {
+          message: "指定されたDiscordチャネルが見つかりません",
         });
       }
+
+      return c.json({ success: true });
     }
   );
 

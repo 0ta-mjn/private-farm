@@ -1,11 +1,11 @@
-# Discord Bots
+# Discord 通知システム
 
-Private Farm IoTシステムのDiscord通知機能を提供するCloud Functions群です。農場の状態変化や異常検知時にDiscord上で通知を送信します。
+Private Farm IoTシステムのDiscord通知機能を提供するCloudflare Workers群です。農場の状態変化や異常検知時にDiscord上で通知を送信します。
 
 ## 概要
 
-このパッケージは、Private Farm IoTシステムの様々なイベントに対してDiscord通知を送信するGoogle Cloud Functions群を提供します。
-ローカル環境では、Express.jsベースのサーバーとして実装され、複数のエンドポイントを公開しています。
+このパッケージは、Private Farm IoTシステムの様々なイベントに対してDiscord通知を送信するCloudflare Workers群を提供します。
+現在はデイリー通知機能を中心に実装されており、`@repo/discord`パッケージのWebhook機能を活用しています。
 
 ## 機能
 
@@ -18,19 +18,19 @@ Private Farm IoTシステムのDiscord通知機能を提供するCloud Functions
 ## 技術スタック
 
 - **Runtime**: Node.js 22
-- **Framework**: Express.js
+- **Framework**: Cloudflare Workers
 - **Build Tool**: tsup + TypeScript
 - **Validation**: Zod
-- **Deployment**: Google Cloud Functions
+- **Deployment**: Cloudflare Workers (Wrangler)
 - **Package Manager**: pnpm
 
 ## プロジェクト構成
 
 ```text
 src/
-├── index.ts          # メインサーバー設定
-├── hello-world.ts    # Hello World機能
-└── [将来の機能]      # 通知機能など
+└── daily/            # デイリー通知 Worker
+    ├── index.ts      # Worker エントリーポイント
+    └── [関連ファイル]
 ```
 
 ## 開発環境セットアップ
@@ -67,11 +67,14 @@ pnpm lint
 
 ## デプロイメント
 
-Google Cloud Functionsへのデプロイは、プロジェクトルートからTurborepoのビルドコマンドを使用してください。
+Cloudflare Workersへのデプロイは、以下のコマンドを使用してください：
 
 ```bash
-# プロジェクトルートから
-pnpm build --filter=discord-bots
+# デイリー通知 Worker のデプロイ
+pnpm cf:deploy:daily
+
+# プロジェクトルートから全体ビルド
+pnpm build --filter=reviewer
 ```
 
 ## 今後の拡張予定
@@ -82,8 +85,9 @@ pnpm build --filter=discord-bots
 
 ## 関連パッケージ
 
-- `@repo/core`: ビジネスロジック
-- `@repo/db`: データベース操作
+- `@repo/dashboard-db`: データベース操作・リポジトリインターフェース
+- `@repo/discord`: Discord API統合・Webhook送信
+- `@repo/config`: 環境設定管理
 - `@repo/eslint-config`: ESLint設定
 - `@repo/tsconfig`: TypeScript設定
 
