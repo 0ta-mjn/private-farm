@@ -1,0 +1,14 @@
+name: "setup production wrangler.toml"
+runs:
+  using: "composite"
+  steps:
+    - name: Replace D1 database ID
+      run: |
+        sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
+        sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+      env:
+        DASHBOARD_D1_DATABASE_ID: ${{ inputs.dashboard_database_id }}
+inputs:
+  dashboard_database_id:
+    required: true
+    type: string
