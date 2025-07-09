@@ -26,7 +26,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "d1:generate": "pnpm drizzle-kit generate --dialect sqlite --out ./migrations/d1 --schema ./src/adapters/d1/schema.ts",
-    "d1:migrate": "wrangler d1 migrations apply dashboard --config ../../infra/cloudflare/api/wrangler.toml",
+    "d1:migrate": "wrangler d1 migrations apply dashboard --config ../../infra/cloudflare/api/wrangler.toml --remote",
     "d1:migrate:testing": "wrangler d1 migrations apply dashboard --config ../../infra/cloudflare/api/wrangler.toml --local",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
