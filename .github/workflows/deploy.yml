@@ -15,11 +15,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Workspace
-        uses: ./.github/workflows/setup-workspace.yml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
 
-      - name: Setup Wrangler for Production
-        uses: ./.github/workflows/production-wrangler.yml
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Replace D1 database ID
+        run: |
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+        env:
+          DASHBOARD_D1_DATABASE_ID: ${{ secrets.DASHBOARD_D1_DATABASE_ID }}
 
       - name: Push dashboard database schema
         run: pnpm d1:migrate
@@ -37,11 +50,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Workspace
-        uses: ./.github/workflows/setup-workspace.yml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
 
-      - name: Setup Wrangler for Production
-        uses: ./.github/workflows/production-wrangler.yml
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Replace D1 database ID
+        run: |
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+        env:
+          DASHBOARD_D1_DATABASE_ID: ${{ secrets.DASHBOARD_D1_DATABASE_ID }}
 
       - name: Build & Deploy Worker
         working-directory: "apps/api"
@@ -60,11 +86,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Workspace
-        uses: ./.github/workflows/setup-workspace.yml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
 
-      - name: Setup Wrangler for Production
-        uses: ./.github/workflows/production-wrangler.yml
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Replace D1 database ID
+        run: |
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+        env:
+          DASHBOARD_D1_DATABASE_ID: ${{ secrets.DASHBOARD_D1_DATABASE_ID }}
 
       - name: Build & Deploy Worker
         working-directory: "apps/reviewer"
@@ -82,11 +121,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Workspace
-        uses: ./.github/workflows/setup-workspace.yml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
 
-      - name: Setup Wrangler for Production
-        uses: ./.github/workflows/production-wrangler.yml
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Replace D1 database ID
+        run: |
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
+          sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/reviewer/wrangler.toml
+        env:
+          DASHBOARD_D1_DATABASE_ID: ${{ secrets.DASHBOARD_D1_DATABASE_ID }}
 
       - name: Build & Deploy Worker
         working-directory: "apps/dashboard"
