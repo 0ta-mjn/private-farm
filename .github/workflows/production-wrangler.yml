@@ -6,6 +6,9 @@ jobs:
   replace_d1_database_id:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Replace D1 database ID
         run: |
           sed -i "s|<YOUR_DASHBOARD_D1_DATABASE_ID>|${DASHBOARD_D1_DATABASE_ID}|g" infra/cloudflare/api/wrangler.toml
