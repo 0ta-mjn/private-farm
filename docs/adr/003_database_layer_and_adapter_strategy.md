@@ -1,4 +1,4 @@
-# ADR‑002 – Database Layer & Adapter Strategy
+# ADR‑003 – Database Layer & Adapter Strategy
 
 **Date:** 2025‑07‑09 | **Status:** Accepted
 
