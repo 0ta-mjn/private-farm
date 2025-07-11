@@ -1,14 +1,17 @@
 import { HonoRequest } from "hono";
+import { EnQueuedMessage } from "../../interfaces";
 
 export const parseRequest = async (
   req: Request | HonoRequest
-): Promise<string | null> => {
+): Promise<EnQueuedMessage | null> => {
   const query = new URL(req.url).searchParams;
   const event = query.get("event");
   switch (event) {
+    case "join":
+    case "status":
     case "up": {
       const data = await req.json();
-      return JSON.stringify({ event, data });
+      return { event, data };
     }
     default:
       return null;

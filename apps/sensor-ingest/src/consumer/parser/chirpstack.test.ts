@@ -119,7 +119,7 @@ describe("parseMessage", () => {
       const result = parseMessage(messageWithEmptyParsed);
 
       expect(result).toBeDefined();
-      expect(result?.values).toEqual([]);
+      expect(result?.values).toBeNull(); // 空の場合はnullを返す
     });
 
     it("parsedオブジェクトが存在しなくても正常に処理できること", () => {
@@ -136,7 +136,7 @@ describe("parseMessage", () => {
       const result = parseMessage(messageWithoutParsed);
 
       expect(result).toBeDefined();
-      expect(result?.values).toEqual([]);
+      expect(result?.values).toBeNull(); // 空の場合はnullを返す
     });
 
     it("applicationIdとapplicationNameがオプショナルでも正常に処理できること", () => {
@@ -160,6 +160,226 @@ describe("parseMessage", () => {
       expect(result?.deviceInfo.applicationId).toBeUndefined();
       expect(result?.deviceInfo.applicationName).toBeUndefined();
       expect(result?.values).toEqual([["soil-moisture", 40.0]]);
+    });
+
+    it("objectが存在しない場合、values: null を返すこと", () => {
+      const messageWithoutObject = {
+        deduplicationId: "test-dedup-no-object",
+        time: "2025-07-11T21:00:00.000Z",
+        deviceInfo: {
+          devEui: "aaaabbbbccccdddd",
+          deviceName: "no-object-sensor",
+          applicationId: "app-1",
+          applicationName: "Test App",
+        },
+        // object field is missing
+      };
+
+      const result = parseMessage(messageWithoutObject);
+
+      expect(result).toBeDefined();
+      expect(result?.deduplicationId).toBe("test-dedup-no-object");
+      expect(result?.time).toEqual(new Date("2025-07-11T21:00:00.000Z"));
+      expect(result?.deviceInfo).toEqual({
+        devEui: "aaaabbbbccccdddd",
+        deviceName: "no-object-sensor",
+        applicationId: "app-1",
+        applicationName: "Test App",
+      });
+      expect(result?.values).toBeNull();
+    });
+
+    it("objectがnullの場合、values: null を返すこと", () => {
+      const messageWithNullObject = {
+        deduplicationId: "test-dedup-null-object",
+        time: "2025-07-11T22:00:00.000Z",
+        deviceInfo: {
+          devEui: "bbbbccccddddeeee",
+          deviceName: "null-object-sensor",
+        },
+        object: null,
+      };
+
+      const result = parseMessage(messageWithNullObject);
+
+      expect(result).toBeDefined();
+      expect(result?.deduplicationId).toBe("test-dedup-null-object");
+      expect(result?.time).toEqual(new Date("2025-07-11T22:00:00.000Z"));
+      expect(result?.deviceInfo).toEqual({
+        devEui: "bbbbccccddddeeee",
+        deviceName: "null-object-sensor",
+        applicationId: undefined,
+        applicationName: undefined,
+      });
+      expect(result?.values).toBeNull();
+    });
+
+    it("batteryLevelフィールドを正しく処理できること (数値)", () => {
+      const messageWithBatteryLevel = {
+        deduplicationId: "test-dedup-battery",
+        time: "2025-07-11T23:00:00.000Z",
+        deviceInfo: {
+          devEui: "ccccddddeeeeaaaa",
+          deviceName: "battery-sensor",
+        },
+        object: {
+          parsed: {
+            "soil-moisture": 45.0,
+          },
+        },
+        batteryLevel: 75,
+      };
+
+      const result = parseMessage(messageWithBatteryLevel);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([
+        ["soil-moisture", 45.0],
+        ["battery-percentage", 75],
+      ]);
+    });
+
+    it("batteryLevelフィールドを正しく処理できること (文字列)", () => {
+      const messageWithStringBatteryLevel = {
+        deduplicationId: "test-dedup-battery-string",
+        time: "2025-07-11T23:30:00.000Z",
+        deviceInfo: {
+          devEui: "ddddeeeeffffaaaa",
+          deviceName: "battery-string-sensor",
+        },
+        object: {
+          parsed: {
+            "air-temperature": 22.5,
+          },
+        },
+        batteryLevel: "85",
+      };
+
+      const result = parseMessage(messageWithStringBatteryLevel);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([
+        ["air-temperature", 22.5],
+        ["battery-percentage", 85],
+      ]);
+    });
+
+    it("batteryLevelがparsedにも含まれている場合、batteryLevelで上書きされること", () => {
+      const messageWithBothBatteryFields = {
+        deduplicationId: "test-dedup-battery-override",
+        time: "2025-07-12T00:00:00.000Z",
+        deviceInfo: {
+          devEui: "eeeeffffaaaabbbb",
+          deviceName: "battery-override-sensor",
+        },
+        object: {
+          parsed: {
+            "battery-percentage": 60, // この値は上書きされる
+            "soil-temperature": 25.0,
+          },
+        },
+        batteryLevel: 80, // この値が使用される
+      };
+
+      const result = parseMessage(messageWithBothBatteryFields);
+
+      expect(result).toBeDefined();
+      const batteryValue = result?.values?.find(([type]) => type === "battery-percentage");
+      expect(batteryValue).toEqual(["battery-percentage", 80]); // 上書きされた値
+    });
+
+    it("objectがない場合でもbatteryLevelは処理されること", () => {
+      const messageWithOnlyBatteryLevel = {
+        deduplicationId: "test-dedup-only-battery",
+        time: "2025-07-12T01:00:00.000Z",
+        deviceInfo: {
+          devEui: "ffffaaaabbbbcccc",
+          deviceName: "only-battery-sensor",
+        },
+        // object field is missing
+        batteryLevel: 95,
+      };
+
+      const result = parseMessage(messageWithOnlyBatteryLevel);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([["battery-percentage", 95]]);
+    });
+
+    it("objectもbatteryLevelもない場合、values: null を返すこと", () => {
+      const messageWithoutValues = {
+        deduplicationId: "test-dedup-no-values",
+        time: "2025-07-12T01:30:00.000Z",
+        deviceInfo: {
+          devEui: "aaaabbbbccccdddd",
+          deviceName: "no-values-sensor",
+        },
+        // object and batteryLevel fields are missing
+      };
+
+      const result = parseMessage(messageWithoutValues);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toBeNull();
+    });
+
+    it("batteryLevelが無効な文字列の場合は無視されること", () => {
+      const messageWithInvalidBatteryLevel = {
+        deduplicationId: "test-dedup-invalid-battery",
+        time: "2025-07-12T02:00:00.000Z",
+        deviceInfo: {
+          devEui: "aaaabbbbccccdddd",
+          deviceName: "invalid-battery-sensor",
+        },
+        object: {
+          parsed: {
+            "soil-moisture": 40.0,
+          },
+        },
+        batteryLevel: "invalid-battery-value",
+      };
+
+      const result = parseMessage(messageWithInvalidBatteryLevel);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([["soil-moisture", 40.0]]);
+      // battery-percentageは含まれない
+      const batteryValue = result?.values?.find(([type]) => type === "battery-percentage");
+      expect(batteryValue).toBeUndefined();
+    });
+
+    it("batteryLevelが0の場合も正しく処理されること", () => {
+      const messageWithZeroBattery = {
+        deduplicationId: "test-dedup-zero-battery",
+        time: "2025-07-12T02:30:00.000Z",
+        deviceInfo: {
+          devEui: "bbbbccccddddeeee",
+          deviceName: "zero-battery-sensor",
+        },
+        batteryLevel: 0,
+      };
+
+      const result = parseMessage(messageWithZeroBattery);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([["battery-percentage", 0]]);
+    });
+
+    it("batteryLevelが負の値の場合も処理されること", () => {
+      const messageWithNegativeBattery = {
+        deduplicationId: "test-dedup-negative-battery",
+        time: "2025-07-12T03:00:00.000Z",
+        deviceInfo: {
+          devEui: "ccccddddeeeeaaaa",
+          deviceName: "negative-battery-sensor",
+        },
+        batteryLevel: -5,
+      };
+
+      const result = parseMessage(messageWithNegativeBattery);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toEqual([["battery-percentage", -5]]);
     });
   });
 
@@ -244,7 +464,7 @@ describe("parseMessage", () => {
       );
     });
 
-    it("パースできない文字列値を無視すること", () => {
+    it("パースできない文字列値を警告して無視すること", () => {
       const messageWithInvalidStringValues = {
         deduplicationId: "test-dedup-invalid-strings",
         time: "2025-07-11T23:00:00.000Z",
@@ -265,7 +485,37 @@ describe("parseMessage", () => {
 
       expect(result).toBeDefined();
       expect(result?.values).toEqual([["air-temperature", 25.5]]);
-      // パースできない文字列値は単純に無視され、警告は出ない
+      expect(consoleMocks.warn).toHaveBeenCalledWith(
+        "Skipping string value for soil-moisture:",
+        "not-a-number"
+      );
+      expect(consoleMocks.warn).toHaveBeenCalledWith(
+        "Skipping string value for humidity:",
+        "invalid-float"
+      );
+    });
+
+    it("すべての値が無効な場合、values: null を返すこと", () => {
+      const messageWithAllInvalidValues = {
+        deduplicationId: "test-dedup-all-invalid",
+        time: "2025-07-12T03:00:00.000Z",
+        deviceInfo: {
+          devEui: "bbbbccccddddeeee",
+          deviceName: "all-invalid-sensor",
+        },
+        object: {
+          parsed: {
+            "soil-moisture": "not-a-number",
+            "air-temperature": { invalid: "object" },
+            humidity: true,
+          },
+        },
+      };
+
+      const result = parseMessage(messageWithAllInvalidValues);
+
+      expect(result).toBeDefined();
+      expect(result?.values).toBeNull(); // すべて無効な場合はnullを返す
     });
   });
 

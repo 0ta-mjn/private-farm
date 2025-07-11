@@ -11,6 +11,11 @@ export const LoRaWANSensorData = z.object({
     applicationName: z.string().optional(),
   }),
   /** デコード済みペイロード。key=property_type, value=measurement */
-  values: z.tuple([SupportedSensorProperty, z.number()]).array(),
+  values: z.tuple([SupportedSensorProperty, z.number()]).array().nullable(),
 });
 export type LoRaWANSensorData = z.infer<typeof LoRaWANSensorData>;
+
+export type EnQueuedMessage = {
+  event: "up" | "join" | "status";
+  data: unknown;
+};
