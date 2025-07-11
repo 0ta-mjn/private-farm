@@ -14,7 +14,29 @@
     ```bash
     git clone https://github.com/chirpstack/chirpstack-docker.git
     cd chirpstack-docker
+    ```
+
+1. (オプション) ChirpStackの設定を変更
+    - `docker-compose.yml`を開き、必要に応じて設定を変更
+    - 例: `chirpstack`セクションに以下を追加して、マシンのホスト名を解決できるようにする
+
+    ```yaml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ```
+
+1. ChirpStackを起動
+
+    ```bash
     docker compose up -d
+    ```
+
+1. (オプション) ChirpStackのデバイスリポジトリをインポート
+
+    - lorawan-devicesリポジトリ側のライセンスが削除されているので注意
+
+    ```bash
+    make import-lorawan-devices
     ```
 
 1. ChirpStackのWeb UIにアクセス
@@ -28,9 +50,13 @@
       - Gateway ID(EUI64)を生成して入力
       - その他は自由に設定
     - **Device Profiles**
+      - (上記デバイスリポジトリをインポートした場合はSelect Device Profileから選択可能)
       - Device Profiles > Add Device Profile
       - General: デフォルトでOK
       - Join(OTAA/ABP):  Device supports OTAAを選択
+      - Codec: `decodeUplink`関数を修正し、返り値に`data.parsed`を含めるようにする
+        - 例: `return { data: { parsed: { temperature: 23.5 } } };`
+        - [ChirpStackのデコーダー例](./chirpstack-decoder-examples/)を参考にする
       - その他はデフォルトでOK
     - **Applications**
       - Applications > Add Application
@@ -52,8 +78,11 @@
     make run
     ```
 
+1. LWN-Simulatorの設定ファイルを編集
+    - `config.json`を開き、portを修正(例: `18000`)
+
 1. LWN-SimulatorのWeb UIにアクセス
-    - URL: `http://localhost:8000`
+    - URL: `http://localhost:18000`
 
 1. LWN-Simulatorで以下の設定を行う
     - **Gateway Bridge**
@@ -80,3 +109,8 @@
 1. LWN-Simulatorの右上のボタンをクリックして、シミュレーターをスタート
 
 1. 1分ほど待つと、ChirpStackのWeb UIのDevicesでデバイスがアクティブになる。
+
+### Integration with Sensor Ingest
+
+1. ChirpStackのWeb UIでApplications> [作成したアプリケーション] > Integrationsに移動し、HTTP Integrationを追加
+    - URL: `http://host.docker.internal:8101`
