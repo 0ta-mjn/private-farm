@@ -4,6 +4,7 @@
 declare namespace Cloudflare {
 	interface Env {
 		SensorIngestQueue: Queue;
+        SensorDB: D1Database;
 	}
 }
 interface Env extends Cloudflare.Env {}

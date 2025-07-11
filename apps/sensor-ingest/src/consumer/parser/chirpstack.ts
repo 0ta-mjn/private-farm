@@ -12,9 +12,7 @@ const ChirpStackUpEvent = z.object({
     applicationName: z.string().optional(),
   }),
   object: z.object({
-    parsed: z
-      .record(z.string(), z.union([z.number(), z.string(), z.boolean()]))
-      .optional(),
+    parsed: z.record(z.string(), z.unknown()).optional(),
   }),
 });
 
@@ -38,9 +36,11 @@ export const parseMessage = (message: unknown): LoRaWANSensorData | null => {
           break;
         case "string": {
           // If the value is a string, we can try to parse it as a number
-          const parsedValue = parseFloat(value);
+          const parsedValue = Number(value);
           if (!isNaN(parsedValue)) {
             values.push([supportedKey.data, parsedValue]);
+          } else {
+            console.warn(`Skipping string value for ${key}:`, value);
           }
           break;
         }
