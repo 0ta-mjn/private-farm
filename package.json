@@ -9,7 +9,7 @@
     "db:push": "turbo -F @repo/dashboard-db push",
     "typecheck": "turbo run typecheck",
     "d1:migrate": "pnpm --filter @repo/dashboard-db d1:migrate",
-    "db:migrate:testing": "pnpm --filter @repo/dashboard-db d1:migrate:testing",
+    "db:migrate:testing": "pnpm --filter @repo/dashboard-db d1:migrate:testing && pnpm --filter @repo/sensor-db d1:migrate:testing",
     "emulator:start": "pnpm --filter @repo/supabase run setup",
     "emulator:stop": "pnpm --filter @repo/supabase run stop",
     "emulator:stopd": "pnpm --filter @repo/supabase run stopd",

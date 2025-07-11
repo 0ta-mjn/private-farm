@@ -41,7 +41,6 @@ src/
 
 ```bash
 # 開発用環境変数
-PORT=8080
 DISCORD_BOT_TOKEN=your_discord_bot_token
 DISCORD_WEBHOOK_URL=your_webhook_url
 ```
