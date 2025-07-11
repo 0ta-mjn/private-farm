@@ -1,0 +1,7 @@
+name = "satopod-sensor-ingest-producer"
+compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2025-06-17"
+
+[[queues.producers]]
+binding = "SensorIngestQueue"
+queue = "sensor-ingest-queue"

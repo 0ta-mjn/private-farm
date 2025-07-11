@@ -1,0 +1,15 @@
+name = "satopod-sensor-ingest-consumer"
+compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2025-06-17"
+main = "../../../../apps/sensor-ingest/src/consumer/index.ts"
+
+[[d1_databases]]
+binding = "SensorDB"
+database_name = "sensor"
+database_id = "<YOUR_SENSOR_D1_DATABASE_ID>"
+migrations_dir = "../../../../packages/sensor-db/migrations/d1"
+
+[[queues.consumers]]
+ queue = "sensor-ingest-queue"
+ max_batch_size = 10 # optional: defaults to 10
+ max_batch_timeout = 5 # optional: defaults to 5 seconds
