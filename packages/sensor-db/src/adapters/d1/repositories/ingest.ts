@@ -5,6 +5,7 @@ import {
 } from "../../../interfaces/ingest";
 import { devicesInfoTable, observationsTable } from "../schema";
 import { Database } from "../client";
+import { BatchItem } from "drizzle-orm/batch";
 
 export class D1SensorIngestRepository implements SensorIngestRepository {
   constructor(private db: Database) {}
@@ -32,28 +33,31 @@ export class D1SensorIngestRepository implements SensorIngestRepository {
   async bulkUpsertDeviceInfo(
     deviceInfoArray: DeviceInfoInput[]
   ): Promise<void> {
-    if (deviceInfoArray.length === 0) {
-      return;
-    }
-
-    // デバイス情報をupsert（存在する場合は更新、存在しない場合は挿入）
-    for (const deviceInfo of deviceInfoArray) {
-      await this.db
-        .insert(devicesInfoTable)
-        .values({
-          devEui: deviceInfo.devEui,
-          name: deviceInfo.name,
-          applicationId: deviceInfo.applicationId || null,
-          applicationName: deviceInfo.applicationName || null,
-        })
-        .onConflictDoUpdate({
-          target: devicesInfoTable.devEui,
-          set: {
+    const batchItems: BatchItem<"sqlite">[] = deviceInfoArray.map(
+      (deviceInfo) =>
+        this.db
+          .insert(devicesInfoTable)
+          .values({
+            devEui: deviceInfo.devEui,
             name: deviceInfo.name,
             applicationId: deviceInfo.applicationId || null,
             applicationName: deviceInfo.applicationName || null,
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: devicesInfoTable.devEui,
+            set: {
+              name: deviceInfo.name,
+              applicationId: deviceInfo.applicationId || null,
+              applicationName: deviceInfo.applicationName || null,
+            },
+          })
+    );
+    const firstItem = batchItems.shift();
+    if (!firstItem) {
+      // バッチアイテムが空の場合は何もしない
+      return;
     }
+
+    await this.db.batch([firstItem, ...batchItems]);
   }
 }
